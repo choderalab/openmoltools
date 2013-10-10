@@ -116,11 +116,5 @@ def generate_gaff_xml(pandas_mol2, pybel_mol2):
 def lookup_vdw(atype):
     return nonbonded.ix[atype]
 
-"""
-  <Atom type="1960" charge="1.0" sigma="0.526699322165" epsilon="0.00071128"/>
-f
-</ForceField>
-"""
-
 nonbonded = load_gaff_nonbonded()
 gaff_elements = pd.read_csv(GAFF_ELEMENTS_PATH, index_col=0).element
