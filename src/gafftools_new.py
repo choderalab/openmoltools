@@ -2,7 +2,6 @@ import mdtraj
 import numpy as np
 import pandas as pd
 import cStringIO
-import pybel
 import simtk.openmm.app.element
 import simtk.unit as unit
 import itertools
@@ -69,3 +68,53 @@ class Mol2Parser(object):
         xyz_mm = traj.xyz[0].tolist()
 
         return top_mm, xyz_mm
+
+
+def generate_gaff_xml(atoms, bonds):
+    residue_name = atoms.resName[1]  # To Do: Add check for consistency
+    xml_text = cStringIO.StringIO()
+    xml_text.write("<ForceField>\n")
+
+    xml_text.write("<AtomTypes>\n")
+    for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(False):
+        sigma, epsilon = lookup_vdw(atype)
+        full_name = residue_name + "_" + name
+        element = gaff_elements[atype]
+        omm_element = simtk.openmm.app.element.get_by_symbol(element)
+        mass = omm_element.mass / unit.daltons
+        
+        line = """<Type name="%s" class="%s" element="%s" mass="%f"/>\n""" % (full_name, atype, element, mass)
+        xml_text.write(line)
+    xml_text.write("</AtomTypes>\n")
+
+    xml_text.write("<Residues>\n")
+    xml_text.write("""<Residue name="%s">\n""" % residue_name)
+    for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(False):
+        sigma, epsilon = lookup_vdw(atype)
+        full_name = residue_name + "_" + name
+        element = gaff_elements[atype]
+        omm_element = simtk.openmm.app.element.get_by_symbol(element)
+        mass = omm_element.mass / unit.daltons        
+        line = """   <Atom name="%s" type="%s"/>\n""" % (name, full_name)
+        xml_text.write(line)
+    
+    for (id0, id1, bond_type) in bonds.itertuples(False):
+        i = id0 - 1  # Subtract 1 for zero based indexing in OpenMM???  
+        j = id1 - 1  # Subtract 1 for zero based indexing in OpenMM???  
+        xml_text.write("""<Bond from="%d" to="%d"/>\n""" % (i, j))
+        
+    xml_text.write("</Residue>\n")
+    xml_text.write("</Residues>\n")
+
+
+    xml_text.write("""<NonbondedForce coulomb14scale="0.833333" lj14scale="0.5">\n""")
+    for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(False):
+        sigma, epsilon = lookup_vdw(atype)
+        full_name = residue_name + "_" + name    
+        line = """<Atom type="%s" charge="%f" sigma="%f" epsilon="%f"/>\n""" % (full_name, charge, sigma, epsilon)
+        xml_text.write(line)
+    xml_text.write("</NonbondedForce>\n")
+    
+    xml_text.write("</ForceField>\n")
+    xml_text.reset()
+    return xml_text
