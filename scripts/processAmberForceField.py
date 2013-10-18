@@ -62,8 +62,8 @@ class AmberParser(object):
             self.residueConnections[residue] += [atom]
 
     def process_mol2_file(self, inputfile):
-        import gafftools3  # Late import to delay importing optional modules
-        mol2_parser = gafftools3.Mol2Parser(inputfile)
+        import gafftools  # Late import to delay importing optional modules
+        mol2_parser = gafftools.Mol2Parser(inputfile)
         residue_name = mol2_parser.atoms.resName[1]  # To Do: Add check for consistency
         
         self.residueAtoms[residue_name] = []
@@ -72,7 +72,7 @@ class AmberParser(object):
     
         for (i, name, x, y, z, atype, code, resname, charge) in mol2_parser.atoms.itertuples(False):
             full_name = residue_name + "_" + name
-            element_symbol = gafftools3.gaff_elements[atype]
+            element_symbol = gafftools.gaff_elements[atype]
             e = element.Element.getBySymbol(element_symbol)
             self.addAtom(resname, name, atype, e, charge)
             self.vdwEquivalents[full_name] = atype
