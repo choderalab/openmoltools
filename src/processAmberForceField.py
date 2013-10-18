@@ -3,6 +3,11 @@ import math
 import simtk.openmm.app.element as element
 import simtk.unit as unit
 
+def fix(atomClass):
+    if atomClass == 'X':
+        return ''
+    return atomClass
+
 elements = {}
 for elem in element.Element._elements_by_symbol.values():
     num = elem.atomic_number
@@ -16,48 +21,69 @@ CONNECTIVITY = 3
 RESIDUECONNECT = 4
 section = OTHER
 
-residueAtoms = {}
-residueBonds = {}
-residueConnections = {}
-
-types = []
-masses = {}
-resAtomTypes = {}
-vdwEquivalents = {}
-vdw = {}
-charge = {}
-bonds = []
-angles = []
-torsions = []
-impropers = []
 charge14scale = 1.0/1.2
 epsilon14scale = 0.5
 
 skipResidues = ['CIO', 'IB'] # "Generic" ions defined by Amber, which are identical to other real ions
 skipClasses = ['OW', 'HW'] # Skip water atoms, since we define these in separate files
 
-def addAtom(residue, atomName, atomClass, element, charge):
-    if residue is None:
-        return
-    residueAtoms[residue].append([atomName, len(types)])
-    types.append((atomClass, element, charge))
+class AmberParser(object):
+    def __init__(self):
+        self.residueAtoms = {}
+        self.residueBonds = {}
+        self.residueConnections = {}
 
-def addBond(residue, atom1, atom2):
-    if residue is None:
-        return
-    residueBonds[residue].append((atom1, atom2))
+        self.types = []
+        self.masses = {}
+        self.resAtomTypes = {}
+        self.vdwEquivalents = {}
+        self.vdw = {}
+        self.charge = {}
+        self.bonds = []
+        self.angles = []
+        self.torsions = []
+        self.impropers = []
 
-def addExternalBond(residue, atom):
-    if residue is None:
-        return
-    if atom != -1:
-        residueConnections[residue] += [atom]
+    def addAtom(self, residue, atomName, atomClass, element, charge):
+        if residue is None:
+            return
+        self.residueAtoms[residue].append([atomName, len(self.types)])
+        self.types.append((atomClass, element, charge))
 
-# Load input files.
+    def addBond(self, residue, atom1, atom2):
+        if residue is None:
+            return
+        self.residueBonds[residue].append((atom1, atom2))
 
-for inputfile in sys.argv[1:]:
-    if inputfile.endswith('.lib') or inputfile.endswith('.off'):
-        # Read a library file
+    def addExternalBond(self, residue, atom):
+        if residue is None:
+            return
+        if atom != -1:
+            self.residueConnections[residue] += [atom]
+
+    def process_mol2_file(self, inputfile):
+        import gafftools3  # Late import to delay importing optional modules
+        mol2_parser = gafftools3.Mol2Parser(inputfile)
+        residue_name = mol2_parser.atoms.resName[1]  # To Do: Add check for consistency
+        
+        self.residueAtoms[residue_name] = []
+        self.residueBonds[residue_name] = []
+        self.residueConnections[residue_name] = []        
+    
+        for (i, name, x, y, z, atype, code, resname, charge) in mol2_parser.atoms.itertuples(False):
+            full_name = residue_name + "_" + name
+            element_symbol = gafftools3.gaff_elements[atype]
+            e = element.Element.getBySymbol(element_symbol)
+            self.addAtom(resname, name, atype, e, charge)
+            self.vdwEquivalents[full_name] = atype
+
+        for (id0, id1, bond_type) in mol2_parser.bonds.itertuples(False):
+            i = id0 - 1  # Subtract 1 for zero based indexing in OpenMM???  
+            j = id1 - 1  # Subtract 1 for zero based indexing in OpenMM???  
+            self.addBond(residue_name, i, j)
+
+    def process_library_file(self, inputfile):
+        """Read a library file"""
         for line in open(inputfile):
             if line.startswith('!entry'):
                 fields = line.split('.')
@@ -68,9 +94,9 @@ for inputfile in sys.argv[1:]:
                 key = fields[3].split()[0]
                 if key == 'atoms':
                     section = ATOMS
-                    residueAtoms[residue] = []
-                    residueBonds[residue] = []
-                    residueConnections[residue] = []
+                    self.residueAtoms[residue] = []
+                    self.residueBonds[residue] = []
+                    self.residueConnections[residue] = []
                 elif key == 'connect':
                     section = CONNECT
                 elif key == 'connectivity':
@@ -93,7 +119,7 @@ for inputfile in sys.argv[1:]:
                         raise ValueError('Illegal atomic number: '+line)
                 else:
                     elem = elements[int(fields[6])]
-                charge = float(fields[7])
+                self.charge = float(fields[7])
                 addAtom(residue, atomName, atomClass, elem, charge)
             elif section == CONNECT:
                 addExternalBond(residue, int(line)-1)
@@ -106,9 +132,9 @@ for inputfile in sys.argv[1:]:
                 # those, using this block only for other external connections.
                 for atom in [int(x)-1 for x in line.split()[2:]]:
                     addExternalBond(residue, atom)
-    
-    elif inputfile.endswith('.dat'):
-        # Read a force field file.
+
+    def process_dat_file(self, inputfile):
+        """Read a force field file."""
         block = 0
         continueTorsion = False
         for line in open(inputfile):     
@@ -120,7 +146,7 @@ for inputfile in sys.argv[1:]:
                 if len(fields) == 0:
                     block += 1
                 else:
-                    masses[fields[0]] = float(fields[1])
+                    self.masses[fields[0]] = float(fields[1])
             elif block == 2:   # Hydrophilic atoms
                 block += 1
             elif block == 3:   # Bonds
@@ -128,13 +154,13 @@ for inputfile in sys.argv[1:]:
                     block += 1
                 else:
                     fields = line[5:].split()
-                    bonds.append((line[:2].strip(), line[3:5].strip(), fields[0], fields[1]))
+                    self.bonds.append((line[:2].strip(), line[3:5].strip(), fields[0], fields[1]))
             elif block == 4:   # Angles
                 if len(line) == 0:
                     block += 1
                 else:
                     fields = line[8:].split()
-                    angles.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), fields[0], fields[1]))
+                    self.angles.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), fields[0], fields[1]))
             elif block == 5:   # Torsions
                 if len(line) == 0:
                     block += 1
@@ -142,16 +168,16 @@ for inputfile in sys.argv[1:]:
                     fields = line[11:].split()
                     periodicity = int(float(fields[3]))
                     if continueTorsion:
-                        torsions[-1] += [float(fields[1])/float(fields[0]), fields[2], abs(periodicity)]
+                        self.torsions[-1] += [float(fields[1])/float(fields[0]), fields[2], abs(periodicity)]
                     else:
-                        torsions.append([line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), float(fields[1])/float(fields[0]), fields[2], abs(periodicity)])
+                        self.torsions.append([line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), float(fields[1])/float(fields[0]), fields[2], abs(periodicity)])
                     continueTorsion = (periodicity < 0)
             elif block == 6:   # Improper torsions
                 if len(line) == 0:
                     block += 1
                 else:
                     fields = line[11:].split()
-                    impropers.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), fields[0], fields[1], fields[2]))
+                    self.impropers.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), fields[0], fields[1], fields[2]))
             elif block == 7:   # 10-12 hbond potential
                 if len(line) == 0:
                     block += 1
@@ -161,21 +187,20 @@ for inputfile in sys.argv[1:]:
                 else:
                     fields = line.split()
                     for atom in fields[1:]:
-                        vdwEquivalents[atom] = fields[0]
+                        self.vdwEquivalents[atom] = fields[0]
             elif block == 9:   # VDW type
                 block += 1
-                vdwType = line.split()[1]
-                if vdwType not in ['RE', 'AC']:
+                self.vdwType = line.split()[1]
+                if self.vdwType not in ['RE', 'AC']:
                     raise ValueError('Nonbonded type (KINDNB) must be RE or AC') 
             elif block == 10:   # VDW parameters
                 if len(line) == 0:
                     block += 1
                 else:
                     fields = line.split()
-                    vdw[fields[0]] = (fields[1], fields[2])
-    
-    else:
-        # Assume it's a frcmod file.
+                    self.vdw[fields[0]] = (fields[1], fields[2])
+
+    def process_frc_file(self, inputfile):
         block = ''
         continueTorsion = False
         first = True
@@ -188,165 +213,180 @@ for inputfile in sys.argv[1:]:
                 block = line
             elif block.startswith('MASS'):
                 fields = line.split()
-                masses[fields[0]] = float(fields[1])
+                self.masses[fields[0]] = float(fields[1])
             elif block.startswith('BOND'):
                 fields = line[5:].split()
-                bonds.append((line[:2].strip(), line[3:5].strip(), fields[0], fields[1]))
+                self.bonds.append((line[:2].strip(), line[3:5].strip(), fields[0], fields[1]))
             elif block.startswith('ANGL'):
                 fields = line[8:].split()
-                angles.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), fields[0], fields[1]))
+                self.angles.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), fields[0], fields[1]))
             elif block.startswith('DIHE'):
                 fields = line[11:].split()
                 periodicity = int(float(fields[3]))
                 if continueTorsion:
-                    torsions[-1] += [float(fields[1])/float(fields[0]), fields[2], abs(periodicity)]
+                    self.torsions[-1] += [float(fields[1])/float(fields[0]), fields[2], abs(periodicity)]
                 else:
-                    torsions.append([line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), float(fields[1])/float(fields[0]), fields[2], abs(periodicity)])
+                    self.torsions.append([line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), float(fields[1])/float(fields[0]), fields[2], abs(periodicity)])
                 continueTorsion = (periodicity < 0)
             elif block.startswith('IMPR'):
                 fields = line[11:].split()
-                impropers.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), fields[0], fields[1], fields[2]))
+                self.impropers.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), fields[0], fields[1], fields[2]))
             elif block.startswith('NONB'):
                 fields = line.split()
-                vdw[fields[0]] = (fields[1], fields[2])
+                self.vdw[fields[0]] = (fields[1], fields[2])
 
-# Reduce the list of atom types.  If multiple hydrogens are bound to the same heavy atom,
-# they should all use the same type.
+    def print_xml(self):
+        print "<ForceField>"
+        print " <AtomTypes>"
+        for index, type in enumerate(self.types):
+            print """  <Type name="%d" class="%s" element="%s" mass="%s"/>""" % (index, type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu))
+        print " </AtomTypes>"
+        print " <Residues>"
+        for res in sorted(self.residueAtoms):
+            print """  <Residue name="%s">""" % res
+            for atom in self.residueAtoms[res]:
+                print "   <Atom name=\"%s\" type=\"%d\"/>" % tuple(atom)
+            if res in self.residueBonds:
+                for bond in self.residueBonds[res]:
+                    print """   <Bond from="%d" to="%d"/>""" % bond
+            if res in self.residueConnections:
+                for bond in self.residueConnections[res]:
+                    print """   <ExternalBond from="%d"/>""" % bond
+            print "  </Residue>"
+        print " </Residues>"
+        print " <HarmonicBondForce>"
+        processed = set()
+        for bond in self.bonds:
+            signature = (bond[0], bond[1])
+            if signature in processed:
+                continue
+            if any([c in skipClasses for c in signature]):
+                continue
+            processed.add(signature)
+            length = float(bond[3])*0.1
+            k = float(bond[2])*2*100*4.184
+            print """  <Bond class1="%s" class2="%s" length="%s" k="%s"/>""" % (bond[0], bond[1], str(length), str(k))
+        print " </HarmonicBondForce>"
+        print " <HarmonicAngleForce>"
+        processed = set()
+        for angle in self.angles:
+            signature = (angle[0], angle[1], angle[2])
+            if signature in processed:
+                continue
+            if any([c in skipClasses for c in signature]):
+                continue
+            processed.add(signature)
+            theta = float(angle[4])*math.pi/180.0
+            k = float(angle[3])*2*4.184
+            print """  <Angle class1="%s" class2="%s" class3="%s" angle="%s" k="%s"/>""" % (angle[0], angle[1], angle[2], str(theta), str(k))
+        print " </HarmonicAngleForce>"
+        print " <PeriodicTorsionForce>"
+        processed = set()
+        for tor in reversed(self.torsions):
+            signature = (fix(tor[0]), fix(tor[1]), fix(tor[2]), fix(tor[3]))
+            if signature in processed:
+                continue
+            if any([c in skipClasses for c in signature]):
+                continue
+            processed.add(signature)
+            tag = "  <Proper class1=\"%s\" class2=\"%s\" class3=\"%s\" class4=\"%s\"" % signature
+            i = 4
+            while i < len(tor):
+                index = i/3
+                periodicity = int(float(tor[i+2]))
+                phase = float(tor[i+1])*math.pi/180.0
+                k = tor[i]*4.184
+                tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
+                i += 3
+            tag += "/>"
+            print tag
+        processed = set()
+        for tor in reversed(self.impropers):
+            signature = (fix(tor[2]), fix(tor[0]), fix(tor[1]), fix(tor[3]))
+            if signature in processed:
+                continue
+            if any([c in skipClasses for c in signature]):
+                continue
+            processed.add(signature)
+            tag = "  <Improper class1=\"%s\" class2=\"%s\" class3=\"%s\" class4=\"%s\"" % signature
+            i = 4
+            while i < len(tor):
+                index = i/3
+                periodicity = int(float(tor[i+2]))
+                phase = float(tor[i+1])*math.pi/180.0
+                k = float(tor[i])*4.184
+                tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
+                i += 3
+            tag += "/>"
+            print tag
+        print " </PeriodicTorsionForce>"
+        print """ <NonbondedForce coulomb14scale="%g" lj14scale="%s">""" % (charge14scale, epsilon14scale)
+        sigmaScale = 0.1*2.0/(2.0**(1.0/6.0))
+        for index, type in enumerate(self.types):
+            atomClass = type[0]
+            q = type[2]
+            if atomClass in self.vdwEquivalents:
+                atomClass = self.vdwEquivalents[atomClass]
+            if atomClass in self.vdw:
+                params = [float(x) for x in self.vdw[atomClass]]
+                if self.vdwType == 'RE':
+                    sigma = params[0]*sigmaScale
+                    epsilon = params[1]*4.184
+                else:
+                    sigma = (params[0]/params[1])**(1.0/6.0)
+                    epsilon = 4.184*params[1]*params[1]/(4*params[0])
+            else:
+                sigma = 0
+                epsilon = 0
+            if q != 0 or epsilon != 0:
+                print """  <Atom type="%d" charge="%s" sigma="%s" epsilon="%s"/>""" % (index, q, sigma, epsilon)
+        print " </NonbondedForce>"
+        print "</ForceField>"
 
-removeType = [False]*len(types)
-for res in residueAtoms:
-    if res not in residueBonds:
-        continue
-    atomBonds = [[] for atom in residueAtoms[res]]
-    for bond in residueBonds[res]:
-        atomBonds[bond[0]].append(bond[1])
-        atomBonds[bond[1]].append(bond[0])
-    for index, atom in enumerate(residueAtoms[res]):
-        hydrogens = [x for x in atomBonds[index] if types[residueAtoms[res][x][1]][1] == element.hydrogen]
-        for h in hydrogens[1:]:
-            removeType[residueAtoms[res][h][1]] = True
-            residueAtoms[res][h][1] = residueAtoms[res][hydrogens[0]][1]
-newTypes = []
-replaceWithType = [0]*len(types)
-for i in range(len(types)):
-    if not removeType[i]:
-        newTypes.append(types[i])
-    replaceWithType[i] = len(newTypes)-1
-types = newTypes
-for res in residueAtoms:
-    for atom in residueAtoms[res]:
-        atom[1] = replaceWithType[atom[1]]
+    def parse_filenames(self, filenames):
+        for inputfile in filenames:
+            if inputfile.endswith('.lib') or inputfile.endswith('.off'):
+                self.process_library_file(inputfile)
+            elif inputfile.endswith('.dat'):
+                self.process_dat_file(inputfile)
+            elif inputfile.endswith("mol2"):
+                self.process_mol2_file(inputfile)
+            else:
+                self.process_frc_file(inputfile)
+        
+        self.reduce_atomtypes()
 
-# Create the XML output.
+    def reduce_atomtypes(self):
+        """Reduce the list of atom self.types.  If multiple hydrogens are bound to the same heavy atom,
+        they should all use the same type.
+        """
 
-def fix(atomClass):
-    if atomClass == 'X':
-        return ''
-    return atomClass
+        removeType = [False]*len(self.types)
+        for res in self.residueAtoms:
+            if res not in self.residueBonds:
+                continue
+            atomBonds = [[] for atom in self.residueAtoms[res]]
+            for bond in self.residueBonds[res]:
+                atomBonds[bond[0]].append(bond[1])
+                atomBonds[bond[1]].append(bond[0])
+            for index, atom in enumerate(self.residueAtoms[res]):
+                hydrogens = [x for x in atomBonds[index] if self.types[self.residueAtoms[res][x][1]][1] == element.hydrogen]
+                for h in hydrogens[1:]:
+                    removeType[self.residueAtoms[res][h][1]] = True
+                    self.residueAtoms[res][h][1] = self.residueAtoms[res][hydrogens[0]][1]
+        newTypes = []
+        replaceWithType = [0]*len(self.types)
+        for i in range(len(self.types)):
+            if not removeType[i]:
+                newTypes.append(self.types[i])
+            replaceWithType[i] = len(newTypes)-1
+        self.types = newTypes
+        for res in self.residueAtoms:
+            for atom in self.residueAtoms[res]:
+                atom[1] = replaceWithType[atom[1]]
 
-print "<ForceField>"
-print " <AtomTypes>"
-for index, type in enumerate(types):
-    print """  <Type name="%d" class="%s" element="%s" mass="%s"/>""" % (index, type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu))
-print " </AtomTypes>"
-print " <Residues>"
-for res in sorted(residueAtoms):
-    print """  <Residue name="%s">""" % res
-    for atom in residueAtoms[res]:
-        print "   <Atom name=\"%s\" type=\"%d\"/>" % tuple(atom)
-    if res in residueBonds:
-        for bond in residueBonds[res]:
-            print """   <Bond from="%d" to="%d"/>""" % bond
-    if res in residueConnections:
-        for bond in residueConnections[res]:
-            print """   <ExternalBond from="%d"/>""" % bond
-    print "  </Residue>"
-print " </Residues>"
-print " <HarmonicBondForce>"
-processed = set()
-for bond in bonds:
-    signature = (bond[0], bond[1])
-    if signature in processed:
-        continue
-    if any([c in skipClasses for c in signature]):
-        continue
-    processed.add(signature)
-    length = float(bond[3])*0.1
-    k = float(bond[2])*2*100*4.184
-    print """  <Bond class1="%s" class2="%s" length="%s" k="%s"/>""" % (bond[0], bond[1], str(length), str(k))
-print " </HarmonicBondForce>"
-print " <HarmonicAngleForce>"
-processed = set()
-for angle in angles:
-    signature = (angle[0], angle[1], angle[2])
-    if signature in processed:
-        continue
-    if any([c in skipClasses for c in signature]):
-        continue
-    processed.add(signature)
-    theta = float(angle[4])*math.pi/180.0
-    k = float(angle[3])*2*4.184
-    print """  <Angle class1="%s" class2="%s" class3="%s" angle="%s" k="%s"/>""" % (angle[0], angle[1], angle[2], str(theta), str(k))
-print " </HarmonicAngleForce>"
-print " <PeriodicTorsionForce>"
-processed = set()
-for tor in reversed(torsions):
-    signature = (fix(tor[0]), fix(tor[1]), fix(tor[2]), fix(tor[3]))
-    if signature in processed:
-        continue
-    if any([c in skipClasses for c in signature]):
-        continue
-    processed.add(signature)
-    tag = "  <Proper class1=\"%s\" class2=\"%s\" class3=\"%s\" class4=\"%s\"" % signature
-    i = 4
-    while i < len(tor):
-        index = i/3
-        periodicity = int(float(tor[i+2]))
-        phase = float(tor[i+1])*math.pi/180.0
-        k = tor[i]*4.184
-        tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
-        i += 3
-    tag += "/>"
-    print tag
-processed = set()
-for tor in reversed(impropers):
-    signature = (fix(tor[2]), fix(tor[0]), fix(tor[1]), fix(tor[3]))
-    if signature in processed:
-        continue
-    if any([c in skipClasses for c in signature]):
-        continue
-    processed.add(signature)
-    tag = "  <Improper class1=\"%s\" class2=\"%s\" class3=\"%s\" class4=\"%s\"" % signature
-    i = 4
-    while i < len(tor):
-        index = i/3
-        periodicity = int(float(tor[i+2]))
-        phase = float(tor[i+1])*math.pi/180.0
-        k = float(tor[i])*4.184
-        tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
-        i += 3
-    tag += "/>"
-    print tag
-print " </PeriodicTorsionForce>"
-print """ <NonbondedForce coulomb14scale="%g" lj14scale="%s">""" % (charge14scale, epsilon14scale)
-sigmaScale = 0.1*2.0/(2.0**(1.0/6.0))
-for index, type in enumerate(types):
-    atomClass = type[0]
-    q = type[2]
-    if atomClass in vdwEquivalents:
-        atomClass = vdwEquivalents[atomClass]
-    if atomClass in vdw:
-        params = [float(x) for x in vdw[atomClass]]
-        if vdwType == 'RE':
-            sigma = params[0]*sigmaScale
-            epsilon = params[1]*4.184
-        else:
-            sigma = (params[0]/params[1])**(1.0/6.0)
-            epsilon = 4.184*params[1]*params[1]/(4*params[0])
-    else:
-        sigma = 0
-        epsilon = 0
-    if q != 0 or epsilon != 0:
-        print """  <Atom type="%d" charge="%s" sigma="%s" epsilon="%s"/>""" % (index, q, sigma, epsilon)
-print " </NonbondedForce>"
-print "</ForceField>"
+
+if __name__ == "__main__":
+    amber_parser = AmberParser()
+    amber_parser.parse_filenames(sys.argv[1:])
+    amber_parser.print_xml()
