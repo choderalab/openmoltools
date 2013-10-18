@@ -1,0 +1,132 @@
+<ForceField>
+<AtomTypes>
+<Type name="EFZ_CL" class="cl" element="Cl" mass="35.453200"/>
+<Type name="EFZ_F1" class="f" element="F" mass="18.998403"/>
+<Type name="EFZ_F2" class="f" element="F" mass="18.998403"/>
+<Type name="EFZ_F3" class="f" element="F" mass="18.998403"/>
+<Type name="EFZ_O1" class="o" element="O" mass="15.999430"/>
+<Type name="EFZ_O2" class="os" element="O" mass="15.999430"/>
+<Type name="EFZ_N" class="n" element="N" mass="14.006720"/>
+<Type name="EFZ_C1" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C2" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C3" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C4" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C5" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C6" class="ca" element="C" mass="12.010780"/>
+<Type name="EFZ_C7" class="c3" element="C" mass="12.010780"/>
+<Type name="EFZ_C8" class="c1" element="C" mass="12.010780"/>
+<Type name="EFZ_C9" class="c1" element="C" mass="12.010780"/>
+<Type name="EFZ_C10" class="cx" element="C" mass="12.010780"/>
+<Type name="EFZ_C11" class="cx" element="C" mass="12.010780"/>
+<Type name="EFZ_C12" class="cx" element="C" mass="12.010780"/>
+<Type name="EFZ_C13" class="c3" element="C" mass="12.010780"/>
+<Type name="EFZ_C14" class="c" element="C" mass="12.010780"/>
+<Type name="EFZ_H122" class="hc" element="H" mass="1.007947"/>
+<Type name="EFZ_H121" class="hc" element="H" mass="1.007947"/>
+<Type name="EFZ_H112" class="hc" element="H" mass="1.007947"/>
+<Type name="EFZ_H111" class="hc" element="H" mass="1.007947"/>
+<Type name="EFZ_H101" class="hc" element="H" mass="1.007947"/>
+<Type name="EFZ_HN" class="hn" element="H" mass="1.007947"/>
+<Type name="EFZ_H5" class="ha" element="H" mass="1.007947"/>
+<Type name="EFZ_H3" class="ha" element="H" mass="1.007947"/>
+<Type name="EFZ_H2" class="ha" element="H" mass="1.007947"/>
+</AtomTypes>
+<Residues>
+<Residue name="EFZ">
+   <Atom name="CL" type="EFZ_CL"/>
+   <Atom name="F1" type="EFZ_F1"/>
+   <Atom name="F2" type="EFZ_F2"/>
+   <Atom name="F3" type="EFZ_F3"/>
+   <Atom name="O1" type="EFZ_O1"/>
+   <Atom name="O2" type="EFZ_O2"/>
+   <Atom name="N" type="EFZ_N"/>
+   <Atom name="C1" type="EFZ_C1"/>
+   <Atom name="C2" type="EFZ_C2"/>
+   <Atom name="C3" type="EFZ_C3"/>
+   <Atom name="C4" type="EFZ_C4"/>
+   <Atom name="C5" type="EFZ_C5"/>
+   <Atom name="C6" type="EFZ_C6"/>
+   <Atom name="C7" type="EFZ_C7"/>
+   <Atom name="C8" type="EFZ_C8"/>
+   <Atom name="C9" type="EFZ_C9"/>
+   <Atom name="C10" type="EFZ_C10"/>
+   <Atom name="C11" type="EFZ_C11"/>
+   <Atom name="C12" type="EFZ_C12"/>
+   <Atom name="C13" type="EFZ_C13"/>
+   <Atom name="C14" type="EFZ_C14"/>
+   <Atom name="H122" type="EFZ_H122"/>
+   <Atom name="H121" type="EFZ_H121"/>
+   <Atom name="H112" type="EFZ_H112"/>
+   <Atom name="H111" type="EFZ_H111"/>
+   <Atom name="H101" type="EFZ_H101"/>
+   <Atom name="HN" type="EFZ_HN"/>
+   <Atom name="H5" type="EFZ_H5"/>
+   <Atom name="H3" type="EFZ_H3"/>
+   <Atom name="H2" type="EFZ_H2"/>
+<Bond from="0" to="10"/>
+<Bond from="1" to="19"/>
+<Bond from="2" to="19"/>
+<Bond from="3" to="19"/>
+<Bond from="4" to="20"/>
+<Bond from="5" to="13"/>
+<Bond from="5" to="20"/>
+<Bond from="6" to="7"/>
+<Bond from="6" to="20"/>
+<Bond from="6" to="26"/>
+<Bond from="7" to="8"/>
+<Bond from="7" to="12"/>
+<Bond from="8" to="9"/>
+<Bond from="8" to="29"/>
+<Bond from="9" to="10"/>
+<Bond from="9" to="28"/>
+<Bond from="10" to="11"/>
+<Bond from="11" to="12"/>
+<Bond from="11" to="27"/>
+<Bond from="12" to="13"/>
+<Bond from="13" to="14"/>
+<Bond from="13" to="19"/>
+<Bond from="14" to="15"/>
+<Bond from="15" to="16"/>
+<Bond from="16" to="17"/>
+<Bond from="16" to="18"/>
+<Bond from="16" to="25"/>
+<Bond from="17" to="18"/>
+<Bond from="17" to="23"/>
+<Bond from="17" to="24"/>
+<Bond from="18" to="21"/>
+<Bond from="18" to="22"/>
+</Residue>
+</Residues>
+<NonbondedForce coulomb14scale="0.833333" lj14scale="0.5">
+<Atom type="EFZ_CL" charge="-0.074400" sigma="1.948000" epsilon="0.265000"/>
+<Atom type="EFZ_F1" charge="-0.224300" sigma="1.750000" epsilon="0.061000"/>
+<Atom type="EFZ_F2" charge="-0.224300" sigma="1.750000" epsilon="0.061000"/>
+<Atom type="EFZ_F3" charge="-0.224300" sigma="1.750000" epsilon="0.061000"/>
+<Atom type="EFZ_O1" charge="-0.582500" sigma="1.661200" epsilon="0.210000"/>
+<Atom type="EFZ_O2" charge="-0.378900" sigma="1.683700" epsilon="0.170000"/>
+<Atom type="EFZ_N" charge="-0.474100" sigma="1.824000" epsilon="0.170000"/>
+<Atom type="EFZ_C1" charge="0.107600" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C2" charge="-0.172000" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C3" charge="-0.068000" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C4" charge="-0.017600" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C5" charge="-0.053000" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C6" charge="-0.175300" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C7" charge="0.314200" sigma="1.908000" epsilon="0.109400"/>
+<Atom type="EFZ_C8" charge="-0.204100" sigma="1.908000" epsilon="0.210000"/>
+<Atom type="EFZ_C9" charge="0.013900" sigma="1.908000" epsilon="0.210000"/>
+<Atom type="EFZ_C10" charge="-0.082600" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C11" charge="-0.107900" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C12" charge="-0.107900" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_C13" charge="0.626900" sigma="1.908000" epsilon="0.109400"/>
+<Atom type="EFZ_C14" charge="0.843600" sigma="1.908000" epsilon="0.086000"/>
+<Atom type="EFZ_H122" charge="0.081950" sigma="1.487000" epsilon="0.015700"/>
+<Atom type="EFZ_H121" charge="0.081950" sigma="1.487000" epsilon="0.015700"/>
+<Atom type="EFZ_H112" charge="0.081950" sigma="1.487000" epsilon="0.015700"/>
+<Atom type="EFZ_H111" charge="0.081950" sigma="1.487000" epsilon="0.015700"/>
+<Atom type="EFZ_H101" charge="0.103700" sigma="1.487000" epsilon="0.015700"/>
+<Atom type="EFZ_HN" charge="0.356500" sigma="0.600000" epsilon="0.015700"/>
+<Atom type="EFZ_H5" charge="0.170000" sigma="1.459000" epsilon="0.015000"/>
+<Atom type="EFZ_H3" charge="0.156000" sigma="1.459000" epsilon="0.015000"/>
+<Atom type="EFZ_H2" charge="0.149000" sigma="1.459000" epsilon="0.015000"/>
+</NonbondedForce>
+</ForceField>

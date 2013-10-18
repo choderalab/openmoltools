@@ -65,7 +65,7 @@ class Mol2Parser(object):
     def to_openmm(self):
         traj = self.to_mdtraj()
         top_mm = traj.top.to_openmm()
-        xyz_mm = traj.xyz[0].tolist()
+        xyz_mm = (traj.xyz[0] / 10.0).tolist()  # Convert from angstrom to nanometer
 
         return top_mm, xyz_mm
 
@@ -117,4 +117,102 @@ def generate_gaff_xml(atoms, bonds):
     
     xml_text.write("</ForceField>\n")
     xml_text.reset()
+    return xml_text
+
+_FRCMOD_HEADERS = ["MASS", "BOND", "ANGL", "DIHE", "IMPR", "NONB"]
+
+
+def parse_frcmod_sections(x):
+    if x[0:4] in _FRCMOD_HEADERS:
+        parse_frcmod_sections.key = x[0:4]
+    return parse_frcmod_sections.key
+
+parse_frcmod_sections.key = None
+
+parsers = {
+"BOND": lambda stream: pd.read_fwf(stream, colspecs=((0,2),(3,5), (6, 8), (11, 17), (22, 29)), header=None, names=["type0", "type1", "k", "r0"]), 
+"ANGL": lambda stream: pd.read_fwf(stream, colspecs=((0,2),(3,5), (6, 8), (11, 17), (22, 29)), header=None, names=["type0", "type1", "type2", "k", "theta0"]),
+"DIHE": lambda stream: pd.read_fwf(stream, colspecs=((0,2),(3,5), (6, 8), (9, 11), (18, 24), (32, 39), (46, 51)), names=["type0", "type1", "type2", "type3", "k", "phase", "periodicity"], header=None),
+"IMPR": lambda stream: pd.read_fwf(stream, colspecs=((0,2),(3,5), (6, 8), (9, 11), (18, 24), (32, 39), (46, 51)), names=["type0", "type1", "type2", "type3", "k", "phase", "periodicity"], header=None)
+}
+
+def bonds_to_xml(frame, xml_text):
+    pass
+
+def angles_to_xml(frame, xml_text):
+    xml_text.write("<Angle/>\n")
+    for (type0, type1, type2, k, theta) in frame.itertuples(False):
+          line = """<Angle class1="%s" class2="%s" class3="%s" angle="%f" k="%f"/>\n""" % (type0, type1, type2, theta * np.pi / 180., k * 4.184)  # Radians and KJ / mol
+          xml_text.write(line)
+    xml_text.write("</Angle/>\n")
+    
+def dihedrals_to_xml(frame, xml_text):
+    xml_text.write("<<PeriodicTorsionForce>/>\n")
+    processed = []
+    for (type0, type1, type2, type3, k, phase, periodicity) in frame.itertuples(False):
+        signature = (type0, type1, type2, type3)
+        if signature in processed:
+            continue
+        processed.add(signature)
+
+    for (type0, type1, type2, type3, k, phase, periodicity) in frame.itertuples(False):
+        signature = (type0, type1, type2, type3)
+        if signature in processed:
+            continue
+        processed.add(signature)
+
+    tag = "  <Proper class1=\"%s\" class2=\"%s\" class3=\"%s\" class4=\"%s\"" % signature
+    i = 4
+    while i < len(tor):
+        index = i/3
+        periodicity = int(float(tor[i+2]))
+        phase = float(tor[i+1])*math.pi/180.0
+        k = tor[i]*4.184
+        tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
+        i += 3
+    tag += "/>"
+
+        #line = """<Proper class1="%s" class2="%s" class3="%s" class4="%s" angle="%f" k="%f"/>\n""" % (type0, type1, type2, type3,)
+        #xml_text.write(line)
+    xml_text.write("</<PeriodicTorsionForce>/>\n")
+
+def impropers_to_xml(frame, xml_text):
+    xml_text.write("<<PeriodicTorsionForce>/>\n")
+    for (type0, type1, type2, type3, k, phase, periodicity) in frame.itertuples(False):
+        pass
+        #line = """<Improper class1="%s" class2="%s" class3="%s" class4="%s" angle="%f" k="%f"/>\n""" % (type0, type1, type2, type3, theta, k)
+        #xml_text.write(line)
+    xml_text.write("</<PeriodicTorsionForce>/>\n")
+
+xml_mungers = {
+"BOND": bonds_to_xml,
+"ANGL": angles_to_xml,
+"DIHE": dihedrals_to_xml,
+"IMPR": impropers_to_xml,
+}
+
+def frcmod_to_xml(filename):
+    with open(filename) as f:
+        data = dict((key, list(grp)) for key, grp in itertools.groupby(f, parse_frcmod_sections))
+
+    section_frames = {}
+    for header, lines in data.iteritems():
+        if header in parsers.keys() and len(lines) > 2:
+            print(header)
+            stream = cStringIO.StringIO()
+            stream.writelines(lines[1:-1])  # Remove first (header) and last (blank) lines
+            stream.reset()
+            frame = parsers[header](stream)
+            section_frames[header] = frame
+            print(frame)
+
+    xml_text = cStringIO.StringIO()
+    xml_text.write("<ForceField>\n")
+
+    for header, frame in section_frames.iteritems():
+        print(header)
+        print(frame)
+        xml_mungers[header](frame, xml_text)
+
+    xml_text.write("</ForceField>\n")
     return xml_text

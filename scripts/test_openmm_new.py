@@ -5,14 +5,14 @@ import gafftools_new
 
 temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
-timestep = 1.0 * u.femtosecond
+timestep = 0.1 * u.femtosecond
 
 mol2 = gafftools_new.Mol2Parser("./sample_files/sustiva.mol2")
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("./xml/gaff.xml", "out.xml")
+forcefield = app.ForceField("./sample_files/sustiva.xml", "./xml/gaff.xml", "./sample_files/sustiva.frcmod.xml")
 
-system = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=app.HBonds)
+system = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
 integrator = mm.LangevinIntegrator(temperature, friction, timestep)
 
