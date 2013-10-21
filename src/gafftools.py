@@ -114,13 +114,14 @@ class Mol2Parser(object):
 
         top = mdtraj.Topology.from_dataframe(atoms_mdtraj, bonds_mdtraj)
         xyzlist = np.array([atoms[["x","y","z"]].values])
+        xyzlist /= 10.0  # Convert from angstrom to nanometer
         traj = mdtraj.Trajectory(xyzlist, top)
         return traj
 
     def to_openmm(self):
         traj = self.to_mdtraj()
         top_mm = traj.top.to_openmm()
-        xyz_mm = (traj.xyz[0] / 10.0).tolist()  # Convert from angstrom to nanometer
+        xyz_mm = traj.xyz[0].tolist()
 
         return top_mm, xyz_mm
 
