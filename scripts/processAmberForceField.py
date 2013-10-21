@@ -3,6 +3,8 @@ import math
 import simtk.openmm.app.element as element
 import simtk.unit as unit
 
+USE_NUMERIC_TYPES = False  # True for AMBER, False for GAFF
+
 def fix(atomClass):
     if atomClass == 'X':
         return ''
@@ -34,6 +36,7 @@ class AmberParser(object):
         self.residueConnections = {}
 
         self.types = []
+        self.type_names = []
         self.masses = {}
         self.resAtomTypes = {}
         self.vdwEquivalents = {}
@@ -44,11 +47,16 @@ class AmberParser(object):
         self.torsions = []
         self.impropers = []
 
-    def addAtom(self, residue, atomName, atomClass, element, charge):
+    def addAtom(self, residue, atomName, atomClass, element, charge, use_numeric_types=USE_NUMERIC_TYPES):
         if residue is None:
             return
-        self.residueAtoms[residue].append([atomName, len(self.types)])
+        type_id = len(self.types)
+        self.residueAtoms[residue].append([atomName, type_id])
         self.types.append((atomClass, element, charge))
+        if use_numeric_types:
+            self.type_names.append("%d" % (type_id))
+        else:
+            self.type_names.append("%s-%s" % (residue, atomName))
 
     def addBond(self, residue, atom1, atom2):
         if residue is None:
@@ -239,13 +247,15 @@ class AmberParser(object):
         print "<ForceField>"
         print " <AtomTypes>"
         for index, type in enumerate(self.types):
-            print """  <Type name="%d" class="%s" element="%s" mass="%s"/>""" % (index, type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu))
+            print """  <Type name="%s" class="%s" element="%s" mass="%s"/>""" % (self.type_names[index], type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu))
         print " </AtomTypes>"
         print " <Residues>"
         for res in sorted(self.residueAtoms):
             print """  <Residue name="%s">""" % res
             for atom in self.residueAtoms[res]:
-                print "   <Atom name=\"%s\" type=\"%d\"/>" % tuple(atom)
+                atom_name, type_id = tuple(atom)
+                atom_type = self.type_names[type_id]
+                print "   <Atom name=\"%s\" type=\"%s\"/>" % (atom_name, atom_type)
             if res in self.residueBonds:
                 for bond in self.residueBonds[res]:
                     print """   <Bond from="%d" to="%d"/>""" % bond
@@ -339,7 +349,7 @@ class AmberParser(object):
                 sigma = 0
                 epsilon = 0
             if q != 0 or epsilon != 0:
-                print """  <Atom type="%d" charge="%s" sigma="%s" epsilon="%s"/>""" % (index, q, sigma, epsilon)
+                print """  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon)
         print " </NonbondedForce>"
         print "</ForceField>"
 
