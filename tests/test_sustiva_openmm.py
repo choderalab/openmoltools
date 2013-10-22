@@ -22,3 +22,15 @@ system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbonde
 
 checker = system_checker.SystemChecker(system_prm, system_xml)
 checker.check_forces()
+
+
+integrator_xml = mm.LangevinIntegrator(temperature, friction, timestep)
+simulation_xml = app.Simulation(top, system_xml, integrator_xml)
+simulation_xml.context.setPositions(xyz)
+state_xml = simulation_xml.context.getState(getEnergy=True)
+
+
+integrator_prm = mm.LangevinIntegrator(temperature, friction, timestep)
+simulation_prm = app.Simulation(prmtop.topology, system_prm, integrator_prm)
+simulation_prm.context.setPositions(xyz)
+state_prm = simulation_prm.context.getState(getEnergy=True)
