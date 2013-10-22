@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import math
 import simtk.openmm.app.element as element

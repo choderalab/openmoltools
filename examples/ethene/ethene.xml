@@ -1,102 +1,27 @@
 <!-- Time and parameters of origin: -->
-<!-- 2013-10-22 19:23:36.801424 -->
-<!-- /home/kyleb/src/amber12/dat/leap/parm/gaff.dat ./sustiva.mol2 ./sustiva.frcmod -->
+<!-- 2013-10-22 19:22:13.125380 -->
+<!-- /home/kyleb/src/amber12/dat/leap/parm/gaff.dat ./ethene.mol2 ./ethene.frcmod -->
 
 <ForceField>
  <AtomTypes>
-  <Type name="LIG-Cl" class="cl" element="Cl" mass="35.4532"/>
-  <Type name="LIG-F" class="f" element="F" mass="18.99840325"/>
-  <Type name="LIG-F1" class="f" element="F" mass="18.99840325"/>
-  <Type name="LIG-F2" class="f" element="F" mass="18.99840325"/>
-  <Type name="LIG-O" class="os" element="O" mass="15.99943"/>
-  <Type name="LIG-O1" class="o" element="O" mass="15.99943"/>
-  <Type name="LIG-N" class="n" element="N" mass="14.00672"/>
-  <Type name="LIG-C" class="cx" element="C" mass="12.01078"/>
-  <Type name="LIG-C1" class="cx" element="C" mass="12.01078"/>
-  <Type name="LIG-C2" class="cx" element="C" mass="12.01078"/>
-  <Type name="LIG-C3" class="c3" element="C" mass="12.01078"/>
-  <Type name="LIG-C4" class="c1" element="C" mass="12.01078"/>
-  <Type name="LIG-C5" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-C6" class="c1" element="C" mass="12.01078"/>
-  <Type name="LIG-C7" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-C8" class="c3" element="C" mass="12.01078"/>
-  <Type name="LIG-C9" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-C10" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-C11" class="c" element="C" mass="12.01078"/>
-  <Type name="LIG-C12" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-C13" class="ca" element="C" mass="12.01078"/>
-  <Type name="LIG-H" class="hc" element="H" mass="1.007947"/>
-  <Type name="LIG-H1" class="hc" element="H" mass="1.007947"/>
-  <Type name="LIG-H2" class="hc" element="H" mass="1.007947"/>
-  <Type name="LIG-H3" class="ha" element="H" mass="1.007947"/>
-  <Type name="LIG-H4" class="hn" element="H" mass="1.007947"/>
-  <Type name="LIG-H5" class="ha" element="H" mass="1.007947"/>
-  <Type name="LIG-H6" class="ha" element="H" mass="1.007947"/>
+  <Type name="LIG-C" class="c2" element="C" mass="12.01078"/>
+  <Type name="LIG-C1" class="c2" element="C" mass="12.01078"/>
+  <Type name="LIG-H" class="ha" element="H" mass="1.007947"/>
+  <Type name="LIG-H1" class="ha" element="H" mass="1.007947"/>
  </AtomTypes>
  <Residues>
   <Residue name="LIG">
-   <Atom name="Cl" type="LIG-Cl"/>
-   <Atom name="F" type="LIG-F"/>
-   <Atom name="F1" type="LIG-F1"/>
-   <Atom name="F2" type="LIG-F2"/>
-   <Atom name="O" type="LIG-O"/>
-   <Atom name="O1" type="LIG-O1"/>
-   <Atom name="N" type="LIG-N"/>
    <Atom name="C" type="LIG-C"/>
    <Atom name="C1" type="LIG-C1"/>
-   <Atom name="C2" type="LIG-C2"/>
-   <Atom name="C3" type="LIG-C3"/>
-   <Atom name="C4" type="LIG-C4"/>
-   <Atom name="C5" type="LIG-C5"/>
-   <Atom name="C6" type="LIG-C6"/>
-   <Atom name="C7" type="LIG-C7"/>
-   <Atom name="C8" type="LIG-C8"/>
-   <Atom name="C9" type="LIG-C9"/>
-   <Atom name="C10" type="LIG-C10"/>
-   <Atom name="C11" type="LIG-C11"/>
-   <Atom name="C12" type="LIG-C12"/>
-   <Atom name="C13" type="LIG-C13"/>
    <Atom name="H" type="LIG-H"/>
-   <Atom name="H1" type="LIG-H1"/>
+   <Atom name="H1" type="LIG-H"/>
    <Atom name="H2" type="LIG-H1"/>
-   <Atom name="H3" type="LIG-H2"/>
-   <Atom name="H4" type="LIG-H2"/>
-   <Atom name="H5" type="LIG-H3"/>
-   <Atom name="H6" type="LIG-H4"/>
-   <Atom name="H7" type="LIG-H5"/>
-   <Atom name="H8" type="LIG-H6"/>
-   <Bond from="0" to="19"/>
-   <Bond from="1" to="15"/>
-   <Bond from="2" to="15"/>
-   <Bond from="3" to="15"/>
-   <Bond from="4" to="10"/>
-   <Bond from="4" to="18"/>
-   <Bond from="5" to="18"/>
-   <Bond from="6" to="14"/>
-   <Bond from="6" to="18"/>
-   <Bond from="6" to="27"/>
-   <Bond from="7" to="8"/>
-   <Bond from="7" to="9"/>
-   <Bond from="7" to="11"/>
-   <Bond from="7" to="21"/>
-   <Bond from="8" to="9"/>
-   <Bond from="8" to="22"/>
-   <Bond from="8" to="23"/>
-   <Bond from="9" to="24"/>
-   <Bond from="9" to="25"/>
-   <Bond from="10" to="12"/>
-   <Bond from="10" to="13"/>
-   <Bond from="10" to="15"/>
-   <Bond from="11" to="13"/>
-   <Bond from="12" to="14"/>
-   <Bond from="12" to="16"/>
-   <Bond from="14" to="17"/>
-   <Bond from="16" to="19"/>
-   <Bond from="16" to="26"/>
-   <Bond from="17" to="20"/>
-   <Bond from="17" to="28"/>
-   <Bond from="19" to="20"/>
-   <Bond from="20" to="29"/>
+   <Atom name="H3" type="LIG-H1"/>
+   <Bond from="0" to="1"/>
+   <Bond from="0" to="2"/>
+   <Bond from="0" to="3"/>
+   <Bond from="1" to="4"/>
+   <Bond from="1" to="5"/>
   </Residue>
  </Residues>
  <HarmonicBondForce>
@@ -4963,8 +4888,6 @@
   <Angle class1="py" class2="sy" class3="py" angle="1.82369453541" k="303.34"/>
   <Angle class1="sx" class2="sy" class3="sx" angle="1.78006130411" k="475.80448"/>
   <Angle class1="sy" class2="sy" class3="sy" angle="1.80275058438" k="473.87984"/>
-  <Angle class1="cx" class2="c1" class3="c1" angle="3.11471458311" k="470.95104"/>
-  <Angle class1="c1" class2="cx" class3="hc" angle="1.91549885406" k="403.756"/>
  </HarmonicAngleForce>
  <PeriodicTorsionForce>
   <Proper class1="hc" class2="c3" class3="c3" class4="br" periodicity1="3" phase1="0.0" k1="0.0" periodicity2="1" phase2="0.0" k2="2.3012"/>
@@ -5604,10 +5527,7 @@
   <Proper class1="" class2="c" class3="cg" class4="" periodicity1="2" phase1="3.14159265359" k1="0.0"/>
   <Proper class1="" class2="c" class3="c1" class4="" periodicity1="2" phase1="3.14159265359" k1="0.0"/>
   <Proper class1="" class2="c" class3="c" class4="" periodicity1="2" phase1="3.14159265359" k1="1.2552"/>
-  <Improper class1="c" class2="n" class3="o" class4="os" periodicity1="2" phase1="3.14159265359" k1="43.932"/>
-  <Improper class1="ca" class2="ca" class3="ca" class4="ha" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
-  <Improper class1="ca" class2="ca" class3="ca" class4="n" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
-  <Improper class1="n" class2="c" class3="ca" class4="hn" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
+  <Improper class1="c2" class2="c2" class3="ha" class4="ha" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
   <Improper class1="ca" class2="na" class3="n2" class4="n2" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
   <Improper class1="ca" class2="n2" class3="ca" class4="n2" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
   <Improper class1="ca" class2="n2" class3="c2" class4="n2" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
@@ -5648,33 +5568,9 @@
   <Improper class1="c" class2="" class3="o" class4="o" periodicity1="2" phase1="3.14159265359" k1="4.6024"/>
  </PeriodicTorsionForce>
  <NonbondedForce coulomb14scale="0.833333" lj14scale="0.5">
-  <Atom type="LIG-Cl" charge="-0.0744" sigma="0.347094140587" epsilon="1.10876"/>
-  <Atom type="LIG-F" charge="-0.2243" sigma="0.311814551349" epsilon="0.255224"/>
-  <Atom type="LIG-F1" charge="-0.2243" sigma="0.311814551349" epsilon="0.255224"/>
-  <Atom type="LIG-F2" charge="-0.2243" sigma="0.311814551349" epsilon="0.255224"/>
-  <Atom type="LIG-O" charge="-0.3789" sigma="0.300001234347" epsilon="0.71128"/>
-  <Atom type="LIG-O1" charge="-0.5825" sigma="0.295992190115" epsilon="0.87864"/>
-  <Atom type="LIG-N" charge="-0.4741" sigma="0.324999852378" epsilon="0.71128"/>
-  <Atom type="LIG-C" charge="-0.0826" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C1" charge="-0.1079" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C2" charge="-0.1079" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C3" charge="0.3142" sigma="0.339966950842" epsilon="0.4577296"/>
-  <Atom type="LIG-C4" charge="0.0139" sigma="0.339966950842" epsilon="0.87864"/>
-  <Atom type="LIG-C5" charge="-0.1753" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C6" charge="-0.2041" sigma="0.339966950842" epsilon="0.87864"/>
-  <Atom type="LIG-C7" charge="0.1076" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C8" charge="0.6269" sigma="0.339966950842" epsilon="0.4577296"/>
-  <Atom type="LIG-C9" charge="-0.053" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C10" charge="-0.172" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C11" charge="0.8436" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C12" charge="-0.0176" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-C13" charge="-0.068" sigma="0.339966950842" epsilon="0.359824"/>
-  <Atom type="LIG-H" charge="0.1037" sigma="0.264953278775" epsilon="0.0656888"/>
-  <Atom type="LIG-H1" charge="0.08195" sigma="0.264953278775" epsilon="0.0656888"/>
-  <Atom type="LIG-H2" charge="0.08195" sigma="0.264953278775" epsilon="0.0656888"/>
-  <Atom type="LIG-H3" charge="0.17" sigma="0.259964245953" epsilon="0.06276"/>
-  <Atom type="LIG-H4" charge="0.3565" sigma="0.106907846177" epsilon="0.0656888"/>
-  <Atom type="LIG-H5" charge="0.149" sigma="0.259964245953" epsilon="0.06276"/>
-  <Atom type="LIG-H6" charge="0.156" sigma="0.259964245953" epsilon="0.06276"/>
+  <Atom type="LIG-C" charge="-0.218" sigma="0.339966950842" epsilon="0.359824"/>
+  <Atom type="LIG-C1" charge="-0.218" sigma="0.339966950842" epsilon="0.359824"/>
+  <Atom type="LIG-H" charge="0.109" sigma="0.259964245953" epsilon="0.06276"/>
+  <Atom type="LIG-H1" charge="0.109" sigma="0.259964245953" epsilon="0.06276"/>
  </NonbondedForce>
 </ForceField>
