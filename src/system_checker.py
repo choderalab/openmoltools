@@ -1,8 +1,11 @@
+import simtk.unit as u
 import numpy as np
+
+reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
 
 reorder_bonds = lambda i0, i1: (min(i0, i1), max(i0, i1))
 reorder_angles = lambda i0, i1, i2: (min(i0, i2), i1, max(i0, i2))
-reorder_torsions = lambda i0, i1, i2, i3: (i0, i1, i2, i3)
+#reorder_torsions = lambda i0, i1, i2, i3: (i0, i1, i2, i3)
 
 def reorder_torsions(i0, i1, i2, i3, phase):
     if len(set([i0, i1, i2, i3])) == 4:  # Unique atoms
@@ -10,7 +13,7 @@ def reorder_torsions(i0, i1, i2, i3, phase):
             j0, j1, j2, j3 = i0, i1, i2, i3
         else:
             j0, j1, j2, j3 = i3, i2, i1, i0
-        if abs(phase - np.pi) < 1E-4:  # Four unique atoms in a planar configuration?  Not sure here...
+        if abs(phase / u.radian - np.pi) < 1E-4:  # Four unique atoms in a planar configuration?  Not sure here...
             pass
     else:
         j0, j1, j2, j3 = i0, i1, i2, i3
@@ -203,8 +206,8 @@ class SystemChecker(object):
             entries1 = dict1[i0, i1, i2, i3]        
             assert len(entries0) == len(entries1), "Error: PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
             
-            subdict0 = dict(((per, phase), k0) for (per, phase, k0) in entries0)
-            subdict1 = dict(((per, phase), k0) for (per, phase, k0) in entries1)
+            subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
+            subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
             
             assert set(subdict0.keys()) == set(subdict1.keys()), "Error: PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
             

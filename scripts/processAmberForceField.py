@@ -2,8 +2,9 @@ import sys
 import math
 import simtk.openmm.app.element as element
 import simtk.unit as unit
-
-USE_NUMERIC_TYPES = False  # True for AMBER, False for GAFF
+import subprocess
+import datetime
+import string
 
 def fix(atomClass):
     if atomClass == 'X':
@@ -46,8 +47,10 @@ class AmberParser(object):
         self.angles = []
         self.torsions = []
         self.impropers = []
+        
+        self.set_originance()
 
-    def addAtom(self, residue, atomName, atomClass, element, charge, use_numeric_types=USE_NUMERIC_TYPES):
+    def addAtom(self, residue, atomName, atomClass, element, charge, use_numeric_types=True):
         if residue is None:
             return
         type_id = len(self.types)
@@ -82,7 +85,7 @@ class AmberParser(object):
             full_name = residue_name + "_" + name
             element_symbol = gafftools.gaff_elements[atype]
             e = element.Element.getBySymbol(element_symbol)
-            self.addAtom(resname, name, atype, e, charge)
+            self.addAtom(resname, name, atype, e, charge, use_numeric_types=False)  # use_numeric_types set to false to use string-based atom names, rather than numbers
             self.vdwEquivalents[full_name] = atype
 
         for (id0, id1, bond_type) in mol2_parser.bonds.itertuples(False):
@@ -244,6 +247,7 @@ class AmberParser(object):
                 self.vdw[fields[0]] = (fields[1], fields[2])
 
     def print_xml(self):
+        print self.originance
         print "<ForceField>"
         print " <AtomTypes>"
         for index, type in enumerate(self.types):
@@ -395,6 +399,16 @@ class AmberParser(object):
             for atom in self.residueAtoms[res]:
                 atom[1] = replaceWithType[atom[1]]
 
+    def set_originance(self):
+        self.originance = []
+        line = """<!-- %s -->\n""" % "Time and parameters of origin:"
+        self.originance.append(line)
+        now = datetime.datetime.now()
+        line = """<!-- %s -->\n""" % str(now)
+        self.originance.append(line)
+        line = """<!-- %s -->\n""" % subprocess.list2cmdline(sys.argv[1:])
+        self.originance.append(line)        
+        self.originance = string.join(self.originance, "")
 
 if __name__ == "__main__":
     amber_parser = AmberParser()
