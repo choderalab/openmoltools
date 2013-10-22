@@ -1,0 +1,19 @@
+CHARGE      0.00 ( 0 )
+Formula: H6 C3 
+ATOM      1  C   LIG     1       1.282  -0.203   0.000  0.000000         C
+ATOM      2  C   LIG     1      -0.064   0.440   0.000  0.000000         C
+ATOM      3  C   LIG     1      -1.218  -0.237   0.000  0.000000         C
+ATOM      4  H   LIG     1       1.843   0.106  -0.887  0.000000         H
+ATOM      5  H   LIG     1       1.219  -1.296   0.000  0.000000         H
+ATOM      6  H   LIG     1       1.843   0.106   0.887  0.000000         H
+ATOM      7  H   LIG     1      -0.095   1.526   0.000  0.000000         H
+ATOM      8  H   LIG     1      -2.165   0.291   0.000  0.000000         H
+ATOM      9  H   LIG     1      -1.239  -1.321   0.000  0.000000         H
+BOND    1    1    2    1      C    C
+BOND    2    1    4    1      C    H
+BOND    3    1    5    1      C    H
+BOND    4    1    6    1      C    H
+BOND    5    2    3    2      C    C
+BOND    6    2    7    1      C    H
+BOND    7    3    8    1      C    H
+BOND    8    3    9    1      C    H

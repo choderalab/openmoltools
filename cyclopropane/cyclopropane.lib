@@ -1,0 +1,88 @@
+!!index array str
+ "SUS"
+!entry.SUS.unit.atoms table  str name  str type  int typex  int resx  int flags  int seq  int elmnt  dbl chg
+ "C" "cx" 0 1 131072 1 6 -0.136400
+ "C1" "cx" 0 1 131072 2 6 -0.136400
+ "C2" "cx" 0 1 131072 3 6 -0.136400
+ "H" "hc" 0 1 131072 4 1 0.068700
+ "H1" "hc" 0 1 131072 5 1 0.068700
+ "H2" "hc" 0 1 131072 6 1 0.068700
+ "H3" "hc" 0 1 131072 7 1 0.068700
+ "H4" "hc" 0 1 131072 8 1 0.068700
+ "H5" "hc" 0 1 131072 9 1 0.068700
+!entry.SUS.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg
+ "C" "cx" 0 -1 0.0
+ "C1" "cx" 0 -1 0.0
+ "C2" "cx" 0 -1 0.0
+ "H" "hc" 0 -1 0.0
+ "H1" "hc" 0 -1 0.0
+ "H2" "hc" 0 -1 0.0
+ "H3" "hc" 0 -1 0.0
+ "H4" "hc" 0 -1 0.0
+ "H5" "hc" 0 -1 0.0
+!entry.SUS.unit.boundbox array dbl
+ -1.000000
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+!entry.SUS.unit.childsequence single int
+ 2
+!entry.SUS.unit.connect array int
+ 0
+ 0
+!entry.SUS.unit.connectivity table  int atom1x  int atom2x  int flags
+ 1 2 1
+ 1 3 1
+ 1 4 1
+ 1 5 1
+ 2 3 1
+ 2 6 1
+ 2 7 1
+ 3 8 1
+ 3 9 1
+!entry.SUS.unit.hierarchy table  str abovetype  int abovex  str belowtype  int belowx
+ "U" 0 "R" 1
+ "R" 1 "A" 1
+ "R" 1 "A" 2
+ "R" 1 "A" 3
+ "R" 1 "A" 4
+ "R" 1 "A" 5
+ "R" 1 "A" 6
+ "R" 1 "A" 7
+ "R" 1 "A" 8
+ "R" 1 "A" 9
+!entry.SUS.unit.name single str
+ "LIG"
+!entry.SUS.unit.positions table  dbl x  dbl y  dbl z
+ 0.319000 0.806000 0.0
+ -0.857000 -0.127000 0.0
+ 0.539000 -0.679000 0.0
+ 0.533000 1.348000 -0.912000
+ 0.533000 1.348000 0.912000
+ -1.434000 -0.213000 0.912000
+ -1.434000 -0.213000 -0.912000
+ 0.901000 -1.136000 -0.912000
+ 0.901000 -1.136000 0.912000
+!entry.SUS.unit.residueconnect table  int c1x  int c2x  int c3x  int c4x  int c5x  int c6x
+ 0 0 0 0 0 0
+!entry.SUS.unit.residues table  str name  int seq  int childseq  int startatomx  str restype  int imagingx
+ "LIG" 1 10 1 "?" 0
+!entry.SUS.unit.residuesPdbSequenceNumber array int
+ 0
+!entry.SUS.unit.solventcap array dbl
+ -1.000000
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+!entry.SUS.unit.velocities table  dbl x  dbl y  dbl z
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0
+ 0.0 0.0 0.0

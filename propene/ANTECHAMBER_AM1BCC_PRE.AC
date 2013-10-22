@@ -1,0 +1,19 @@
+CHARGE      0.00 ( 0 )
+Formula: H6 C3 
+ATOM      1  C   LIG     1       1.282  -0.203   0.000 -0.189000        c3
+ATOM      2  C1  LIG     1      -0.064   0.440   0.000 -0.162000        c2
+ATOM      3  C2  LIG     1      -1.218  -0.237   0.000 -0.226000        c2
+ATOM      4  H   LIG     1       1.843   0.106  -0.887  0.080333        hc
+ATOM      5  H1  LIG     1       1.219  -1.296   0.000  0.080333        hc
+ATOM      6  H2  LIG     1       1.843   0.106   0.887  0.080333        hc
+ATOM      7  H3  LIG     1      -0.095   1.526   0.000  0.117000        ha
+ATOM      8  H4  LIG     1      -2.165   0.291   0.000  0.110000        ha
+ATOM      9  H5  LIG     1      -1.239  -1.321   0.000  0.110000        ha
+BOND    1    1    2    1      C   C1
+BOND    2    1    4    1      C    H
+BOND    3    1    5    1      C   H1
+BOND    4    1    6    1      C   H2
+BOND    5    2    3    2     C1   C2
+BOND    6    2    7    1     C1   H3
+BOND    7    3    8    1     C2   H4
+BOND    8    3    9    1     C2   H5

@@ -4,7 +4,7 @@ MASS
 BOND
 
 ANGLE
-c1-c1-cx   56.280     178.460   same as c1-c1-c3
+cx-c1-c1   56.280     178.460   same as c1-c1-c3
 c1-cx-hc   48.250     109.750   same as c1-c3-hc
 
 DIHE
