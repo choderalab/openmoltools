@@ -11,7 +11,7 @@ def reorder_torsions(i0, i1, i2, i3, phase):
         else:
             j0, j1, j2, j3 = i3, i2, i1, i0
         if abs(phase - np.pi) < 1E-4:  # Four unique atoms in a planar configuration?  Not sure here...
-            
+            pass
     else:
         j0, j1, j2, j3 = i0, i1, i2, i3
         
