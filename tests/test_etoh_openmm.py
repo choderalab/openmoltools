@@ -8,15 +8,15 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./etoh/etoh.prmtop")
-inpcrt = app.AmberInpcrdFile("./etoh/etoh.inpcrd")
+prmtop = app.AmberPrmtopFile("./examples/etoh/etoh.prmtop")
+inpcrt = app.AmberInpcrdFile("./examples/etoh/etoh.inpcrd")
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./etoh/etoh.mol2")
+mol2 = gafftools.Mol2Parser("./examples/etoh/etoh.mol2")
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("etoh.xml")
+forcefield = app.ForceField("./examples/etoh/etoh.xml")
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 

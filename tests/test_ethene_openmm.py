@@ -8,15 +8,15 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./ethene/ethene.prmtop")
-inpcrt = app.AmberInpcrdFile("./ethene/ethene.inpcrd")
+prmtop = app.AmberPrmtopFile("./examples/ethene/ethene.prmtop")
+inpcrt = app.AmberInpcrdFile("./examples/ethene/ethene.inpcrd")
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./ethene/ethene.mol2")
+mol2 = gafftools.Mol2Parser("./examples/ethene/ethene.mol2")
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("ethene.xml")
+forcefield = app.ForceField("./examples/ethene/ethene.xml")
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 

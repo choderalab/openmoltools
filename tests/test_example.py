@@ -4,19 +4,20 @@ import simtk.openmm as mm
 import gafftools
 import system_checker
 
+example = "cyclopropane"
 temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./examples/propene/propene.prmtop")
-inpcrt = app.AmberInpcrdFile("./examples/propene/propene.inpcrd")
+prmtop = app.AmberPrmtopFile("./examples/%s/%s.prmtop" % (example, example))
+inpcrt = app.AmberInpcrdFile("./examples/%s/%s.inpcrd" % (example, example))
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./examples/propene/propene.mol2")
+mol2 = gafftools.Mol2Parser("./examples/%s/%s.mol2" % (example, example))
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("./examples/propene/propene.xml")
+forcefield = app.ForceField("./examples/%s/%s.xml" % (example, example))
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
