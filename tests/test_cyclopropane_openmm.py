@@ -8,15 +8,15 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./etoh/etoh.prmtop")
-inpcrt = app.AmberInpcrdFile("./etoh/etoh.inpcrd")
+prmtop = app.AmberPrmtopFile("./cyclopropane/cyclopropane.prmtop")
+inpcrt = app.AmberInpcrdFile("./cyclopropane/cyclopropane.inpcrd")
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./etoh/etoh.mol2")
+mol2 = gafftools.Mol2Parser("./cyclopropane/cyclopropane.mol2")
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("etoh.xml")
+forcefield = app.ForceField("./cyclopropane/cyclopropane.xml")
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
@@ -35,3 +35,7 @@ simulation_prm = app.Simulation(prmtop.topology, system_prm, integrator_prm)
 simulation_prm.context.setPositions(xyz)
 state_prm = simulation_prm.context.getState(getEnergy=True)
 state_prm.getPotentialEnergy()
+
+
+d0 = dict([(key, val) for key, val in checker.dict0.iteritems() if set(key) == set([0, 1, 2])])
+d1 = dict([(key, val) for key, val in checker.dict1.iteritems() if set(key) == set([0, 1, 2])])

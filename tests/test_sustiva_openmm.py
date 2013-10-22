@@ -8,15 +8,15 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./sample_files/sustiva.prmtop")
-inpcrt = app.AmberInpcrdFile("./sample_files/sustiva.inpcrd")
+prmtop = app.AmberPrmtopFile("./sustiva/sustiva.prmtop")
+inpcrt = app.AmberInpcrdFile("./sustiva/sustiva.inpcrd")
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./sample_files/sustiva.mol2")
+mol2 = gafftools.Mol2Parser("./sustiva/sustiva.mol2")
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("out.xml")
+forcefield = app.ForceField("./sustiva/sustiva.xml")
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
@@ -28,9 +28,10 @@ integrator_xml = mm.LangevinIntegrator(temperature, friction, timestep)
 simulation_xml = app.Simulation(top, system_xml, integrator_xml)
 simulation_xml.context.setPositions(xyz)
 state_xml = simulation_xml.context.getState(getEnergy=True)
-
+state_xml.getPotentialEnergy()
 
 integrator_prm = mm.LangevinIntegrator(temperature, friction, timestep)
 simulation_prm = app.Simulation(prmtop.topology, system_prm, integrator_prm)
 simulation_prm.context.setPositions(xyz)
 state_prm = simulation_prm.context.getState(getEnergy=True)
+state_prm.getPotentialEnergy()
