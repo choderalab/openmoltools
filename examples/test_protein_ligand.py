@@ -5,18 +5,21 @@ from gaff2xml import gafftools
 import mdtraj
 
 ligand_name = "sustiva"
+pdb_filename = "./chemicals/1vii.pdb"
+mol2_filename = "./chemicals/%s/%s.mol2" % (ligand_name, ligand_name)
+xml_filename = "./chemicals/%s/%s.xml" % (ligand_name, ligand_name)
 
 temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 2.0 * u.femtosecond
 
-protein_traj = mdtraj.load("./chemicals/1vii.pdb")
+protein_traj = mdtraj.load(pdb_filename)
 protein_traj.center_coordinates()
 
 protein_top = protein_traj.top.to_openmm()
 protein_xyz = protein_traj.openmm_positions(0)
 
-mol2 = gafftools.Mol2Parser("./chemicals/%s/%s.mol2" % (ligand_name, ligand_name))
+mol2 = gafftools.Mol2Parser(mol2_filename)
 ligand_top = mol2.to_openmm()[0]
 
 ligand_traj = mol2.to_mdtraj()
@@ -28,7 +31,7 @@ ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
 ligand_xyz = ligand_traj.openmm_positions(0)
 
-forcefield = app.ForceField("amber10.xml", "./chemicals/%s/%s.xml" % (ligand_name, ligand_name), "tip3p.xml")
+forcefield = app.ForceField("amber10.xml", xml_filename, "tip3p.xml")
 
 model = app.modeller.Modeller(protein_top, protein_xyz)
 model.add(ligand_top, ligand_xyz)

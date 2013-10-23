@@ -3,20 +3,22 @@ from simtk.openmm import app
 import simtk.openmm as mm
 from gaff2xml import gafftools, system_checker
 
-example = "imatinib"
+ligand_name = "sustiva"
+ligand_path = "./chemicals/%s/" % ligand_name
+
 temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./chemicals/%s/%s.prmtop" % (example, example))
-inpcrt = app.AmberInpcrdFile("./chemicals/%s/%s.inpcrd" % (example, example))
+prmtop = app.AmberPrmtopFile("%s/%s.prmtop" % (ligand_path, ligand_name))
+inpcrt = app.AmberInpcrdFile("%s/%s.inpcrd" % (ligand_path, ligand_name))
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./chemicals/%s/%s.mol2" % (example, example))
+mol2 = gafftools.Mol2Parser("%s/%s.mol2" % (ligand_path, ligand_name))
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("./chemicals/%s/%s.xml" % (example, example))
+forcefield = app.ForceField("%s/%s.xml" % (ligand_path, ligand_name))
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
