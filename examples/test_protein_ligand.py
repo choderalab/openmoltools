@@ -1,7 +1,7 @@
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
-import gafftools
+from gaff2xml import gafftools
 import mdtraj
 
 ligand_name = "sustiva"
