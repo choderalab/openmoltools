@@ -21,7 +21,9 @@ cp ../chemicals/sustiva/sustiva.sdf ./
 generate_example_data.py sustiva
 ```
 
-This should create a file sustiva.xml, which can be used by openmm to simulate your system.
+This should create a file sustiva.xml, which can be used by openmm to simulate your system.  
+Under the hood, `generate_example_data.py` first runs Antechamber then converts
+to XML via `processAmberForceField.py`.
 
 A boilerplate script for simulating your protein-ligand system is available in 
 examples/test_protein_ligand.py
