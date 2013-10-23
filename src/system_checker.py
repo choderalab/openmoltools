@@ -7,20 +7,31 @@ reorder_bonds = lambda i0, i1: (min(i0, i1), max(i0, i1))
 reorder_angles = lambda i0, i1, i2: (min(i0, i2), i1, max(i0, i2))
 #reorder_torsions = lambda i0, i1, i2, i3: (i0, i1, i2, i3)
 
-def reorder_torsions(i0, i1, i2, i3, phase):
-    if len(set([i0, i1, i2, i3])) == 4:  # Unique atoms
-        if i0 < i3:
-            j0, j1, j2, j3 = i0, i1, i2, i3
-        else:
-            j0, j1, j2, j3 = i3, i2, i1, i0
-        if abs(phase / u.radian - np.pi) < 1E-4:  # Four unique atoms in a planar configuration?  Not sure here...
-            pass
-    else:
+def reorder_proper_torsions(i0, i1, i2, i3):
+    if i0 < i3:
         j0, j1, j2, j3 = i0, i1, i2, i3
-        
+    else:
+        j0, j1, j2, j3 = i3, i2, i1, i0        
+
     return j0, j1, j2, j3
 
 EPSILON = 1E-4
+
+def get_symmetrized_bond_set(bond_force):
+    bond_set = set()
+    n_bonds = bond_force.getNumBonds()
+
+    for k in range(n_bonds):
+        (i0, i1, r0, k0) = bond_force.getBondParameters(k)
+        bond_set.add((i0, i1))
+        bond_set.add((i1, i0))
+
+    return bond_set
+
+def is_proper(i0, i1, i2, i3, bond_set):
+    """Check for three sequential bonds and atom uniqueness."""
+    if (i0, i1) in bond_set and (i1, i2) in bond_set and (i2, i3) in bond_set and len(set([i0, i1, i2, i3])) == 4:  
+        return True
 
 class SystemChecker(object):
     def __init__(self, system0, system1):
@@ -33,7 +44,7 @@ class SystemChecker(object):
         self.check_bonds()
         self.check_angles()
         self.check_nonbonded()
-        self.check_periodic_torsions()
+        self.check_proper_torsions()
 
     def check_bonds(self):
         force0 = self.forces0[4]  # Fix hardcoded lookup later.
@@ -159,9 +170,15 @@ class SystemChecker(object):
                     continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.  
                 assert (abs(val0 - val1) / denominator) < EPSILON, "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
 
-    def check_periodic_torsions(self):
+    def check_proper_torsions(self):
+        bond_force0 = self.forces0[4]
+        bond_force1 = self.forces1[4]
+        
         force0 = self.forces0[2]
         force1 = self.forces1[2]
+        
+        bond_set0 = get_symmetrized_bond_set(bond_force0)
+        bond_set1 = get_symmetrized_bond_set(bond_force1)
                 
         i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
         phase_unit, k0_unit = phase.unit, k0.unit
@@ -169,7 +186,10 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
             i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(k)
-            i0, i1, i2, i3 = reorder_torsions(i0, i1, i2, i3, phase)
+            if not is_proper(i0, i1, i2, i3, bond_set0):
+                continue
+
+            i0, i1, i2, i3 = reorder_proper_torsions(i0, i1, i2, i3)
 
             phase, k0 = phase / phase_unit, k0 / k0_unit
             if k0 == 0.0:
@@ -182,7 +202,10 @@ class SystemChecker(object):
 
         for k in range(force1.getNumTorsions()):
             i0, i1, i2, i3, per, phase, k0 = force1.getTorsionParameters(k)
-            i0, i1, i2, i3 = reorder_torsions(i0, i1, i2, i3, phase)
+            if not is_proper(i0, i1, i2, i3, bond_set1):
+                continue
+
+            i0, i1, i2, i3 = reorder_proper_torsions(i0, i1, i2, i3)
 
             phase, k0 = phase / phase_unit, k0 / k0_unit
             if k0 == 0.0:
@@ -199,19 +222,20 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         diff_keys = keys0.symmetric_difference(keys1)
 
-        assert diff_keys == set(), "Systems have different PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
+        assert diff_keys == set(), "Systems have different (proper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
             entries0 = dict0[i0, i1, i2, i3]
             entries1 = dict1[i0, i1, i2, i3]        
-            assert len(entries0) == len(entries1), "Error: PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
+            assert len(entries0) == len(entries1), "Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
             
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
             
-            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
+            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
             
-            for (per, phase) in subdict0.keys():    
-                val0 = dict0[i0, i1, i2, i3][k]
-                val1 = dict1[i0, i1, i2, i3][k]
-                assert (abs(val0 - val1) / val0) < EPSILON, "Error: PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+            for (per, phase) in subdict0.keys():
+                val0 = subdict0[per, phase] 
+                val1 = subdict1[per, phase]
+                assert (abs(val0 - val1) / val0) < EPSILON, "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+
