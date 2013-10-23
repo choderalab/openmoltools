@@ -1,11 +1,14 @@
 import simtk.unit as u
 import numpy as np
+import itertools
+import simtk.openmm as mm
+
+EPSILON = 1E-4  # Error tolerance for differences in parameters.  Typically for relative differences, but sometimes for absolute.
 
 reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
 
 reorder_bonds = lambda i0, i1: (min(i0, i1), max(i0, i1))
 reorder_angles = lambda i0, i1, i2: (min(i0, i2), i1, max(i0, i2))
-#reorder_torsions = lambda i0, i1, i2, i3: (i0, i1, i2, i3)
 
 def reorder_proper_torsions(i0, i1, i2, i3):
     if i0 < i3:
@@ -15,13 +18,28 @@ def reorder_proper_torsions(i0, i1, i2, i3):
 
     return j0, j1, j2, j3
 
-def reorder_improper_torsions(i0, i1, i2, i3):
-    """Assumes that i2 is the central atom!!!"""
-    j2 = i2
-    j0, j1, j3 = sorted((i0, i1, i3))
-    return j0, j1, j2, j3
+def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
+    """Return j0, j1, j2, j3, where j0 is the central index and j1, j2, j3
+    are in sorted() order.  Centrality is determined by the maximum counts
+    in the adjacency matrix.
+    """
 
-EPSILON = 1E-4
+    connections = np.zeros((4, 4))
+
+    mapping = {i0:0, i1:1, i2:2, i3:3}
+    inv_mapping = dict([(val, key) for key, val in mapping.iteritems()])
+
+    for (a,b) in itertools.combinations([i0, i1, i2, i3], 2):
+        if (a,b) in bond_set:
+            i, j = mapping[a], mapping[b]
+            connections[i, j] += 1.
+
+    central_ind = connections.sum(0).argmax()
+    central_ind = inv_mapping[central_ind]
+    other_ind = sorted([i0, i1, i2, i3])
+    other_ind.remove(central_ind)
+    
+    return central_ind, other_ind[0], other_ind[1], other_ind[2]
 
 def get_symmetrized_bond_set(bond_force):
     bond_set = set()
@@ -38,24 +56,49 @@ def is_proper(i0, i1, i2, i3, bond_set):
     """Check for three sequential bonds and atom uniqueness."""
     if (i0, i1) in bond_set and (i1, i2) in bond_set and (i2, i3) in bond_set and len(set([i0, i1, i2, i3])) == 4:  
         return True
+    return False
+
+def is_improper(i0, i1, i2, i3, bond_set):
+    """Check for three non-sequential bonds and atom uniqueness."""
+    if len(set([i0, i1, i2, i3])) == 4:
+        if not ((i0, i1) in bond_set and (i1, i2) in bond_set and (i2, i3) in bond_set):
+            return True
+    return False
 
 class SystemChecker(object):
-    def __init__(self, system0, system1):
-        self.forces0 = system0.getForces()
-        self.forces1 = system1.getForces()
-        self.forces0.sort(key=lambda x: type(x))
-        self.forces1.sort(key=lambda x: type(x))
-        
-    def check_forces(self):
-        self.check_bonds()
-        self.check_angles()
-        self.check_nonbonded()
-        self.check_proper_torsions()
-        self.check_improper_torsions()
+    def __init__(self, simulation0, simulation1):
+        self.simulation0 = simulation0
+        self.simulation1 = simulation1
 
-    def check_bonds(self):
-        force0 = self.forces0[4]  # Fix hardcoded lookup later.
-        force1 = self.forces1[4]
+        for force in simulation0.system.getForces():
+            if type(force) == mm.HarmonicBondForce:
+                self.bond_force0 = force
+            elif type(force) == mm.HarmonicAngleForce:
+                self.angle_force0 = force
+            elif type(force) == mm.PeriodicTorsionForce:
+                self.torsion_force0 = force
+            elif type(force) == mm.NonbondedForce:
+                self.nonbonded_force0 = force
+
+        for force in simulation1.system.getForces():
+            if type(force) == mm.HarmonicBondForce:
+                self.bond_force1 = force
+            elif type(force) == mm.HarmonicAngleForce:
+                self.angle_force1 = force
+            elif type(force) == mm.PeriodicTorsionForce:
+                self.torsion_force1 = force
+            elif type(force) == mm.NonbondedForce:
+                self.nonbonded_force1 = force
+        
+    def check_force_parameters(self):
+        self.check_bonds(self.bond_force0, self.bond_force1)
+        self.check_angles(self.angle_force0, self.angle_force1)
+        self.check_nonbonded(self.nonbonded_force0, self.nonbonded_force1)
+        self.check_proper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
+        self.check_improper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
+        print("Note: skipping degenerate impropers with < 4 atoms.")
+
+    def check_bonds(self, force0, force1):
     
         assert force0.getNumBonds() == force1.getNumBonds(), "Error: Systems have %d and %d entries in HarmonicBondForce, respectively." % (force0.getNumBonds(), force1.getNumBonds())
         n_bonds = force0.getNumBonds()
@@ -84,9 +127,7 @@ class SystemChecker(object):
                 assert (abs(val0 - val1) / val0) < EPSILON, "Error: Harmonic Bond (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
 
 
-    def check_angles(self):
-        force0 = self.forces0[1]  # Fix hardcoded lookup later.
-        force1 = self.forces1[1]
+    def check_angles(self, force0, force1):
     
         assert force0.getNumAngles() == force1.getNumAngles(), "Error: Systems have %d and %d entries in HarmonicAngleForce, respectively." % (force0.getNumAngles(), force1.getNumAngles())
         
@@ -115,9 +156,7 @@ class SystemChecker(object):
                 val1 = dict1[i0, i1, i2][k]
                 assert (abs(val0 - val1) / val0) < EPSILON, "Error: Harmonic Angle (%d, %d, %d) has %s values of %f and %f, respectively." % (i0, i1, i2, parameter_name, val0, val1)
 
-    def check_nonbonded(self):
-        force0 = self.forces0[0]
-        force1 = self.forces1[0]
+    def check_nonbonded(self, force0, force1):
                
         assert force0.getNumParticles() == force1.getNumParticles(), "Error: Systems have %d and %d particles in NonbondedForce, respectively." % (force0.getNumParticles(), force1.getNumParticles())
         
@@ -177,12 +216,7 @@ class SystemChecker(object):
                     continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.  
                 assert (abs(val0 - val1) / denominator) < EPSILON, "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
 
-    def check_proper_torsions(self):
-        bond_force0 = self.forces0[4]
-        bond_force1 = self.forces1[4]
-        
-        force0 = self.forces0[2]
-        force1 = self.forces1[2]
+    def check_proper_torsions(self, force0, force1, bond_force0, bond_force1):
         
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
@@ -244,12 +278,7 @@ class SystemChecker(object):
                 val1 = subdict1[per, phase]
                 assert (abs(val0 - val1) / val0) < EPSILON, "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
-    def check_improper_torsions(self):
-        bond_force0 = self.forces0[4]
-        bond_force1 = self.forces1[4]
-        
-        force0 = self.forces0[2]
-        force1 = self.forces1[2]
+    def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):    
         
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
@@ -260,10 +289,10 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
             i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(k)
-            if is_proper(i0, i1, i2, i3, bond_set0):
+            if not is_improper(i0, i1, i2, i3, bond_set0):
                 continue
 
-            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3)
+            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3, bond_set0)
 
             phase, k0 = phase / phase_unit, k0 / k0_unit
             if k0 == 0.0:
@@ -276,10 +305,10 @@ class SystemChecker(object):
 
         for k in range(force1.getNumTorsions()):
             i0, i1, i2, i3, per, phase, k0 = force1.getTorsionParameters(k)
-            if is_proper(i0, i1, i2, i3, bond_set1):
+            if not is_improper(i0, i1, i2, i3, bond_set1):
                 continue
 
-            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3)
+            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3, bond_set0)
 
             phase, k0 = phase / phase_unit, k0 / k0_unit
             if k0 == 0.0:
@@ -289,8 +318,6 @@ class SystemChecker(object):
                 dict1[i0, i1, i2, i3] = []
 
             dict1[i0, i1, i2, i3].append((per, phase, k0))
-
-        self.dict0, self.dict1 = dict0, dict1
 
         keys0 = set(dict0.keys())
         keys1 = set(dict1.keys())
@@ -313,3 +340,31 @@ class SystemChecker(object):
                 val1 = subdict1[per, phase]
                 assert (abs(val0 - val1) / val0) < EPSILON, "Error: (improper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
+    def zero_degenerate_impropers(self, f):
+        """Set the force constant to zero for improper dihedrals that 
+        involve less than four unique atoms.
+        """
+        for k in range(f.getNumTorsions()):
+            i0, i1, i2, i3, per, phase, k0 = f.getTorsionParameters(k)
+            if len(set([i0, i1, i2, i3])) < 4:
+                f.setTorsionParameters(k, i0, i1, i2, i3, per, phase, k0 * 0.0)
+    
+
+    def check_energies(self, zero_degenerate_impropers=True):
+        if zero_degenerate_impropers == True:
+            self.zero_degenerate_impropers(self.torsion_force0)
+            xyz = self.simulation0.context.getState(getPositions=True).getPositions()
+            self.simulation0.context.reinitialize()
+            self.simulation0.context.setPositions(xyz)
+            self.zero_degenerate_impropers(self.torsion_force1)
+            xyz = self.simulation1.context.getState(getPositions=True).getPositions()
+            self.simulation1.context.reinitialize()
+            self.simulation1.context.setPositions(xyz)
+
+        state0 = self.simulation0.context.getState(getEnergy=True)
+        energy0 = state0.getPotentialEnergy()
+
+        state1 = self.simulation1.context.getState(getEnergy=True)
+        energy1 = state1.getPotentialEnergy()
+        
+        return energy0, energy1
