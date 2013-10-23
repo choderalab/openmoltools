@@ -412,6 +412,10 @@ class AmberParser(object):
         self.originance = string.join(self.originance, "")
 
 if __name__ == "__main__":
-    amber_parser = AmberParser()
-    amber_parser.parse_filenames(sys.argv[1:])
-    amber_parser.print_xml()
+    if len(sys.argv[1:]) <= 1:
+        print("""Usage: processAmberForceField.py some_path/gaff.dat ligand_name.mol2 ligand_name.frcmod
+""")
+    else:
+        amber_parser = AmberParser()
+        amber_parser.parse_filenames(sys.argv[1:])
+        amber_parser.print_xml()
