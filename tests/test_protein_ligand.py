@@ -4,17 +4,19 @@ import simtk.openmm as mm
 import gafftools
 import mdtraj
 
+ligand_name = "sustiva"
+
 temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 2.0 * u.femtosecond
 
-protein_traj = mdtraj.load("./1vii.pdb")
+protein_traj = mdtraj.load("./examples/1vii.pdb")
 protein_traj.center_coordinates()
 
 protein_top = protein_traj.top.to_openmm()
 protein_xyz = protein_traj.openmm_positions(0)
 
-mol2 = gafftools.Mol2Parser("./sample_files/sustiva.mol2")
+mol2 = gafftools.Mol2Parser("./examples/%s/%s.mol2" % (ligand_name, ligand_name))
 ligand_top = mol2.to_openmm()[0]
 
 ligand_traj = mol2.to_mdtraj()
@@ -26,7 +28,7 @@ ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
 ligand_xyz = ligand_traj.openmm_positions(0)
 
-forcefield = app.ForceField("amber10.xml", "out.xml", "tip3p.xml")
+forcefield = app.ForceField("amber10.xml", "./examples/%s/%s.xml" % (ligand_name, ligand_name), "tip3p.xml")
 
 model = app.modeller.Modeller(protein_top, protein_xyz)
 model.add(ligand_top, ligand_xyz)
