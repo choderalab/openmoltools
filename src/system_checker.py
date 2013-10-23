@@ -15,6 +15,12 @@ def reorder_proper_torsions(i0, i1, i2, i3):
 
     return j0, j1, j2, j3
 
+def reorder_improper_torsions(i0, i1, i2, i3):
+    """Assumes that i2 is the central atom!!!"""
+    j2 = i2
+    j0, j1, j3 = sorted((i0, i1, i3))
+    return j0, j1, j2, j3
+
 EPSILON = 1E-4
 
 def get_symmetrized_bond_set(bond_force):
@@ -45,6 +51,7 @@ class SystemChecker(object):
         self.check_angles()
         self.check_nonbonded()
         self.check_proper_torsions()
+        self.check_improper_torsions()
 
     def check_bonds(self):
         force0 = self.forces0[4]  # Fix hardcoded lookup later.
@@ -216,8 +223,6 @@ class SystemChecker(object):
 
             dict1[i0, i1, i2, i3].append((per, phase, k0))
 
-        self.dict0, self.dict1 = dict0, dict1
-
         keys0 = set(dict0.keys())
         keys1 = set(dict1.keys())
         diff_keys = keys0.symmetric_difference(keys1)
@@ -238,4 +243,73 @@ class SystemChecker(object):
                 val0 = subdict0[per, phase] 
                 val1 = subdict1[per, phase]
                 assert (abs(val0 - val1) / val0) < EPSILON, "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+
+    def check_improper_torsions(self):
+        bond_force0 = self.forces0[4]
+        bond_force1 = self.forces1[4]
+        
+        force0 = self.forces0[2]
+        force1 = self.forces1[2]
+        
+        bond_set0 = get_symmetrized_bond_set(bond_force0)
+        bond_set1 = get_symmetrized_bond_set(bond_force1)
+                
+        i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
+        phase_unit, k0_unit = phase.unit, k0.unit
+
+        dict0, dict1 = {}, {}
+        for k in range(force0.getNumTorsions()):
+            i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(k)
+            if is_proper(i0, i1, i2, i3, bond_set0):
+                continue
+
+            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3)
+
+            phase, k0 = phase / phase_unit, k0 / k0_unit
+            if k0 == 0.0:
+                continue
+
+            if not dict0.has_key((i0, i1, i2, i3)):
+                dict0[i0, i1, i2, i3] = []
+
+            dict0[i0, i1, i2, i3].append((per, phase, k0))
+
+        for k in range(force1.getNumTorsions()):
+            i0, i1, i2, i3, per, phase, k0 = force1.getTorsionParameters(k)
+            if is_proper(i0, i1, i2, i3, bond_set1):
+                continue
+
+            i0, i1, i2, i3 = reorder_improper_torsions(i0, i1, i2, i3)
+
+            phase, k0 = phase / phase_unit, k0 / k0_unit
+            if k0 == 0.0:
+                continue
+
+            if not dict1.has_key((i0, i1, i2, i3)):
+                dict1[i0, i1, i2, i3] = []
+
+            dict1[i0, i1, i2, i3].append((per, phase, k0))
+
+        self.dict0, self.dict1 = dict0, dict1
+
+        keys0 = set(dict0.keys())
+        keys1 = set(dict1.keys())
+        diff_keys = keys0.symmetric_difference(keys1)
+
+        assert diff_keys == set(), "Systems have different (improper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
+
+        for (i0, i1, i2, i3) in dict0.keys():
+            entries0 = dict0[i0, i1, i2, i3]
+            entries1 = dict1[i0, i1, i2, i3]        
+            assert len(entries0) == len(entries1), "Error:  (improper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
+            
+            subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
+            subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
+            
+            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (improper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
+            
+            for (per, phase) in subdict0.keys():
+                val0 = subdict0[per, phase] 
+                val1 = subdict1[per, phase]
+                assert (abs(val0 - val1) / val0) < EPSILON, "Error: (improper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
