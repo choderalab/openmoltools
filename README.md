@@ -8,14 +8,18 @@ This tool is in BETA testing: use at your own risk!
 
 Installation:
 
+```
 python setup.py install
+```
 
 Usage:
 
+```
 mkdir sustiva
 cd sustiva
 cp ../chemicals/sustiva/sustiva.sdf ./
 generate_example_data.py sustiva
+```
 
 This should create a file sustiva.xml, which can be used by openmm to simulate your system.
 
