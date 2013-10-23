@@ -74,7 +74,7 @@ class AmberParser(object):
             self.residueConnections[residue] += [atom]
 
     def process_mol2_file(self, inputfile):
-        import gafftools  # Late import to delay importing optional modules
+        from gaff2xml import gafftools  # Late import to delay importing optional modules
         mol2_parser = gafftools.Mol2Parser(inputfile)
         residue_name = mol2_parser.atoms.resName[1]  # To Do: Add check for consistency
         

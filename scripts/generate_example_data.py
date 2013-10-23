@@ -3,6 +3,8 @@ import os
 import tempfile
 import sys
 
+AMBER_PATH = "~/src/amber12/dat/leap/parm/"
+
 def run_antechamber(ligand_name):
     cmd = "obabel -i sdf %s.sdf -o pdb > %s.pdb" % (ligand_name, ligand_name)
     os.system(cmd)
@@ -10,7 +12,7 @@ def run_antechamber(ligand_name):
     os.system(cmd)
     cmd = "parmchk -i %s.mol2 -f mol2 -o %s.frcmod" % (ligand_name, ligand_name)
     os.system(cmd)
-    cmd = "python ../../scripts/processAmberForceField.py ~/src/amber12/dat/leap/parm/gaff.dat ./%s.mol2 ./%s.frcmod > %s.xml" % (ligand_name, ligand_name, ligand_name)
+    cmd = "processAmberForceField.py %s/gaff.dat ./%s.mol2 ./%s.frcmod > %s.xml" % (AMBER_PATH, ligand_name, ligand_name, ligand_name)
     os.system(cmd)
 
     tleap_input = """
