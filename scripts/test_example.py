@@ -9,15 +9,15 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 0.1 * u.femtosecond
 
-prmtop = app.AmberPrmtopFile("./examples/%s/%s.prmtop" % (example, example))
-inpcrt = app.AmberInpcrdFile("./examples/%s/%s.inpcrd" % (example, example))
+prmtop = app.AmberPrmtopFile("./chemicals/%s/%s.prmtop" % (example, example))
+inpcrt = app.AmberInpcrdFile("./chemicals/%s/%s.inpcrd" % (example, example))
 
 system_prm = prmtop.createSystem(nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
-mol2 = gafftools.Mol2Parser("./examples/%s/%s.mol2" % (example, example))
+mol2 = gafftools.Mol2Parser("./chemicals/%s/%s.mol2" % (example, example))
 top, xyz = mol2.to_openmm()
 
-forcefield = app.ForceField("./examples/%s/%s.xml" % (example, example))
+forcefield = app.ForceField("./chemicals/%s/%s.xml" % (example, example))
 
 system_xml = forcefield.createSystem(top, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1.0*u.nanometers, constraints=None)
 
