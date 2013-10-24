@@ -6,6 +6,7 @@ import simtk.unit as unit
 import subprocess
 import datetime
 import string
+import cStringIO
 
 def fix(atomClass):
     if atomClass == 'X':
@@ -49,7 +50,7 @@ class AmberParser(object):
         self.torsions = []
         self.impropers = []
         
-        self.set_originance()
+        self.set_provenance()
 
     def addAtom(self, residue, atomName, atomClass, element, charge, use_numeric_types=True):
         if residue is None:
@@ -247,29 +248,31 @@ class AmberParser(object):
                 fields = line.split()
                 self.vdw[fields[0]] = (fields[1], fields[2])
 
-    def print_xml(self):
-        print self.originance
-        print "<ForceField>"
-        print " <AtomTypes>"
+    def generate_xml(self):
+        stream = cStringIO.StringIO()
+        write_stream = lambda x: stream.write(x + "\n")
+        write_stream( self.provenance)
+        write_stream( "<ForceField>")
+        write_stream( " <AtomTypes>")
         for index, type in enumerate(self.types):
-            print """  <Type name="%s" class="%s" element="%s" mass="%s"/>""" % (self.type_names[index], type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu))
-        print " </AtomTypes>"
-        print " <Residues>"
+            write_stream( """  <Type name="%s" class="%s" element="%s" mass="%s"/>""" % (self.type_names[index], type[0], type[1].symbol, type[1].mass.value_in_unit(unit.amu)))
+        write_stream( " </AtomTypes>")
+        write_stream( " <Residues>")
         for res in sorted(self.residueAtoms):
-            print """  <Residue name="%s">""" % res
+            write_stream( """  <Residue name="%s">""" % res)
             for atom in self.residueAtoms[res]:
                 atom_name, type_id = tuple(atom)
                 atom_type = self.type_names[type_id]
-                print "   <Atom name=\"%s\" type=\"%s\"/>" % (atom_name, atom_type)
+                write_stream( "   <Atom name=\"%s\" type=\"%s\"/>" % (atom_name, atom_type))
             if res in self.residueBonds:
                 for bond in self.residueBonds[res]:
-                    print """   <Bond from="%d" to="%d"/>""" % bond
+                    write_stream( """   <Bond from="%d" to="%d"/>""" % bond)
             if res in self.residueConnections:
                 for bond in self.residueConnections[res]:
-                    print """   <ExternalBond from="%d"/>""" % bond
-            print "  </Residue>"
-        print " </Residues>"
-        print " <HarmonicBondForce>"
+                    write_stream( """   <ExternalBond from="%d"/>""" % bond)
+            write_stream( "  </Residue>")
+        write_stream( " </Residues>")
+        write_stream( " <HarmonicBondForce>")
         processed = set()
         for bond in self.bonds:
             signature = (bond[0], bond[1])
@@ -280,9 +283,9 @@ class AmberParser(object):
             processed.add(signature)
             length = float(bond[3])*0.1
             k = float(bond[2])*2*100*4.184
-            print """  <Bond class1="%s" class2="%s" length="%s" k="%s"/>""" % (bond[0], bond[1], str(length), str(k))
-        print " </HarmonicBondForce>"
-        print " <HarmonicAngleForce>"
+            write_stream( """  <Bond class1="%s" class2="%s" length="%s" k="%s"/>""" % (bond[0], bond[1], str(length), str(k)))
+        write_stream( " </HarmonicBondForce>")
+        write_stream( " <HarmonicAngleForce>")
         processed = set()
         for angle in self.angles:
             signature = (angle[0], angle[1], angle[2])
@@ -293,9 +296,9 @@ class AmberParser(object):
             processed.add(signature)
             theta = float(angle[4])*math.pi/180.0
             k = float(angle[3])*2*4.184
-            print """  <Angle class1="%s" class2="%s" class3="%s" angle="%s" k="%s"/>""" % (angle[0], angle[1], angle[2], str(theta), str(k))
-        print " </HarmonicAngleForce>"
-        print " <PeriodicTorsionForce>"
+            write_stream( """  <Angle class1="%s" class2="%s" class3="%s" angle="%s" k="%s"/>""" % (angle[0], angle[1], angle[2], str(theta), str(k)))
+        write_stream( " </HarmonicAngleForce>")
+        write_stream( " <PeriodicTorsionForce>")
         processed = set()
         for tor in reversed(self.torsions):
             signature = (fix(tor[0]), fix(tor[1]), fix(tor[2]), fix(tor[3]))
@@ -314,7 +317,7 @@ class AmberParser(object):
                 tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
                 i += 3
             tag += "/>"
-            print tag
+            write_stream( tag )
         processed = set()
         for tor in reversed(self.impropers):
             signature = (fix(tor[2]), fix(tor[0]), fix(tor[1]), fix(tor[3]))
@@ -333,9 +336,9 @@ class AmberParser(object):
                 tag += " periodicity%d=\"%d\" phase%d=\"%s\" k%d=\"%s\"" % (index, periodicity, index, str(phase), index, str(k))
                 i += 3
             tag += "/>"
-            print tag
-        print " </PeriodicTorsionForce>"
-        print """ <NonbondedForce coulomb14scale="%g" lj14scale="%s">""" % (charge14scale, epsilon14scale)
+            write_stream( tag )
+        write_stream( " </PeriodicTorsionForce>")
+        write_stream( """ <NonbondedForce coulomb14scale="%g" lj14scale="%s">""" % (charge14scale, epsilon14scale))
         sigmaScale = 0.1*2.0/(2.0**(1.0/6.0))
         for index, type in enumerate(self.types):
             atomClass = type[0]
@@ -354,9 +357,12 @@ class AmberParser(object):
                 sigma = 0
                 epsilon = 0
             if q != 0 or epsilon != 0:
-                print """  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon)
-        print " </NonbondedForce>"
-        print "</ForceField>"
+                write_stream( """  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon))
+        write_stream( " </NonbondedForce>")
+        write_stream( "</ForceField>")
+        stream.reset()
+        
+        return stream
 
     def parse_filenames(self, filenames):
         for inputfile in filenames:
@@ -400,14 +406,14 @@ class AmberParser(object):
             for atom in self.residueAtoms[res]:
                 atom[1] = replaceWithType[atom[1]]
 
-    def set_originance(self):
-        self.originance = []
+    def set_provenance(self):
+        self.provenance = []
         line = """<!-- %s -->\n""" % "Time and parameters of origin:"
-        self.originance.append(line)
+        self.provenance.append(line)
         now = datetime.datetime.now()
         line = """<!-- %s -->\n""" % str(now)
-        self.originance.append(line)
+        self.provenance.append(line)
         line = """<!-- %s -->\n""" % subprocess.list2cmdline(sys.argv[1:])
-        self.originance.append(line)        
-        self.originance = string.join(self.originance, "")
+        self.provenance.append(line)        
+        self.provenance = string.join(self.provenance, "")
 

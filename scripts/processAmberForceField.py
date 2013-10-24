@@ -9,4 +9,5 @@ if __name__ == "__main__":
     else:
         parser = amber_parser.AmberParser()
         parser.parse_filenames(sys.argv[1:])
-        parser.print_xml()
+        stream = parser.generate_xml()
+        print stream.read()
