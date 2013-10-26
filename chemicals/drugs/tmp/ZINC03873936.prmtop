@@ -1,4 +1,4 @@
-%VERSION  VERSION_STAMP = V0001.000  DATE = 10/23/13  22:02:57                  
+%VERSION  VERSION_STAMP = V0001.000  DATE = 10/26/13  12:29:55                  
 %FLAG TITLE                                                                     
 %FORMAT(20a4)                                                                   
 ZINC03873936                                                                    
@@ -90,7 +90,7 @@ H26 H27 H28 H29 H30 H31 N5  H32
       66
 %FLAG RESIDUE_LABEL                                                             
 %FORMAT(20a4)                                                                   
-<0> 
+MOL 
 %FLAG RESIDUE_POINTER                                                           
 %FORMAT(10I8)                                                                   
        1

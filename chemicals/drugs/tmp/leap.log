@@ -1,4 +1,4 @@
-log started: Wed Oct 23 22:02:56 2013
+log started: Sat Oct 26 12:29:54 2013
 
 Log file: ./leap.log
 >> #
@@ -350,7 +350,7 @@ Loading: TPF
 ----- Source: /Users/choderaj/code/amber/amber12/dat/leap/cmd/leaprc.gaff
 ----- Source of /Users/choderaj/code/amber/amber12/dat/leap/cmd/leaprc.gaff done
 >> logFile leap.log
-log started: Wed Oct 23 22:02:57 2013
+log started: Sat Oct 26 12:29:55 2013
 
 Log file: ./leap.log
 >> #
@@ -458,11 +458,6 @@ Loading parameters: ./ZINC03873936.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 remark goes here
-> saveoff LIG ZINC03873936.lib
- Creating ZINC03873936.lib
-Saving LIG.
-Building topology.
-Building atom parameters.
 > saveamberparm LIG ZINC03873936.prmtop ZINC03873936.inpcrd
 Checking Unit.
 WARNING: The unperturbed charge of the unit: 1.000100 is not zero.
@@ -485,7 +480,7 @@ Marking per-residue atom chain types.
 
 	res	total affected
 
-	<0>	1
+	MOL	1
   )
  (no restraints)
 > quit

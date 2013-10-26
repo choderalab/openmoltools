@@ -4,7 +4,6 @@ source leaprc.gaff
 LIG = loadmol2 ZINC03873936.gaff.mol2
 check LIG
 loadamberparams ZINC03873936.frcmod
-saveoff LIG ZINC03873936.lib
 saveamberparm LIG ZINC03873936.prmtop ZINC03873936.inpcrd
 quit
 
