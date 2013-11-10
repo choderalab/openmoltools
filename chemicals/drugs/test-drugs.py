@@ -11,7 +11,7 @@ import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
 
-from amber_parser import AmberParser
+from gaff2xml.amber_parser import AmberParser
 
 def run_antechamber(molecule, charge_method=None, verbose=False):
     """
@@ -111,7 +111,7 @@ def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbo
     outfile.close()
 
     # Read mol2 file.
-    from gafftools import Mol2Parser
+    from gaff2xml.gafftools import Mol2Parser
     mol2 = Mol2Parser(gaff_mol2_filename)
     [topology, positions] = mol2.to_openmm()
 
@@ -173,7 +173,7 @@ def test_molecule(molecule, verbose=False, charge_method=None):
     simulation_leap  = create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbose=verbose)
     
     # Compare simulations.
-    from system_checker import SystemChecker
+    from gaff2xml.system_checker import SystemChecker
     syscheck = SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
 
