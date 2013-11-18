@@ -6,6 +6,9 @@ import simtk.openmm.app.element
 import simtk.unit as unit
 import itertools
 
+import logging
+logger = logging.getLogger(__name__)
+
 gaff_elements = {'br': 'Br',
  'c': 'C',
  'c1': 'C',

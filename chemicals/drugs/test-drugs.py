@@ -13,6 +13,10 @@ import simtk.unit as units
 
 from gaff2xml.amber_parser import AmberParser
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=0, format="%(message)s")
+
 def run_antechamber(molecule, charge_method=None, verbose=False):
     """
     Run AmberTools antechamber to create GAFF mol2 and frcmod files.

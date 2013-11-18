@@ -8,6 +8,9 @@ import datetime
 import string
 import cStringIO
 
+import logging
+logger = logging.getLogger(__name__)
+
 def fix(atomClass):
     if atomClass == 'X':
         return ''

@@ -3,6 +3,9 @@ import numpy as np
 import itertools
 import simtk.openmm as mm
 
+import logging
+logger = logging.getLogger(__name__)
+
 EPSILON = 1E-4  # Error tolerance for differences in parameters.  Typically for relative differences, but sometimes for absolute.
 
 reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
@@ -97,7 +100,7 @@ class SystemChecker(object):
         self.check_nonbonded(self.nonbonded_force0, self.nonbonded_force1)
         self.check_proper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
         self.check_improper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
-        print("Note: skipping degenerate impropers with < 4 atoms.")
+        logger.info("Note: skipping degenerate impropers with < 4 atoms.")
 
     def check_bonds(self, force0, force1):
     
@@ -177,7 +180,7 @@ class SystemChecker(object):
             if epsilon0 != 0.:
                 assert (abs(sigma0 - sigma1) / sigma0) < EPSILON, "Error: Particle %d has sigma of %f and %f, respectively." % (k, sigma0, sigma1)
             else:
-                print("Skipping comparison of sigma (%f, %f) on particle %d because epsilon has values %f, %f" % (sigma0, sigma1, k, epsilon0, epsilon1))
+                logger.info("Skipping comparison of sigma (%f, %f) on particle %d because epsilon has values %f, %f" % (sigma0, sigma1, k, epsilon0, epsilon1))
 
             if epsilon0 == 0.:
                 denominator = 1.0  # Don't normalize if has value zero
@@ -324,6 +327,8 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         diff_keys = keys0.symmetric_difference(keys1)
 
+        logger.info("Torsions0 - Torsions1 = %s" % (keys0.difference(keys1)))
+        logger.info("Torsions1 - Torsions0 = %s" % (keys1.difference(keys0)))
         assert diff_keys == set(), "Systems have different (improper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
