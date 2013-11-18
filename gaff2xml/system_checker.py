@@ -33,7 +33,8 @@ def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
         if (a,b) in bond_set:
             i, j = mapping[a], mapping[b]
             connections[i, j] += 1.
-
+            connections[j, i] += 1.
+    
     central_ind = connections.sum(0).argmax()
     central_ind = inv_mapping[central_ind]
     other_ind = sorted([i0, i1, i2, i3])
