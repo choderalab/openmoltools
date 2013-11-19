@@ -136,18 +136,18 @@ class AmberParser(object):
                 else:
                     elem = elements[int(fields[6])]
                 self.charge = float(fields[7])
-                addAtom(residue, atomName, atomClass, elem, charge)
+                self.addAtom(residue, atomName, atomClass, elem, self.charge)
             elif section == CONNECT:
-                addExternalBond(residue, int(line)-1)
+                self.addExternalBond(residue, int(line)-1)
             elif section == CONNECTIVITY:
                 fields = line.split()
-                addBond(residue, int(fields[0])-1, int(fields[1])-1)
+                self.addBond(residue, int(fields[0])-1, int(fields[1])-1)
             elif section == RESIDUECONNECT:
                 # Some Amber files have errors in them, incorrectly listing atoms that should not be
                 # connected in the first two positions.  We therefore rely on the "connect" section for
                 # those, using this block only for other external connections.
                 for atom in [int(x)-1 for x in line.split()[2:]]:
-                    addExternalBond(residue, atom)
+                    self.addExternalBond(residue, atom)
 
     def process_dat_file(self, inputfile):
         """Read a force field file."""
