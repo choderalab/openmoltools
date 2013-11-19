@@ -14,6 +14,20 @@ reorder_bonds = lambda i0, i1: (min(i0, i1), max(i0, i1))
 reorder_angles = lambda i0, i1, i2: (min(i0, i2), i1, max(i0, i2))
 
 def reorder_proper_torsions(i0, i1, i2, i3):
+    """Return the atom indices of a proper torsion after "flipping" the 
+    order so that the first atom is the smallest index.
+
+    Parameters
+    ----------
+    i0, i1, i2, i3 : int, 
+        Atom indices of torsion
+
+    Returns
+    -------
+    j0, j1, j2, j3 : int, 
+        Atom indices of torsion    
+    
+    """
     if i0 < i3:
         j0, j1, j2, j3 = i0, i1, i2, i3
     else:
@@ -23,8 +37,24 @@ def reorder_proper_torsions(i0, i1, i2, i3):
 
 def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
     """Return j0, j1, j2, j3, where j0 is the central index and j1, j2, j3
-    are in sorted() order.  Centrality is determined by the maximum counts
-    in the adjacency matrix.
+    are in sorted() order.  
+
+    Parameters
+    ----------
+    i0, i1, i2, i3 : int, 
+        Atom indices of torsion
+    bond_set : set containing the index pairs between which a bond is defined
+
+    Returns
+    -------
+    j0, j1, j2, j3 : int, 
+        Atom indices of torsion, with j0 being the central index
+        
+    Notes
+    -----
+    
+    Centrality is determined by the maximum counts in the adjacency matrix.
+    
     """
 
     connections = np.zeros((4, 4))
@@ -46,6 +76,22 @@ def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
     return central_ind, other_ind[0], other_ind[1], other_ind[2]
 
 def get_symmetrized_bond_set(bond_force):
+    """Return a set containing atom pairs connected by bonds.
+    
+    Parameters
+    ----------
+    bond_force : mm.HarmonicBondForce
+        The bond force of an OpenMM system
+    
+    Returns
+    -------
+    bond_set : a set containing pairs of atoms connected by bonds:
+    
+    Notes
+    -----
+    The resulting set is symmetric: if (i,j) in S, then (j,i) in S.
+    """
+    
     bond_set = set()
     n_bonds = bond_force.getNumBonds()
 
@@ -109,6 +155,8 @@ class SystemChecker(object):
                 self.nonbonded_force1 = force
         
     def check_force_parameters(self):
+        """Check that force parameters are the same, up to some equivalence.
+        """
         self.check_bonds(self.bond_force0, self.bond_force1)
         self.check_angles(self.angle_force0, self.angle_force1)
         self.check_nonbonded(self.nonbonded_force0, self.nonbonded_force1)
@@ -117,9 +165,21 @@ class SystemChecker(object):
         logger.info("Note: skipping degenerate impropers with < 4 atoms.")
 
     def check_bonds(self, force0, force1):
+        """Check that force0 and force1 are equivalent Bond forces.
+        
+
+        Parameters
+        ----------
+        force0 : mm.HarmonicBondForce
+        force1 : mm.HarmonicBondForce
+
+        """
+        
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.HarmonicBondForce
     
-        assert force0.getNumBonds() == force1.getNumBonds(), "Error: Systems have %d and %d entries in HarmonicBondForce, respectively." % (force0.getNumBonds(), force1.getNumBonds())
-        n_bonds = force0.getNumBonds()
+        n_bonds0 = force0.getNumBonds()
+        n_bonds1 = force1.getNumBonds()
 
         dict0, dict1 = {}, {}
         
@@ -127,15 +187,20 @@ class SystemChecker(object):
         unit_r = r0.unit
         unit_k = k0.unit
 
-        for k in range(n_bonds):
+        for k in range(n_bonds0):
             i0, i1, r0, k0 = force0.getBondParameters(k)
             i0, i1 = reorder_bonds(i0, i1)
-            dict0[i0, i1] = ((r0 / unit_r, k0 / unit_k))
+            if k0 / k0.unit != 0.0:  # Skip forces with strength 0.0
+                dict0[i0, i1] = ((r0 / unit_r, k0 / unit_k))
 
+        for k in range(n_bonds1):
             i0, i1, r0, k0 = force1.getBondParameters(k)
             i0, i1 = reorder_bonds(i0, i1)
-            dict1[i0, i1] = ((r0 / unit_r, k0 / unit_k))
+            if k0 / k0.unit != 0.0:  # Skip forces with strength 0.0
+                dict1[i0, i1] = ((r0 / unit_r, k0 / unit_k))
 
+        logger.info("Bonds0 - Bonds1 = %s" % (keys0.difference(keys1)))
+        logger.info("Bonds1 - Bonds0 = %s" % (keys1.difference(keys0)))
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicBond Forces"
 
         for k, parameter_name in enumerate(["r0", "k0"]):
@@ -146,10 +211,19 @@ class SystemChecker(object):
 
 
     def check_angles(self, force0, force1):
+        """Check that force0 and force1 are equivalent Angle forces.
         
-        #We can't assert numAngles are equal because one might have "blank" forces with constant 0.0
-        #assert force0.getNumAngles() == force1.getNumAngles(), "Error: Systems have %d and %d entries in HarmonicAngleForce, respectively." % (force0.getNumAngles(), force1.getNumAngles())
+
+        Parameters
+        ----------
+        force0 : mm.HarmonicAngleForce
+        force1 : mm.HarmonicAngleForce
+
+        """
         
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.HarmonicAngleForce
+                
         n_angles0 = force0.getNumAngles()
         n_angles1 = force1.getNumAngles()
 
@@ -161,16 +235,18 @@ class SystemChecker(object):
 
         for k in range(n_angles0):
             i0, i1, i2, theta0, k0 = force0.getAngleParameters(k)
-            if (k0 / k0.unit) != 0.0:
+            if (k0 / k0.unit) != 0.0:  # Skip forces with strength 0.0
                 i0, i1, i2 = reorder_angles(i0, i1, i2)
                 dict0[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
         
         for k in range(n_angles1):
             i0, i1, i2, theta0, k0 = force1.getAngleParameters(k)
-            if (k0 / k0.unit) != 0.0:
+            if (k0 / k0.unit) != 0.0:  # Skip forces with strength 0.0
                 i0, i1, i2 = reorder_angles(i0, i1, i2)
                 dict1[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
 
+        logger.info("Angles0 - Angles1 = %s" % (keys0.difference(keys1)))
+        logger.info("Angles1 - Angles0 = %s" % (keys1.difference(keys0)))
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicAngle Forces"
 
         for k, parameter_name in enumerate(["theta0", "k0"]):
