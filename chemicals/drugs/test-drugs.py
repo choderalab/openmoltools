@@ -13,7 +13,11 @@ import simtk.unit as units
 
 from gaff2xml.amber_parser import AmberParser
 
-def run_antechamber(molecule, charge_method=None, verbose=False):
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
+def run_antechamber(molecule, charge_method=None):
     """
     Run AmberTools antechamber to create GAFF mol2 and frcmod files.
 
@@ -23,8 +27,6 @@ def run_antechamber(molecule, charge_method=None, verbose=False):
         The molecule to be parameterized.
     charge_method : str, optional
         If not None, the charge method string will be passed to Antechamber.
-    verbose : bool, optional
-        If specified, verbose output will be printed.
 
     Returns
     -------
@@ -36,7 +38,7 @@ def run_antechamber(molecule, charge_method=None, verbose=False):
     """
     # Get molecule name.
     molecule_name = molecule.GetTitle()
-    if verbose: print molecule_name
+    logger.debug(molecule_name)
 
     # Write molecule as Tripos mol2.
     tripos_mol2_filename = molecule_name + '.tripos.mol2'
@@ -60,17 +62,17 @@ def run_antechamber(molecule, charge_method=None, verbose=False):
     cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (tripos_mol2_filename, gaff_mol2_filename)
     if charge_method:
         cmd += ' -c %s' % charge_method
-    if verbose: print cmd
+    logger.debug(cmd)
     output = os.system(cmd)
-    if verbose: print output
+    logger.debug(output)
     cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
-    if verbose: print cmd
+    logger.debug(cmd)
     output = os.system(cmd)
-    if verbose: print output
+    logger.debug(output)
 
     return (gaff_mol2_filename, frcmod_filename)
 
-def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, verbose=False):
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
     prmtop_filename = molecule_name + '.prmtop' 
     inpcrd_filename = molecule_name + '.inpcrd'
 
@@ -91,18 +93,18 @@ quit
     outfile.close()
     cmd = "tleap -f %s " % leap_input_filename
     output = os.system(cmd)
-    if verbose: print output
+    logger.debug(output)
 
     return (prmtop_filename, inpcrd_filename)
 
-def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbose=False):
+def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename):
     molecule_name = molecule.GetTitle()
 
     # Generate ffxml file.
     amberhome_path = os.environ['AMBERHOME']
     amber_parser = AmberParser()
     gaff_dat_filename = os.path.join(amberhome_path, 'dat', 'leap', 'parm', 'gaff.dat')
-    if verbose: print gaff_dat_filename
+    logger.debug(gaff_dat_filename)
     amber_parser.parse_filenames([gaff_dat_filename, gaff_mol2_filename, frcmod_filename])
     ffxml_stream = amber_parser.generate_xml()
     ffxml_filename = molecule_name + '.ffxml'
@@ -117,7 +119,7 @@ def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbo
 
     # Create System object.
     forcefield = app.ForceField(ffxml_filename)
-    system = forcefield.createSystem(topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds, implicitSolvent=None)
+    system = forcefield.createSystem(topology, nonbondedMethod=app.NoCutoff, constraints=None, implicitSolvent=None)
     
     # Create integrator.
     timestep = 1.0 * units.femtoseconds
@@ -130,16 +132,16 @@ def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbo
 
     return simulation
 
-def create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbose=False):
+def create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename):
     molecule_name = molecule.GetTitle()
 
     # Parameterize system with LEaP.
-    [prmtop_filename, inpcrd_filename] = run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, verbose=verbose)
+    [prmtop_filename, inpcrd_filename] = run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
 
     # Create System object.
     prmtop = app.AmberPrmtopFile(prmtop_filename)
     topology = prmtop.topology
-    system = prmtop.createSystem(nonbondedMethod=app.NoCutoff, constraints=app.HBonds, implicitSolvent=None)
+    system = prmtop.createSystem(nonbondedMethod=app.NoCutoff, constraints=None, implicitSolvent=None)
 
     # Read positions.
     inpcrd = app.AmberInpcrdFile(inpcrd_filename)
@@ -156,12 +158,12 @@ def create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbos
     return simulation
     pass
 
-def test_molecule(molecule, verbose=False, charge_method=None):
+def test_molecule(molecule, charge_method=None):
     
     # Create temporary directory.
     tmp_path = 'tmp' # DEBUG: Create an actual temporary directory.
     if not os.path.exists(tmp_path): os.makedirs(tmp_path)
-    if verbose: print 'temporary directory created in %s' % tmp_path
+    logger.debug('temporary directory created in %s' % tmp_path)
     cwd = os.getcwd()
     os.chdir(tmp_path)
     
@@ -169,8 +171,8 @@ def test_molecule(molecule, verbose=False, charge_method=None):
     [gaff_mol2_filename, frcmod_filename] = run_antechamber(molecule)
 
     # Create simulations.
-    simulation_ffxml = create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbose=verbose)
-    simulation_leap  = create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename, verbose=verbose)
+    simulation_ffxml = create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename)
+    simulation_leap  = create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename)
     
     # Compare simulations.
     from gaff2xml.system_checker import SystemChecker

@@ -8,6 +8,9 @@ import datetime
 import string
 import cStringIO
 
+import logging
+logger = logging.getLogger(__name__)
+
 def fix(atomClass):
     if atomClass == 'X':
         return ''
@@ -377,9 +380,9 @@ class AmberParser(object):
         
         self.reduce_atomtypes()
 
-    def reduce_atomtypes(self):
-        """Reduce the list of atom self.types.  If multiple hydrogens are bound to the same heavy atom,
-        they should all use the same type.
+    def reduce_atomtypes(self, symmetrize_protons=False):
+        """Reduce the list of atom self.types.  If symmetrize_protons is True, multiple hydrogens bound to the same heavy atom
+        should all use the same type.
         """
 
         removeType = [False]*len(self.types)
@@ -390,11 +393,12 @@ class AmberParser(object):
             for bond in self.residueBonds[res]:
                 atomBonds[bond[0]].append(bond[1])
                 atomBonds[bond[1]].append(bond[0])
-            for index, atom in enumerate(self.residueAtoms[res]):
-                hydrogens = [x for x in atomBonds[index] if self.types[self.residueAtoms[res][x][1]][1] == element.hydrogen]
-                for h in hydrogens[1:]:
-                    removeType[self.residueAtoms[res][h][1]] = True
-                    self.residueAtoms[res][h][1] = self.residueAtoms[res][hydrogens[0]][1]
+            if symmetrize_protons == True:
+                for index, atom in enumerate(self.residueAtoms[res]):
+                    hydrogens = [x for x in atomBonds[index] if self.types[self.residueAtoms[res][x][1]][1] == element.hydrogen]
+                    for h in hydrogens[1:]:
+                        removeType[self.residueAtoms[res][h][1]] = True
+                        self.residueAtoms[res][h][1] = self.residueAtoms[res][hydrogens[0]][1]
         newTypes = []
         replaceWithType = [0]*len(self.types)
         for i in range(len(self.types)):
