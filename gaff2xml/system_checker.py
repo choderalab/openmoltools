@@ -146,10 +146,12 @@ class SystemChecker(object):
 
 
     def check_angles(self, force0, force1):
-    
-        assert force0.getNumAngles() == force1.getNumAngles(), "Error: Systems have %d and %d entries in HarmonicAngleForce, respectively." % (force0.getNumAngles(), force1.getNumAngles())
         
-        n_angles = force0.getNumAngles()
+        #We can't assert numAngles are equal because one might have "blank" forces with constant 0.0
+        #assert force0.getNumAngles() == force1.getNumAngles(), "Error: Systems have %d and %d entries in HarmonicAngleForce, respectively." % (force0.getNumAngles(), force1.getNumAngles())
+        
+        n_angles0 = force0.getNumAngles()
+        n_angles1 = force1.getNumAngles()
 
         dict0, dict1 = {}, {}
         
@@ -157,14 +159,17 @@ class SystemChecker(object):
         unit_theta = theta0.unit
         unit_k = k0.unit
 
-        for k in range(n_angles):
+        for k in range(n_angles0):
             i0, i1, i2, theta0, k0 = force0.getAngleParameters(k)
-            i0, i1, i2 = reorder_angles(i0, i1, i2)
-            dict0[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
-
+            if (k0 / k0.unit) != 0.0:
+                i0, i1, i2 = reorder_angles(i0, i1, i2)
+                dict0[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
+        
+        for k in range(n_angles1):
             i0, i1, i2, theta0, k0 = force1.getAngleParameters(k)
-            i0, i1, i2 = reorder_angles(i0, i1, i2)
-            dict1[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
+            if (k0 / k0.unit) != 0.0:
+                i0, i1, i2 = reorder_angles(i0, i1, i2)
+                dict1[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
 
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicAngle Forces"
 
