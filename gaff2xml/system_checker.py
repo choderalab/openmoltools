@@ -195,7 +195,12 @@ class SystemChecker(object):
             q0, sigma0, epsilon0 = q0 / unit_q, sigma0 / unit_sigma, epsilon0 / unit_epsilon
             q1, sigma1, epsilon1 = q1 / unit_q, sigma1 / unit_sigma, epsilon1 / unit_epsilon
 
-            assert (abs(q0 - q1) / q0) < EPSILON, "Error: Particle %d has charges of %f and %f, respectively." % (k, q0, q1)
+            if q0 == 0.:
+                denominator = 1.0  # Don't normalize if has value zero
+            else:
+                denominator = q0  # Normalize to compare relative errors, rather than absolute.
+
+            assert (abs(q0 - q1) / denominator) < EPSILON, "Error: Particle %d has charges of %f and %f, respectively." % (k, q0, q1)
             if epsilon0 != 0.:
                 assert (abs(sigma0 - sigma1) / sigma0) < EPSILON, "Error: Particle %d has sigma of %f and %f, respectively." % (k, sigma0, sigma1)
             else:
