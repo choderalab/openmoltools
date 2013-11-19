@@ -1,4 +1,3 @@
-import simtk.unit as u
 import numpy as np
 import itertools
 import simtk.openmm as mm
@@ -8,10 +7,11 @@ logger = logging.getLogger(__name__)
 
 EPSILON = 1E-4  # Error tolerance for differences in parameters.  Typically for relative differences, but sometimes for absolute.
 
+
 def compare(x0, x1, relative=False):
     """Compare two quantities relative to EPSILON."""
     
-    if relative == True:
+    if relative is True:
         denominator = abs(x1)
     else:
         denominator = 1.0
@@ -336,7 +336,6 @@ class SystemChecker(object):
             for (i0, i1) in dict0.keys():
                 val0 = dict0[i0, i1][k]
                 val1 = dict1[i0, i1][k]
-                denominator = abs(val0)
                 if parameter_name == "sigma" and dict0[i0, i1][2] == 0.0 and dict1[i0, i1][2] == 0.0:
                     continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.  
                 assert compare(val0, val1), "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)

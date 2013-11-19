@@ -77,7 +77,7 @@ gaff_elements = {'br': 'Br',
  'sx': 'S',
  'sy': 'S'}
 
-def parse_mol2_sections(x):    
+def parse_mol2_sections(x):
     if x.startswith('@<TRIPOS>'):
         parse_mol2_sections.key = x
     return parse_mol2_sections.key
