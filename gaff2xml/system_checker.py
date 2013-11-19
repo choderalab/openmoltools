@@ -71,6 +71,20 @@ def is_improper(i0, i1, i2, i3, bond_set):
 
 class SystemChecker(object):
     def __init__(self, simulation0, simulation1):
+        """Create a SystemChecker object that compares forces in simulation0 and simulation1.
+        
+        Parameters
+        ----------
+        simulation0 : OpenMM Simulation
+        simulation1 : OpenMM Simulation
+        
+        Notes
+        -----
+        
+        You MUST have constraints=None when creating your simulation objects.
+        
+        """
+        
         self.simulation0 = simulation0
         self.simulation1 = simulation1
 
