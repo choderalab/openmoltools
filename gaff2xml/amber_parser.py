@@ -381,8 +381,20 @@ class AmberParser(object):
         self.reduce_atomtypes()
 
     def reduce_atomtypes(self, symmetrize_protons=False):
-        """Reduce the list of atom self.types.  If symmetrize_protons is True, multiple hydrogens bound to the same heavy atom
-        should all use the same type.
+        """Reduce the list of atom self.types.  
+        
+        Parameters
+        ----------
+        symmetrize_protons : bool, default=False
+            if True, multiple hydrogens bound to the same heavy atom
+            should all use the same type.
+            
+        Notes
+        -----
+        
+        The default behavior of symmetrize_protons differs from the
+        original OpenMM version of this script.  For arbitrary small
+        molecules, we can not assume symmetric protons.
         """
 
         removeType = [False]*len(self.types)
