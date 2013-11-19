@@ -119,7 +119,7 @@ def create_ffxml_simulation(molecule, gaff_mol2_filename, frcmod_filename):
 
     # Create System object.
     forcefield = app.ForceField(ffxml_filename)
-    system = forcefield.createSystem(topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds, implicitSolvent=None)
+    system = forcefield.createSystem(topology, nonbondedMethod=app.NoCutoff, constraints=None, implicitSolvent=None)
     
     # Create integrator.
     timestep = 1.0 * units.femtoseconds
@@ -141,7 +141,7 @@ def create_leap_simulation(molecule, gaff_mol2_filename, frcmod_filename):
     # Create System object.
     prmtop = app.AmberPrmtopFile(prmtop_filename)
     topology = prmtop.topology
-    system = prmtop.createSystem(nonbondedMethod=app.NoCutoff, constraints=app.HBonds, implicitSolvent=None)
+    system = prmtop.createSystem(nonbondedMethod=app.NoCutoff, constraints=None, implicitSolvent=None)
 
     # Read positions.
     inpcrd = app.AmberInpcrdFile(inpcrd_filename)
