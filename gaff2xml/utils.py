@@ -3,11 +3,15 @@ import os.path
 import tempfile
 import sys
 import logging
-import subprocess
 import string
 from pkg_resources import resource_filename
 import contextlib
 import shutil
+
+try:
+    from subprocess import getoutput  # If python 3
+except ImportError:
+    from commands import getoutput # If python 2
 
 import openeye.oechem
 
@@ -72,15 +76,13 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
 
     logger.debug(cmd)
 
-    cmd_list = string.split(cmd)
-    output = subprocess.check_output(cmd_list)
+    output = getoutput(cmd)
     logger.debug(output)
     
     cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
     logger.debug(cmd)
     
-    cmd_list = string.split(cmd)
-    output = subprocess.check_output(cmd_list)
+    output = getoutput(cmd)
     logger.debug(output)
 
     return gaff_mol2_filename, frcmod_filename
@@ -94,8 +96,7 @@ def convert_molecule(in_filename, out_filename):
     
     cmd = "obabel -i %s %s -o %s > %s" % (ext_in, in_filename, ext_out, out_filename)
     
-    cmd_list = string.split(cmd)
-    output = subprocess.check_output(cmd_list)
+    output = getoutput(cmd)
     logger.debug(output)
 
 
@@ -138,8 +139,7 @@ quit
     cmd = "tleap -f %s " % file_handle.name
     logger.debug(cmd)
     
-    cmd_list = string.split(cmd)
-    output = subprocess.check_output(cmd_list)
+    output = getoutput(cmd)
     logger.debug(output)
     
     file_handle.close()
