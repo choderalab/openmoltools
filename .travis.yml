@@ -1,0 +1,14 @@
+language: c
+
+install:
+  - echo "install"
+  - echo "$python"
+  - tools/ci/apt_install.sh
+  - $python -V
+  - tools/ci/py_install.sh
+
+script:
+  - echo "script"
+  - $python -V
+  - sudo $python setup.py -q install
+  - nosetests

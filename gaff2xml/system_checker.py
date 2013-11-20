@@ -1,4 +1,3 @@
-import simtk.unit as u
 import numpy as np
 import itertools
 import simtk.openmm as mm
@@ -8,44 +7,104 @@ logger = logging.getLogger(__name__)
 
 EPSILON = 1E-4  # Error tolerance for differences in parameters.  Typically for relative differences, but sometimes for absolute.
 
+
+def compare(x0, x1, relative=False):
+    """Compare two quantities relative to EPSILON."""
+
+    if relative is True:
+        denominator = abs(x1)
+    else:
+        denominator = 1.0
+
+    return (abs(x0 - x1) / denominator) < EPSILON
+
 reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
 
 reorder_bonds = lambda i0, i1: (min(i0, i1), max(i0, i1))
 reorder_angles = lambda i0, i1, i2: (min(i0, i2), i1, max(i0, i2))
 
+
 def reorder_proper_torsions(i0, i1, i2, i3):
+    """Return the atom indices of a proper torsion after "flipping" the
+    order so that the first atom is the smallest index.
+
+    Parameters
+    ----------
+    i0, i1, i2, i3 : int,
+        Atom indices of torsion
+
+    Returns
+    -------
+    j0, j1, j2, j3 : int,
+        Atom indices of torsion
+
+    """
     if i0 < i3:
         j0, j1, j2, j3 = i0, i1, i2, i3
     else:
-        j0, j1, j2, j3 = i3, i2, i1, i0        
+        j0, j1, j2, j3 = i3, i2, i1, i0
 
     return j0, j1, j2, j3
 
+
 def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
     """Return j0, j1, j2, j3, where j0 is the central index and j1, j2, j3
-    are in sorted() order.  Centrality is determined by the maximum counts
-    in the adjacency matrix.
+    are in sorted() order.
+
+    Parameters
+    ----------
+    i0, i1, i2, i3 : int,
+        Atom indices of torsion
+    bond_set : set containing the index pairs between which a bond is defined
+
+    Returns
+    -------
+    j0, j1, j2, j3 : int,
+        Atom indices of torsion, with j0 being the central index
+
+    Notes
+    -----
+
+    Centrality is determined by the maximum counts in the adjacency matrix.
+
     """
 
     connections = np.zeros((4, 4))
 
-    mapping = {i0:0, i1:1, i2:2, i3:3}
+    mapping = {i0: 0, i1: 1, i2: 2, i3: 3}
     inv_mapping = dict([(val, key) for key, val in mapping.iteritems()])
 
-    for (a,b) in itertools.combinations([i0, i1, i2, i3], 2):
-        if (a,b) in bond_set:
+    for (a, b) in itertools.combinations([i0, i1, i2, i3], 2):
+        if (a, b) in bond_set:
             i, j = mapping[a], mapping[b]
             connections[i, j] += 1.
             connections[j, i] += 1.
-    
+
     central_ind = connections.sum(0).argmax()
     central_ind = inv_mapping[central_ind]
     other_ind = sorted([i0, i1, i2, i3])
     other_ind.remove(central_ind)
-    
+
     return central_ind, other_ind[0], other_ind[1], other_ind[2]
 
+
 def get_symmetrized_bond_set(bond_force):
+    """Return a set containing atom pairs connected by bonds.
+
+    Parameters
+    ----------
+    bond_force : mm.HarmonicBondForce
+        The bond force of an OpenMM system
+
+    Returns
+    -------
+    bond_set : a set containing pairs of atoms connected by bonds:
+
+    Notes
+    -----
+    The resulting set is symmetric: if (i,j) in S, then (j,i) in S.
+    """
+
     bond_set = set()
     n_bonds = bond_force.getNumBonds()
 
@@ -56,11 +115,13 @@ def get_symmetrized_bond_set(bond_force):
 
     return bond_set
 
+
 def is_proper(i0, i1, i2, i3, bond_set):
     """Check for three sequential bonds and atom uniqueness."""
-    if (i0, i1) in bond_set and (i1, i2) in bond_set and (i2, i3) in bond_set and len(set([i0, i1, i2, i3])) == 4:  
+    if (i0, i1) in bond_set and (i1, i2) in bond_set and (i2, i3) in bond_set and len(set([i0, i1, i2, i3])) == 4:
         return True
     return False
+
 
 def is_improper(i0, i1, i2, i3, bond_set):
     """Check for three non-sequential bonds and atom uniqueness."""
@@ -69,22 +130,24 @@ def is_improper(i0, i1, i2, i3, bond_set):
             return True
     return False
 
+
 class SystemChecker(object):
+
     def __init__(self, simulation0, simulation1):
         """Create a SystemChecker object that compares forces in simulation0 and simulation1.
-        
+
         Parameters
         ----------
         simulation0 : OpenMM Simulation
         simulation1 : OpenMM Simulation
-        
+
         Notes
         -----
-        
+
         You MUST have constraints=None when creating your simulation objects.
-        
+
         """
-        
+
         self.simulation0 = simulation0
         self.simulation1 = simulation1
 
@@ -107,8 +170,10 @@ class SystemChecker(object):
                 self.torsion_force1 = force
             elif type(force) == mm.NonbondedForce:
                 self.nonbonded_force1 = force
-        
+
     def check_force_parameters(self):
+        """Check that force parameters are the same, up to some equivalence.
+        """
         self.check_bonds(self.bond_force0, self.bond_force1)
         self.check_angles(self.angle_force0, self.angle_force1)
         self.check_nonbonded(self.nonbonded_force0, self.nonbonded_force1)
@@ -117,77 +182,119 @@ class SystemChecker(object):
         logger.info("Note: skipping degenerate impropers with < 4 atoms.")
 
     def check_bonds(self, force0, force1):
-    
-        assert force0.getNumBonds() == force1.getNumBonds(), "Error: Systems have %d and %d entries in HarmonicBondForce, respectively." % (force0.getNumBonds(), force1.getNumBonds())
-        n_bonds = force0.getNumBonds()
+        """Check that force0 and force1 are equivalent Bond forces.
+
+
+        Parameters
+        ----------
+        force0 : mm.HarmonicBondForce
+        force1 : mm.HarmonicBondForce
+
+        """
+
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.HarmonicBondForce, "Error: forces must be HarmonicBondForces"
+
+        n_bonds0 = force0.getNumBonds()
+        n_bonds1 = force1.getNumBonds()
 
         dict0, dict1 = {}, {}
-        
+
         i0, i1, r0, k0 = force0.getBondParameters(0)
         unit_r = r0.unit
         unit_k = k0.unit
 
-        for k in range(n_bonds):
+        for k in range(n_bonds0):
             i0, i1, r0, k0 = force0.getBondParameters(k)
             i0, i1 = reorder_bonds(i0, i1)
-            dict0[i0, i1] = ((r0 / unit_r, k0 / unit_k))
+            if k0 / k0.unit != 0.0:  # Skip forces with strength 0.0
+                dict0[i0, i1] = ((r0 / unit_r, k0 / unit_k))
 
+        for k in range(n_bonds1):
             i0, i1, r0, k0 = force1.getBondParameters(k)
             i0, i1 = reorder_bonds(i0, i1)
-            dict1[i0, i1] = ((r0 / unit_r, k0 / unit_k))
+            if k0 / k0.unit != 0.0:  # Skip forces with strength 0.0
+                dict1[i0, i1] = ((r0 / unit_r, k0 / unit_k))
 
+        keys0 = set(dict0.keys())
+        keys1 = set(dict1.keys())
+        logger.info("Bonds0 - Bonds1 = %s" % (keys0.difference(keys1)))
+        logger.info("Bonds1 - Bonds0 = %s" % (keys1.difference(keys0)))
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicBond Forces"
 
         for k, parameter_name in enumerate(["r0", "k0"]):
             for (i0, i1) in dict0.keys():
                 val0 = dict0[i0, i1][k]
                 val1 = dict1[i0, i1][k]
-                assert (abs(val0 - val1) / val0) < EPSILON, "Error: Harmonic Bond (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
-
+                assert compare(val0, val1), "Error: Harmonic Bond (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
 
     def check_angles(self, force0, force1):
-        
-        #We can't assert numAngles are equal because one might have "blank" forces with constant 0.0
-        #assert force0.getNumAngles() == force1.getNumAngles(), "Error: Systems have %d and %d entries in HarmonicAngleForce, respectively." % (force0.getNumAngles(), force1.getNumAngles())
-        
+        """Check that force0 and force1 are equivalent Angle forces.
+
+
+        Parameters
+        ----------
+        force0 : mm.HarmonicAngleForce
+        force1 : mm.HarmonicAngleForce
+
+        """
+
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.HarmonicAngleForce, "Error: forces must be HarmonicAngleForces"
+
         n_angles0 = force0.getNumAngles()
         n_angles1 = force1.getNumAngles()
 
         dict0, dict1 = {}, {}
-        
+
         i0, i1, i2, theta0, k0 = force0.getAngleParameters(0)
         unit_theta = theta0.unit
         unit_k = k0.unit
 
         for k in range(n_angles0):
             i0, i1, i2, theta0, k0 = force0.getAngleParameters(k)
-            if (k0 / k0.unit) != 0.0:
+            if (k0 / k0.unit) != 0.0:  # Skip forces with strength 0.0
                 i0, i1, i2 = reorder_angles(i0, i1, i2)
                 dict0[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
-        
+
         for k in range(n_angles1):
             i0, i1, i2, theta0, k0 = force1.getAngleParameters(k)
-            if (k0 / k0.unit) != 0.0:
+            if (k0 / k0.unit) != 0.0:  # Skip forces with strength 0.0
                 i0, i1, i2 = reorder_angles(i0, i1, i2)
                 dict1[i0, i1, i2] = ((theta0 / unit_theta, k0 / unit_k))
 
+        keys0 = set(dict0.keys())
+        keys1 = set(dict1.keys())
+        logger.info("Angles0 - Angles1 = %s" % (keys0.difference(keys1)))
+        logger.info("Angles1 - Angles0 = %s" % (keys1.difference(keys0)))
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicAngle Forces"
 
         for k, parameter_name in enumerate(["theta0", "k0"]):
             for (i0, i1, i2) in dict0.keys():
                 val0 = dict0[i0, i1, i2][k]
                 val1 = dict1[i0, i1, i2][k]
-                assert (abs(val0 - val1) / val0) < EPSILON, "Error: Harmonic Angle (%d, %d, %d) has %s values of %f and %f, respectively." % (i0, i1, i2, parameter_name, val0, val1)
+                assert compare(val0, val1), "Error: Harmonic Angle (%d, %d, %d) has %s values of %f and %f, respectively." % (i0, i1, i2, parameter_name, val0, val1)
 
     def check_nonbonded(self, force0, force1):
-               
+        """Check that force0 and force1 are equivalent Nonbonded forces.
+
+
+        Parameters
+        ----------
+        force0 : mm.NonbondedForce
+        force1 : mm.NonbondedForce
+
+        """
+
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.NonbondedForce, "Error: forces must be NonbondedForces"
         assert force0.getNumParticles() == force1.getNumParticles(), "Error: Systems have %d and %d particles in NonbondedForce, respectively." % (force0.getNumParticles(), force1.getNumParticles())
-        
+
         n_atoms = force0.getNumParticles()
-        
+
         q, sigma, epsilon = force0.getParticleParameters(0)
         unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
-        
+
         for k in range(n_atoms):
             q0, sigma0, epsilon0 = force0.getParticleParameters(k)
             q1, sigma1, epsilon1 = force1.getParticleParameters(k)
@@ -195,28 +302,17 @@ class SystemChecker(object):
             q0, sigma0, epsilon0 = q0 / unit_q, sigma0 / unit_sigma, epsilon0 / unit_epsilon
             q1, sigma1, epsilon1 = q1 / unit_q, sigma1 / unit_sigma, epsilon1 / unit_epsilon
 
-            if q0 == 0.:
-                denominator = 1.0  # Don't normalize if has value zero
-            else:
-                denominator = q0  # Normalize to compare relative errors, rather than absolute.
+            assert compare(q0, q1), "Error: Particle %d has charges of %f and %f, respectively." % (k, q0, q1)
 
-            assert (abs(q0 - q1) / denominator) < EPSILON, "Error: Particle %d has charges of %f and %f, respectively." % (k, q0, q1)
             if epsilon0 != 0.:
-                assert (abs(sigma0 - sigma1) / sigma0) < EPSILON, "Error: Particle %d has sigma of %f and %f, respectively." % (k, sigma0, sigma1)
+                assert compare(sigma0, sigma1), "Error: Particle %d has sigma of %f and %f, respectively." % (k, sigma0, sigma1)
             else:
                 logger.info("Skipping comparison of sigma (%f, %f) on particle %d because epsilon has values %f, %f" % (sigma0, sigma1, k, epsilon0, epsilon1))
 
-            if epsilon0 == 0.:
-                denominator = 1.0  # Don't normalize if has value zero
-            else:
-                denominator = epsilon0  # Normalize to compare relative errors, rather than absolute.
-
-            assert (abs(epsilon0 - epsilon1) / denominator) < EPSILON, "Error: Particle %d has epsilon of %f and %f, respectively." % (k, epsilon0, epsilon1)
-
+            assert compare(epsilon0, epsilon1), "Error: Particle %d has epsilon of %f and %f, respectively." % (k, epsilon0, epsilon1)
 
         n_exceptions = force0.getNumExceptions()
         assert force0.getNumExceptions() == force1.getNumExceptions(), "Error: Systems have %d and %d exceptions in NonbondedForce, respectively." % (force0.getNumExceptions(), force1.getNumExceptions())
-
 
         i0, i1, qq, sigma, epsilon = force0.getExceptionParameters(0)
         unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
@@ -230,25 +326,47 @@ class SystemChecker(object):
             i0, i1, qq, sigma, epsilon = force1.getExceptionParameters(k)
             i0, i1 = reorder_bonds(i0, i1)
             dict1[i0, i1] = ((qq / unit_qq, sigma / unit_sigma, epsilon / unit_epsilon))
-        
+
+        keys0 = set(dict0.keys())
+        keys1 = set(dict1.keys())
+        logger.info("Exceptions0 - Exceptions1 = %s" % (keys0.difference(keys1)))
+        logger.info("Exceptions1 - Exceptions0 = %s" % (keys1.difference(keys0)))
         assert set(dict0.keys()) == set(dict1.keys()), "Systems have different NonBondedForce Exceptions"
 
         for k, parameter_name in enumerate(["qq", "sigma", "epsilon"]):
             for (i0, i1) in dict0.keys():
                 val0 = dict0[i0, i1][k]
                 val1 = dict1[i0, i1][k]
-                denominator = abs(val0)
-                if denominator < EPSILON:
-                    denominator = 1.0
                 if parameter_name == "sigma" and dict0[i0, i1][2] == 0.0 and dict1[i0, i1][2] == 0.0:
-                    continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.  
-                assert (abs(val0 - val1) / denominator) < EPSILON, "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
+                    continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.
+                assert compare(val0, val1), "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
 
     def check_proper_torsions(self, force0, force1, bond_force0, bond_force1):
-        
+        """Check that force0 and force1 are equivalent PeriodicTorsion forces.
+
+
+        Parameters
+        ----------
+        force0 : mm.PeriodicTorsionForce
+        force1 : mm.PeriodicTorsionForce
+
+        Notes
+        -----
+
+        So this creates and compares a pair of dictionaries, one for each
+        force.  Each dictionary has keys that are atom tuples (i0,i1,i2,i3)
+        and values which are a list of force parameters (per, phase, k0)
+        for that tuple.  This complexity is required because a given tuple
+        can have *multiple* parameters associated with it.
+
+        """
+
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.PeriodicTorsionForce, "Error: forces must be PeriodicTorsionForce"
+
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
-                
+
         i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
         phase_unit, k0_unit = phase.unit, k0.unit
 
@@ -264,7 +382,7 @@ class SystemChecker(object):
             if k0 == 0.0:
                 continue
 
-            if not dict0.has_key((i0, i1, i2, i3)):
+            if not (i0, i1, i2, i3) in dict0:
                 dict0[i0, i1, i2, i3] = []
 
             dict0[i0, i1, i2, i3].append((per, phase, k0))
@@ -280,7 +398,7 @@ class SystemChecker(object):
             if k0 == 0.0:
                 continue
 
-            if not dict1.has_key((i0, i1, i2, i3)):
+            if not (i0, i1, i2, i3) in dict1:
                 dict1[i0, i1, i2, i3] = []
 
             dict1[i0, i1, i2, i3].append((per, phase, k0))
@@ -289,28 +407,65 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         diff_keys = keys0.symmetric_difference(keys1)
 
+        logger.info("Propers0 - Propers1 = %s" % (keys0.difference(keys1)))
+        logger.info("Propers1 - Propers0 = %s" % (keys1.difference(keys0)))
         assert diff_keys == set(), "Systems have different (proper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
             entries0 = dict0[i0, i1, i2, i3]
-            entries1 = dict1[i0, i1, i2, i3]        
+            entries1 = dict1[i0, i1, i2, i3]
             assert len(entries0) == len(entries1), "Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
-            
+
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
-            
-            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
-            
-            for (per, phase) in subdict0.keys():
-                val0 = subdict0[per, phase] 
-                val1 = subdict1[per, phase]
-                assert (abs(val0 - val1) / val0) < EPSILON, "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
-    def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):    
-        
+            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
+
+            for (per, phase) in subdict0.keys():
+                val0 = subdict0[per, phase]
+                val1 = subdict1[per, phase]
+                assert compare(val0, val1), "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+
+    def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):
+        """Check that force0 and force1 are equivalent PeriodicTorsion forces.
+
+
+        Parameters
+        ----------
+        force0 : mm.PeriodicTorsionForce
+        force1 : mm.PeriodicTorsionForce
+
+        Notes
+        -----
+
+        So this creates and compares a pair of dictionaries, one for each
+        force.  Each dictionary has keys that are atom tuples (i0,i1,i2,i3)
+        and values which are a list of force parameters (per, phase, k0)
+        for that tuple.  This complexity is required because a given tuple
+        can have *multiple* parameters associated with it.
+
+        In addition to the complications for *all* torsions, improper torsions
+        have the additional difficulty of ambiguous definitions.  Given a tuple
+        (a,b,c,d) that is held planar by an improper, one can define several permuted dihedral
+        terms that give similar (but not identical) energies.  Many force field
+        codes do NOT pay attention to the exact permutation that is used, leading to
+        subtle differences in topology and energy between MD packages.
+
+        The solution that we use here is to reorder each improper torsion via:
+
+        central_atom, i1, i2, i3
+
+        where i1, i2, and i3 are in increasing order and the central atom
+        is located via the adjacency matrix of bonds.
+
+        """
+
+        assert type(force0) == type(force1), "Error: force0 and force1 must be the same type."
+        assert type(force0) == mm.PeriodicTorsionForce, "Error: forces must be PeriodicTorsionForce"
+
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
-                
+
         i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
         phase_unit, k0_unit = phase.unit, k0.unit
 
@@ -326,7 +481,7 @@ class SystemChecker(object):
             if k0 == 0.0:
                 continue
 
-            if not dict0.has_key((i0, i1, i2, i3)):
+            if not (i0, i1, i2, i3) in dict0:
                 dict0[i0, i1, i2, i3] = []
 
             dict0[i0, i1, i2, i3].append((per, phase, k0))
@@ -342,7 +497,7 @@ class SystemChecker(object):
             if k0 == 0.0:
                 continue
 
-            if not dict1.has_key((i0, i1, i2, i3)):
+            if not (i0, i1, i2, i3) in dict1:
                 dict1[i0, i1, i2, i3] = []
 
             dict1[i0, i1, i2, i3].append((per, phase, k0))
@@ -351,37 +506,44 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         diff_keys = keys0.symmetric_difference(keys1)
 
-        logger.info("Torsions0 - Torsions1 = %s" % (keys0.difference(keys1)))
-        logger.info("Torsions1 - Torsions0 = %s" % (keys1.difference(keys0)))
+        logger.info("Impropers0 - Impropers1 = %s" % (keys0.difference(keys1)))
+        logger.info("Impropers1 - Impropers0 = %s" % (keys1.difference(keys0)))
         assert diff_keys == set(), "Systems have different (improper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
             entries0 = dict0[i0, i1, i2, i3]
-            entries1 = dict1[i0, i1, i2, i3]        
+            entries1 = dict1[i0, i1, i2, i3]
             assert len(entries0) == len(entries1), "Error:  (improper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
-            
+
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
-            
+
             assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (improper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
-            
+
             for (per, phase) in subdict0.keys():
-                val0 = subdict0[per, phase] 
+                val0 = subdict0[per, phase]
                 val1 = subdict1[per, phase]
-                assert (abs(val0 - val1) / val0) < EPSILON, "Error: (improper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+                assert compare(val0, val1), "Error: (improper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
     def zero_degenerate_impropers(self, f):
-        """Set the force constant to zero for improper dihedrals that 
+        """Set the force constant to zero for improper dihedrals that
         involve less than four unique atoms.
         """
         for k in range(f.getNumTorsions()):
             i0, i1, i2, i3, per, phase, k0 = f.getTorsionParameters(k)
             if len(set([i0, i1, i2, i3])) < 4:
                 f.setTorsionParameters(k, i0, i1, i2, i3, per, phase, k0 * 0.0)
-    
 
     def check_energies(self, zero_degenerate_impropers=True):
-        if zero_degenerate_impropers == True:
+        """Compare the energies of the two simulations.
+
+        Parameters
+        ----------
+
+        zero_degenerate_impropers : bool, default=True
+            if True, zero out all impropers with < 4 atoms.
+        """
+        if zero_degenerate_impropers is True:
             self.zero_degenerate_impropers(self.torsion_force0)
             xyz = self.simulation0.context.getState(getPositions=True).getPositions()
             self.simulation0.context.reinitialize()
@@ -396,5 +558,5 @@ class SystemChecker(object):
 
         state1 = self.simulation1.context.getState(getEnergy=True)
         energy1 = state1.getPotentialEnergy()
-        
+
         return energy0, energy1

@@ -68,6 +68,6 @@ setup(name='gaff2xml',
       zip_safe=False,
       scripts=['scripts/generate_example_data.py', 'scripts/processAmberForceField.py'],
       ext_modules=extensions,
-      #package_data={'mdtraj.pdb': ['data/*'], 'mdtraj.testing': ['reference/*']},
+      package_data={'gaff2xml': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
       **setup_kwargs
       )

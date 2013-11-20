@@ -1,13 +1,12 @@
-#!/usr/local/bin/env python
+#!/usr/bin/env python
 
 """
-YANK, a package for alchemical free energy calculations using pyOpenMM and OpenMM.
+gaff2xml, a utility for using GAFF files in OpenMM
 
 COPYRIGHT AND LICENSE
 
 @author John D. Chodera <jchodera@gmail.com>
-@author Kim M. Branson <kim.branson@gmail.com>
-@author Randall J. Radmer <radmer@stanford.edu>
+@author Kyle A. Beauchamp <kyleabeauchamp@gmail.com>
 
 All code in this repository is released under the GNU General Public License.
 
@@ -25,4 +24,4 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from gaff2xml import amber_parser, gafftools, system_checker
+from gaff2xml import amber_parser, gafftools, system_checker, utils
