@@ -24,4 +24,4 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from gaff2xml import amber_parser, gafftools, system_checker
+from gaff2xml import amber_parser, gafftools, system_checker, utils

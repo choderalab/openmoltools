@@ -429,7 +429,11 @@ class AmberParser(object):
         now = datetime.datetime.now()
         line = """<!-- %s -->\n""" % str(now)
         self.provenance.append(line)
-        line = """<!-- %s -->\n""" % subprocess.list2cmdline(sys.argv[1:])
+        cmd_string = subprocess.list2cmdline(sys.argv[1:])
+        cmd_string = cmd_string.replace("-", " ")  # Replace XML specific characters that can break some XML parsers
+        cmd_string = cmd_string.replace(">", " ")  # 
+        cmd_string = cmd_string.replace("<", " ")  # 
+        line = """<!-- %s -->\n""" % cmd_string
         self.provenance.append(line)        
         self.provenance = string.join(self.provenance, "")
 
