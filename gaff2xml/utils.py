@@ -186,6 +186,22 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
 
 
 def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
+    """Process a gaff mol2 file and frcmod file using the XML conversion, returning an OpenMM simulation.
+
+    Parameters
+    ----------
+    molecule_name : str
+        The name of the molecule
+    gaff_mol2_filename : str
+        The name of the gaff mol2 file
+    frcmod_filename : str
+        The name of the gaff frcmod file
+
+    Returns
+    -------
+    simulation : openmm.app.Simulation
+        A functional simulation object for simulating your molecule
+    """
    
     # Generate ffxml file.
     parser = amber_parser.AmberParser()
