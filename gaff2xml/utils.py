@@ -1,9 +1,7 @@
 import os
 import os.path
 import tempfile
-import sys
 import logging
-import string
 from pkg_resources import resource_filename
 import contextlib
 import shutil
@@ -11,7 +9,7 @@ import shutil
 try:
     from subprocess import getoutput  # If python 3
 except ImportError:
-    from commands import getoutput # If python 2
+    from commands import getoutput  # If python 2
 
 import openeye.oechem
 
@@ -27,6 +25,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 AMBERHOME = os.environ['AMBERHOME']
 GAFF_DAT_FILENAME = os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
 
+
 @contextlib.contextmanager
 def enter_temp_directory():
     temp_dir = tempfile.mkdtemp()
@@ -36,10 +35,12 @@ def enter_temp_directory():
     os.chdir(cwd)
     shutil.rmtree(temp_dir)
 
+
 def parse_ligand_filename(filename):
     """Split ligand filename into name and extension.  "./ligand.mol2" -> ("ligand", ".mol2")"""
     name, ext = os.path.splitext(os.path.split(filename)[1])
     return name, ext
+
 
 def run_antechamber(molecule_name, input_filename, charge_method=None):
     """Run AmberTools antechamber and parmchk to create GAFF mol2 and frcmod files.
@@ -78,10 +79,10 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
 
     output = getoutput(cmd)
     logger.debug(output)
-    
+
     cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
     logger.debug(cmd)
-    
+
     output = getoutput(cmd)
     logger.debug(output)
 
@@ -90,12 +91,12 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
 
 def convert_molecule(in_filename, out_filename):
     """Use openbabel to convert filenames.  May not work for all file formats!"""
-    
+
     molecule_name, ext_in = parse_ligand_filename(in_filename)
     molecule_name, ext_out = parse_ligand_filename(out_filename)
-    
+
     cmd = "obabel -i %s %s -o %s > %s" % (ext_in, in_filename, ext_out, out_filename)
-    
+
     output = getoutput(cmd)
     logger.debug(output)
 
@@ -117,14 +118,14 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
     frcmod_filename : str
         Amber frcmod file produced by prmchk
     """
-    
+
     prmtop_filename = "%s.prmtop" % molecule_name
     inpcrd_filename = "%s.inpcrd" % molecule_name
 
     tleap_input = """
 source leaprc.ff99SB
 source leaprc.gaff
-LIG = loadmol2 %s 
+LIG = loadmol2 %s
 check LIG
 loadamberparams %s
 saveamberparm LIG %s %s
@@ -138,12 +139,12 @@ quit
 
     cmd = "tleap -f %s " % file_handle.name
     logger.debug(cmd)
-    
+
     output = getoutput(cmd)
     logger.debug(output)
-    
+
     file_handle.close()
-    
+
     return prmtop_filename, inpcrd_filename
 
 
@@ -152,13 +153,13 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
 
     Parameters
     ----------
-    molecule : openeye.oechem.OEGraphMol 
+    molecule : openeye.oechem.OEGraphMol
         The molecule to be converted.
 
     Returns
     -------
     tripos_mol2_filename : str
-        Filename of output tripos mol2 file    
+        Filename of output tripos mol2 file
     """
     # Get molecule name.
     molecule_name = molecule.GetTitle()
@@ -177,11 +178,11 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     infile = open(tripos_mol2_filename, 'r')
     lines = infile.readlines()
     infile.close()
-    newlines = [ line.replace('<0>', 'MOL') for line in lines ]
+    newlines = [line.replace('<0>', 'MOL') for line in lines]
     outfile = open(tripos_mol2_filename, 'w')
     outfile.writelines(newlines)
     outfile.close()
-    
+
     return molecule_name, tripos_mol2_filename
 
 
@@ -202,11 +203,11 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     simulation : openmm.app.Simulation
         A functional simulation object for simulating your molecule
     """
-   
+
     # Generate ffxml file.
     parser = amber_parser.AmberParser()
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
-    
+
     ffxml_stream = parser.generate_xml()
     ffxml_filename = molecule_name + '.ffxml'
     outfile = open(ffxml_filename, 'w')
@@ -219,17 +220,18 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     # Create System object.
     forcefield = app.ForceField(ffxml_filename)
     system = forcefield.createSystem(topology, nonbondedMethod=app.NoCutoff, constraints=None, implicitSolvent=None)
-    
+
     # Create integrator.
     timestep = 1.0 * units.femtoseconds
     integrator = simtk.openmm.VerletIntegrator(timestep)
-    
+
     # Create simulation.
     platform = simtk.openmm.Platform.getPlatformByName("Reference")
     simulation = app.Simulation(topology, system, integrator, platform=platform)
     simulation.context.setPositions(positions)
 
     return simulation
+
 
 def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """Create an OpenMM simulation using a Gaff mol2 file and frcmod file.
@@ -261,12 +263,13 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     # Create integrator.
     timestep = 1.0 * units.femtoseconds
     integrator = simtk.openmm.VerletIntegrator(timestep)
-    
+
     platform = simtk.openmm.Platform.getPlatformByName("Reference")
     simulation = app.Simulation(topology, system, integrator, platform=platform)
     simulation.context.setPositions(positions)
 
     return simulation
+
 
 def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energy_epsilon=0.5):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
@@ -279,10 +282,10 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energ
     tripos_mol2_filename : str
         Filename of input mol2 file
     charge_method : str, default=None
-        If None, use charges in existing MOL2.  Otherwise, use a charge 
+        If None, use charges in existing MOL2.  Otherwise, use a charge
         model when running antechamber.
     energy_epsilon : float, default=0.5 (units assumed to be KJ / mol)
-        Raise error if energy difference is above this value. 
+        Raise error if energy difference is above this value.
     """
 
     # Generate GAFF parameters.
@@ -291,11 +294,11 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energ
     # Create simulations.
     simulation_ffxml = create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename)
     simulation_leap  = create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename)
-    
+
     # Compare simulations.
     syscheck = system_checker.SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
-    
+
     energy0, energy1 = syscheck.check_energies()
     delta = abs((energy0 - energy1) / units.kilojoules_per_mole)
     assert delta < energy_epsilon, "Error, energy difference (%f) is greater than %f" % (delta, energy_epsilon)
