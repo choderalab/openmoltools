@@ -3,6 +3,7 @@ import os.path
 import tempfile
 import sys
 import logging
+from pkg_resources import resource_filename
 
 import openeye.oechem
 
@@ -28,6 +29,8 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
 
     Parameters
     ----------
+    molecule_name : str
+        Name of the molecule to be parameterized, will be used in output filenames.
     ligand_filename : str
         The molecule to be parameterized.  Must be tripos mol2 format.
     charge_method : str, optional
@@ -242,3 +245,25 @@ def test_molecule(molecule, charge_method=None):
 
     # Restore current working directory.
     os.chdir(cwd)
+
+
+def get_data_filename(relative_path):
+    """Get the full path to one of the reference files shipped for testing
+
+    In the source distribution, these files are in ``gaff2xml/chemicals/*/``,
+    but on installation, they're moved to somewhere in the user's python
+    site-packages directory.
+
+    Parameters
+    ----------
+    name : str
+        Name of the file to load (with respect to the gaff2xml folder).
+
+    """
+
+    fn = resource_filename('gaff2xml', relative_path)
+
+    if not os.path.exists(fn):
+        raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
+
+    return fn
