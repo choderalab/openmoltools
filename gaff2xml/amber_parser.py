@@ -37,6 +37,7 @@ skipClasses = ['OW', 'HW'] # Skip water atoms, since we define these in separate
 
 class AmberParser(object):
     def __init__(self):
+        """Create an AmberParser object for converting amber force field files to XML format."""
         self.residueAtoms = {}
         self.residueBonds = {}
         self.residueConnections = {}
@@ -56,6 +57,17 @@ class AmberParser(object):
         self.set_provenance()
 
     def addAtom(self, residue, atomName, atomClass, element, charge, use_numeric_types=True):
+        """Add an atom to the database of FF data.
+        
+        Notes
+        -----
+
+        use_numeric_types was not originally present in the OpenMM AMBER
+        parsers.  It was added so that we can have atom types of the form
+        "RES-X", where RES is the name of the molecule or residue and X 
+        is the atom numbering within that molecule.  use_numeric_types is
+        set to False when processing mol2 files--e.g. for ligands.
+        """
         if residue is None:
             return
         type_id = len(self.types)
@@ -67,17 +79,35 @@ class AmberParser(object):
             self.type_names.append("%s-%s" % (residue, atomName))
 
     def addBond(self, residue, atom1, atom2):
+        """Add a bond to the database of FF data."""
         if residue is None:
             return
         self.residueBonds[residue].append((atom1, atom2))
 
     def addExternalBond(self, residue, atom):
+        """Add an external bond to the database of FF data."""
         if residue is None:
             return
         if atom != -1:
             self.residueConnections[residue] += [atom]
 
     def process_mol2_file(self, inputfile):
+        """Process an AMBER GAFF-compatible mol2 file.
+
+        Parameters
+        ----------
+        inputfile : str
+            filename of an .mol2 file
+            
+        Notes
+        -----
+        
+        Antechamber is known to produce NONSTANDARD mol2 files.  This function
+        is designed to work with those nonstandard mol2 files, not 
+        Tripos standard mol2 files.  We are forced to live with the poor 
+        decisions of our predecessors...
+        
+        """
         from gaff2xml import gafftools  # Late import to delay importing optional modules
         mol2_parser = gafftools.Mol2Parser(inputfile)
         residue_name = mol2_parser.atoms.resName[1]  # To Do: Add check for consistency
@@ -99,7 +129,14 @@ class AmberParser(object):
             self.addBond(residue_name, i, j)
 
     def process_library_file(self, inputfile):
-        """Read a library file"""
+        """Process an AMBER .lib file.
+
+        Parameters
+        ----------
+        inputfile : str
+            filename of an .lib file
+        
+        """
         for line in open(inputfile):
             if line.startswith('!entry'):
                 fields = line.split('.')
@@ -150,7 +187,14 @@ class AmberParser(object):
                     self.addExternalBond(residue, atom)
 
     def process_dat_file(self, inputfile):
-        """Read a force field file."""
+        """Process an AMBER .dat file.
+
+        Parameters
+        ----------
+        inputfile : str
+            filename of an .dat file
+        
+        """
         block = 0
         continueTorsion = False
         for line in open(inputfile):     
@@ -217,6 +261,14 @@ class AmberParser(object):
                     self.vdw[fields[0]] = (fields[1], fields[2])
 
     def process_frc_file(self, inputfile):
+        """Process an AMBER .frc file.
+
+        Parameters
+        ----------
+        inputfile : str
+            filename of an .frc file
+        
+        """
         block = ''
         continueTorsion = False
         first = True
@@ -252,6 +304,23 @@ class AmberParser(object):
                 self.vdw[fields[0]] = (fields[1], fields[2])
 
     def generate_xml(self):
+        """Return the processed forcefield files as an XML stream.
+        
+        Returns
+        -------
+        stream : cStringIO
+            The text of the output XML forcefield data.
+            
+        Notes
+        -----
+        
+        The stream can be written to disk via:
+                    
+        outfile = open("my_forcefield.xml", 'w')
+        outfile.write(stream.read())
+        outfile.close()
+
+        """
         stream = cStringIO.StringIO()
         write_stream = lambda x: stream.write(x + "\n")
         write_stream( self.provenance)
@@ -368,6 +437,20 @@ class AmberParser(object):
         return stream
 
     def parse_filenames(self, filenames):
+        """Process a list of filenames according to their filetype suffixes
+        
+        Parameters
+        ----------
+        filenames : list (of strings)
+            List of filenames of type (lib, off, dat, or mol2)
+            
+        Notes
+        -----
+        When parameterizing small molecules, the correct order of inputs is:
+        
+        $AMBER_LIB_PATH/gaff.dat ligand_name.mol2 ligand_name.frcmod
+        
+        """
         for inputfile in filenames:
             if inputfile.endswith('.lib') or inputfile.endswith('.off'):
                 self.process_library_file(inputfile)
@@ -423,6 +506,7 @@ class AmberParser(object):
                 atom[1] = replaceWithType[atom[1]]
 
     def set_provenance(self):
+        """Set the provenance attribute with information about the current python session."""
         self.provenance = []
         line = """<!-- %s -->\n""" % "Time and parameters of origin:"
         self.provenance.append(line)
