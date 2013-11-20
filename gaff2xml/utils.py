@@ -252,7 +252,7 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
 
     return simulation
 
-def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
+def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energy_epsilon=0.5):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
 
 
@@ -265,7 +265,8 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
     charge_method : str, default=None
         If None, use charges in existing MOL2.  Otherwise, use a charge 
         model when running antechamber.
-
+    energy_epsilon : float, default=0.5 (units assumed to be KJ / mol)
+        Raise error if energy difference is above this value. 
     """
 
     # Generate GAFF parameters.
@@ -278,6 +279,10 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
     # Compare simulations.
     syscheck = system_checker.SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
+    
+    energy0, energy1 = syscheck.check_energies()
+    delta = abs((energy0 - energy1) / units.kilojoules_per_mole)
+    assert delta < energy_epsilon, "Error, energy difference (%f) is greater than %f" % (delta, energy_epsilon)
 
 
 def get_data_filename(relative_path):
