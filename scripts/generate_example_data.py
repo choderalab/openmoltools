@@ -8,4 +8,5 @@ if __name__ == "__main__":
 Note: this should be run in the gaff2xml/chemicals/ligand_name directory.
 """)
     else:
-        run_antechamber(sys.argv[1])
+        molecule_name, mol2_filename = sys.argv[1:]
+        run_antechamber(molecule_name, mol2_filename, charge_model="bcc")

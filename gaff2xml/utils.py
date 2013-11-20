@@ -3,7 +3,11 @@ import os.path
 import tempfile
 import sys
 import logging
+import subprocess
+import string
 from pkg_resources import resource_filename
+import contextlib
+import shutil
 
 import openeye.oechem
 
@@ -18,6 +22,15 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 AMBERHOME = os.environ['AMBERHOME']
 GAFF_DAT_FILENAME = os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
+
+@contextlib.contextmanager
+def enter_temp_directory():
+    temp_dir = tempfile.mkdtemp()
+    cwd = os.getcwd()
+    os.chdir(temp_dir)
+    yield
+    os.chdir(cwd)
+    shutil.rmtree(temp_dir)
 
 def parse_ligand_filename(filename):
     """Split ligand filename into name and extension.  "./ligand.mol2" -> ("ligand", ".mol2")"""
@@ -58,11 +71,16 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
         cmd += ' -c %s' % charge_method
 
     logger.debug(cmd)
-    output = os.system(cmd)
+
+    cmd_list = string.split(cmd)
+    output = subprocess.check_output(cmd_list)
     logger.debug(output)
+    
     cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
     logger.debug(cmd)
-    output = os.system(cmd)
+    
+    cmd_list = string.split(cmd)
+    output = subprocess.check_output(cmd_list)
     logger.debug(output)
 
     return gaff_mol2_filename, frcmod_filename
@@ -75,10 +93,13 @@ def convert_molecule(in_filename, out_filename):
     molecule_name, ext_out = parse_ligand_filename(out_filename)
     
     cmd = "obabel -i %s %s -o %s > %s" % (ext_in, in_filename, ext_out, out_filename)
-    os.system(cmd)
+    
+    cmd_list = string.split(cmd)
+    output = subprocess.check_output(cmd_list)
+    logger.debug(output)
 
 
-def run_tleap(ligand_name, gaff_mol2_filename, frcmod_filename):
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
     """Run AmberTools tleap to create simulation files for AMBER
 
     Parameters
@@ -96,8 +117,8 @@ def run_tleap(ligand_name, gaff_mol2_filename, frcmod_filename):
         Amber frcmod file produced by prmchk
     """
     
-    prmtop_filename = "%s.prmtop" % ligand_name
-    inpcrd_filename = "%s.inpcrd" % ligand_name
+    prmtop_filename = "%s.prmtop" % molecule_name
+    inpcrd_filename = "%s.inpcrd" % molecule_name
 
     tleap_input = """
 source leaprc.ff99SB
@@ -116,8 +137,11 @@ quit
 
     cmd = "tleap -f %s " % file_handle.name
     logger.debug(cmd)
-    output = os.system(cmd)
+    
+    cmd_list = string.split(cmd)
+    output = subprocess.check_output(cmd_list)
     logger.debug(output)
+    
     file_handle.close()
     
     return prmtop_filename, inpcrd_filename
@@ -158,7 +182,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     outfile.writelines(newlines)
     outfile.close()
     
-    return tripos_mol2_filename
+    return molecule_name, tripos_mol2_filename
 
 
 def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
@@ -192,6 +216,19 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     return simulation
 
 def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
+    """Create an OpenMM simulation using a Gaff mol2 file and frcmod file.
+
+
+    Parameters
+    ----------
+    molecule_name : str
+        Name of the molecule
+    gaff_mol2_filename : str
+        Filename of input (GAFF!) mol2 file
+    frcmod_filename : str
+        Use this frcmod filename
+
+    """
 
     # Parameterize system with LEaP.
     (prmtop_filename, inpcrd_filename) = run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
@@ -215,21 +252,22 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
 
     return simulation
 
-def test_molecule(molecule, charge_method=None):
-    
-    molecule_name = molecule.GetTitle()
-    logger.debug(molecule_name)
-    
-    # Create temporary directory.
-    tmp_path = 'tmp' # DEBUG: Create an actual temporary directory.
-    if not os.path.exists(tmp_path): os.makedirs(tmp_path)
-    logger.debug('temporary directory created in %s' % tmp_path)
-    cwd = os.getcwd()
-    os.chdir(tmp_path)
-    
-    tripos_mol2_filename = molecule_to_mol2(molecule)
-    
-    
+def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
+    """Create a GAFF molecule via LEAP and ffXML and compare force terms.
+
+
+    Parameters
+    ----------
+    molecule_name : str
+        Name of the molecule
+    tripos_mol2_filename : str
+        Filename of input mol2 file
+    charge_method : str, default=None
+        If None, use charges in existing MOL2.  Otherwise, use a charge 
+        model when running antechamber.
+
+    """
+
     # Generate GAFF parameters.
     (gaff_mol2_filename, frcmod_filename) = run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
 
@@ -240,11 +278,6 @@ def test_molecule(molecule, charge_method=None):
     # Compare simulations.
     syscheck = system_checker.SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
-
-    # TODO: Clean up temporary directory.
-
-    # Restore current working directory.
-    os.chdir(cwd)
 
 
 def get_data_filename(relative_path):
