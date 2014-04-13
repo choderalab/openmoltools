@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jchodera/gaff2xml.svg)](https://travis-ci.org/jchodera/gaff2xml)
+
 ## gaff2xml: Converting Antechamber GAFF files to OpenMM XML format
 
 This set of tools allows users to automate the conversion of ligand
