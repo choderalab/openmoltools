@@ -11,8 +11,6 @@ try:
 except ImportError:
     from commands import getoutput  # If python 2
 
-import openeye.oechem
-
 import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
@@ -160,7 +158,14 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     -------
     tripos_mol2_filename : str
         Filename of output tripos mol2 file
+    
     """
+    
+    try:
+        import openeye.oechem
+    except ImportError:
+        raise(ImportError("Must install OpenEye tools to process OpenEye MOL2 files."))
+    
     # Get molecule name.
     molecule_name = molecule.GetTitle()
     logger.debug(molecule_name)

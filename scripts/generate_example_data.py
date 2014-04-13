@@ -9,4 +9,4 @@ Note: this should be run in the gaff2xml/chemicals/ligand_name directory.
 """)
     else:
         molecule_name, mol2_filename = sys.argv[1:]
-        run_antechamber(molecule_name, mol2_filename, charge_model="bcc")
+        run_antechamber(molecule_name, mol2_filename, charge_method="bcc")
