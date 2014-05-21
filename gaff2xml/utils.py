@@ -5,6 +5,7 @@ import logging
 from pkg_resources import resource_filename
 import contextlib
 import shutil
+import mdtraj as md
 
 try:
     from subprocess import getoutput  # If python 3

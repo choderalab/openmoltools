@@ -7,6 +7,7 @@ import subprocess
 import datetime
 import string
 import cStringIO
+import mdtraj as md
 
 import logging
 logger = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ class AmberParser(object):
         decisions of our predecessors...
 
         """
-        atoms, bonds = md.formats.mol2.mol2_to_dataframes(input)
+        atoms, bonds = md.formats.mol2.mol2_to_dataframes(inputfile)
         residue_name = atoms.resName[1]  # To Do: Add check for consistency
 
         self.residueAtoms[residue_name] = []
