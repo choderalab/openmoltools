@@ -15,7 +15,7 @@ import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
 
-from gaff2xml import amber_parser, gafftools, system_checker
+from gaff2xml import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
@@ -219,8 +219,9 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     outfile.write(ffxml_stream.read())
     outfile.close()
 
-    mol2 = gafftools.Mol2Parser(gaff_mol2_filename)  # Read mol2 file.
-    (topology, positions) = mol2.to_openmm()
+    traj = md.load(gaff_mol2_filename)  # Read mol2 file.
+    positions = traj.openmm_positions(0)  # Extract OpenMM-united positions of first (and only) trajectory frame
+    topology = traj.top.to_openmm()
 
     # Create System object.
     forcefield = app.ForceField(ffxml_filename)

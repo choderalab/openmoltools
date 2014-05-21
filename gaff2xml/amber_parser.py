@@ -111,22 +111,21 @@ class AmberParser(object):
         decisions of our predecessors...
 
         """
-        from gaff2xml import gafftools  # Late import to delay importing optional modules
-        mol2_parser = gafftools.Mol2Parser(inputfile)
-        residue_name = mol2_parser.atoms.resName[1]  # To Do: Add check for consistency
+        atoms, bonds = md.formats.mol2.mol2_to_dataframes(input)
+        residue_name = atoms.resName[1]  # To Do: Add check for consistency
 
         self.residueAtoms[residue_name] = []
         self.residueBonds[residue_name] = []
         self.residueConnections[residue_name] = []
 
-        for (i, name, x, y, z, atype, code, resname, charge) in mol2_parser.atoms.itertuples(False):
+        for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(False):
             full_name = residue_name + "_" + name
-            element_symbol = gafftools.gaff_elements[atype]
+            element_symbol = md.formats.mol2.gaff_elements[atype]
             e = element.Element.getBySymbol(element_symbol)
             self.addAtom(resname, name, atype, e, charge, use_numeric_types=False)  # use_numeric_types set to false to use string-based atom names, rather than numbers
             self.vdwEquivalents[full_name] = atype
 
-        for (id0, id1, bond_type) in mol2_parser.bonds.itertuples(False):
+        for (id0, id1, bond_type) in bonds.itertuples(False):
             i = id0 - 1  # Subtract 1 for zero based indexing in OpenMM???
             j = id1 - 1  # Subtract 1 for zero based indexing in OpenMM???
             self.addBond(residue_name, i, j)
