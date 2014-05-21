@@ -26,6 +26,7 @@ min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((pr
 ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
 ligand_xyz = ligand_traj.openmm_positions(0)
+ligand_top = ligand_traj.top.to_openmm()
 
 forcefield = app.ForceField("amber10.xml", xml_filename, "tip3p.xml")
 
