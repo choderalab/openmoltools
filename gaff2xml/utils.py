@@ -15,29 +15,13 @@ except ImportError:
 import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
+from distutils.spawn import find_executable
 
 from gaff2xml import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-def which(program):
-    """Find path to an executable.  From StackOverflow."""
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            path = path.strip('"')
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-    return None
 
 def find_gaff_dat():
     AMBERHOME = None
@@ -48,7 +32,7 @@ def find_gaff_dat():
         pass
     
     if AMBERHOME is None:
-        full_path = which("parmchk")
+        full_path = find_executable("parmchk")
         try:
             AMBERHOME = os.path.split(full_path)[0]
         except:
