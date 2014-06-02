@@ -119,7 +119,7 @@ class AmberParser(object):
         self.residueBonds[residue_name] = []
         self.residueConnections[residue_name] = []
 
-        for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(False):
+        for (i, name, x, y, z, atype, code, resname, charge) in atoms.itertuples(index=True):
             full_name = residue_name + "_" + name
             element_symbol = md.formats.mol2.gaff_elements[atype]
             e = element.Element.getBySymbol(element_symbol)
