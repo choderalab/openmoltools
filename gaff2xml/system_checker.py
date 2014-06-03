@@ -534,6 +534,34 @@ class SystemChecker(object):
             if len(set([i0, i1, i2, i3])) < 4:
                 f.setTorsionParameters(k, i0, i1, i2, i3, per, phase, k0 * 0.0)
 
+    def check_forces(self, zero_degenerate_impropers=True):
+        """Compare the total forces of the two simulations.
+
+        Parameters
+        ----------
+
+        zero_degenerate_impropers : bool, default=True
+            if True, zero out all impropers with < 4 atoms.
+        """
+        if zero_degenerate_impropers is True:
+            self.zero_degenerate_impropers(self.torsion_force0)
+            xyz = self.simulation0.context.getState(getPositions=True).getPositions()
+            self.simulation0.context.reinitialize()
+            self.simulation0.context.setPositions(xyz)
+            self.zero_degenerate_impropers(self.torsion_force1)
+            xyz = self.simulation1.context.getState(getPositions=True).getPositions()
+            self.simulation1.context.reinitialize()
+            self.simulation1.context.setPositions(xyz)
+
+        state0 = self.simulation0.context.getState(getForces=True)
+        force0 = state0.getForces(asNumpy=True)
+
+        state1 = self.simulation1.context.getState(getForces=True)
+        force1 = state1.getForces(asNumpy=True)
+
+        return force0, force1
+
+
     def check_energies(self, zero_degenerate_impropers=True):
         """Compare the energies of the two simulations.
 
