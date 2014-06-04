@@ -1,5 +1,4 @@
 import os
-import os.path
 import tempfile
 import logging
 from pkg_resources import resource_filename
@@ -35,6 +34,7 @@ def find_gaff_dat():
         full_path = find_executable("parmchk2")
         try:
             AMBERHOME = os.path.split(full_path)[0]
+            AMBERHOME = os.path.join(AMBERHOME, "../")
         except:
             raise(ValueError("Cannot find AMBER GAFF"))
 
