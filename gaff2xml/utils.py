@@ -32,7 +32,7 @@ def find_gaff_dat():
         pass
     
     if AMBERHOME is None:
-        full_path = find_executable("parmchk")
+        full_path = find_executable("parmchk2")
         try:
             AMBERHOME = os.path.split(full_path)[0]
         except:
@@ -62,7 +62,7 @@ def parse_ligand_filename(filename):
 
 
 def run_antechamber(molecule_name, input_filename, charge_method=None):
-    """Run AmberTools antechamber and parmchk to create GAFF mol2 and frcmod files.
+    """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
     output = getoutput(cmd)
     logger.debug(output)
 
-    cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
+    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
     logger.debug(cmd)
 
     output = getoutput(cmd)
