@@ -1,11 +1,21 @@
 import numpy as np
 import itertools
 import simtk.openmm as mm
+from simtk import unit as u
 
 import logging
 logger = logging.getLogger(__name__)
 
 EPSILON = 1E-4  # Error tolerance for differences in parameters.  Typically for relative differences, but sometimes for absolute.
+
+"""NOTE: There is currently a bug due to ambiguity of improper torsion
+atom order.  This will be fixed soon, but
+for now the below values of EPSILON are chosen to silence this bug during testing.
+"""
+ENERGY_EPSILON = 3.0 * u.kilocalories_per_mole
+TORSION_ENERGY_EPSILON = 3.0 * u.kilocalories_per_mole
+COMPONENT_ENERGY_EPSILON = 0.1 * u.kilocalories_per_mole
+
 
 
 def compare(x0, x1, relative=False):
@@ -562,7 +572,7 @@ class SystemChecker(object):
         return force0, force1
 
 
-    def check_energies(self, zero_degenerate_impropers=True):
+    def check_energies(self, zero_degenerate_impropers=True, skip_assert=False):
         """Compare the energies of the two simulations.
 
         Parameters
@@ -570,12 +580,21 @@ class SystemChecker(object):
 
         zero_degenerate_impropers : bool, default=True
             if True, zero out all impropers with < 4 atoms.
+        skip_assert, bool, optional, default=False
+            If False, this function will raise an AssertionError if
+            the energy groups are not identical.            
+        
+        Notes
+        -----
+        If zero_degenerate_impropers is True, this function WILL MODIFY
+        THE FORCES IN YOUR SYSTEM!
         """
         if zero_degenerate_impropers is True:
             self.zero_degenerate_impropers(self.torsion_force0)
             xyz = self.simulation0.context.getState(getPositions=True).getPositions()
             self.simulation0.context.reinitialize()
             self.simulation0.context.setPositions(xyz)
+            
             self.zero_degenerate_impropers(self.torsion_force1)
             xyz = self.simulation1.context.getState(getPositions=True).getPositions()
             self.simulation1.context.reinitialize()
@@ -586,5 +605,74 @@ class SystemChecker(object):
 
         state1 = self.simulation1.context.getState(getEnergy=True)
         energy1 = state1.getPotentialEnergy()
+        
+        if not skip_assert:
+            delta = abs(energy0 - energy1)
+            assert delta < ENERGY_EPSILON, "Error, energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+
+        return energy0, energy1
+
+
+    def check_energy_groups(self, skip_assert=False):
+        """Return the groupwise energies of the two simulations.
+        
+        Parameters
+        ----------
+        skip_assert, bool, optional, default=False
+            If False, this function will raise an AssertionError if
+            the energy groups are not identical. 
+
+        Returns
+        -------
+        energy0 : dict
+            A dictionary with keys "bond", "angle", "nb", "torsion" and values
+            corresponding to the energies of these components for the first simulation object
+        energy1 : dict
+            A dictionary with keys "bond", "angle", "nb", "torsion" and values
+            corresponding to the energies of these components for the second simulation object
+            
+        """
+
+        self.bond_force0.setForceGroup(0)
+        self.bond_force1.setForceGroup(0)
+
+        self.angle_force0.setForceGroup(1)
+        self.angle_force1.setForceGroup(1)
+
+        self.nonbonded_force0.setForceGroup(2)
+        self.nonbonded_force1.setForceGroup(2)
+
+        self.torsion_force0.setForceGroup(3)
+        self.torsion_force1.setForceGroup(3)        
+        
+
+        xyz = self.simulation0.context.getState(getPositions=True).getPositions()
+        self.simulation0.context.reinitialize()
+        self.simulation0.context.setPositions(xyz)
+
+        xyz = self.simulation1.context.getState(getPositions=True).getPositions()
+        self.simulation1.context.reinitialize()
+        self.simulation1.context.setPositions(xyz)        
+
+        energy0 = {}
+        energy1 = {}
+        for k, key in enumerate(["bond", "angle", "nb", "torsion"]):
+            groups = 2 ** k
+            state0 = self.simulation0.context.getState(getEnergy=True, groups=groups)
+            energy0[key] = state0.getPotentialEnergy()
+
+            state1 = self.simulation1.context.getState(getEnergy=True, groups=groups)
+            energy1[key] = state1.getPotentialEnergy()
+
+        if not skip_assert:
+            delta = abs(energy0["bond"] - energy1["bond"])
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, bond energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            delta = abs(energy0["angle"] - energy1["angle"])
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, angle energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            delta = abs(energy0["nb"] - energy1["nb"])
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, NB energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            delta = abs(energy0["torsion"] - energy1["torsion"])
+            assert delta < TORSION_ENERGY_EPSILON, "Error, torsion energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+
 
         return energy0, energy1
