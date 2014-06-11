@@ -1,0 +1,10 @@
+python==2.7
+numpy
+scipy
+pytables
+cython
+pandas
+pip
+nose
+mdtraj-dev
+ambermini
