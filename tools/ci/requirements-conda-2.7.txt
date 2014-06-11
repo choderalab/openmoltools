@@ -9,3 +9,4 @@ pip
 nose
 mdtraj-dev
 ambermini
+openmm
