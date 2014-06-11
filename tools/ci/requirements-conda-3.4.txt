@@ -1,4 +1,5 @@
 python==3.4
+pip
 numpy
 scipy
 pytables
