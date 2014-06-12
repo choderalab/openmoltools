@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from unittest import skipIf
 import tempfile
 import os
@@ -12,7 +10,12 @@ def test_drugs():
     os.system(cmd)
     cmd = """awk '/MOLECULE/{close(x);x="%s/molecule_"i++".mol2"}{print > x}' %s/Zdd.mol2""" % (path, path)
     os.system(cmd)
-    for k in range(3404):
+    
+    n_molecules = 3404
+    if os.environ.get("TRAVIS", None) == 'true':
+        n_molecules = 25  # If running on travis, only test the first 25 molecules due to speed.
+
+    for k in range(n_molecules):
         molecule_name = "molecule_%d" % k
         mol2_filename = "%s/%s.mol2" % (path, molecule_name)
         cmd = """sed -i "s/<0>/LIG/" %s""" % mol2_filename
