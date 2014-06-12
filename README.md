@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jchodera/gaff2xml.svg)](https://travis-ci.org/jchodera/gaff2xml)
+[![Build Status](https://travis-ci.org/choderalab/gaff2xml.svg)](https://travis-ci.org/choderalab/gaff2xml)
 
 ## gaff2xml: Converting Antechamber GAFF files to OpenMM XML format
 
