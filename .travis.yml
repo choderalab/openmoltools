@@ -1,23 +1,26 @@
 language: c
+
 install:
-- source tools/ci/install.sh
-- export PYTHONUNBUFFERED=true
+  - source tools/ci/install.sh
+  - export PYTHONUNBUFFERED=true
+
 script:
-- export CC="gcc -std=c89"
-- source deactivate
-- conda install --yes conda-build
-- conda build tools/conda-recipe
-- source activate $python
-- conda install $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
-- conda list -e
-- pydir=$(which python); $precmd $(dirname $pydir)/nosetests --with-coverage --cover-erase
-  -vv
+  - export CC="gcc -std=c89"
+  - source deactivate
+  - conda install --yes conda-build
+  - conda build tools/conda-recipe
+  - source activate $python
+  - conda install $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
+  - conda list -e
+  - pydir=$(which python); $precmd $(dirname $pydir)/nosetests --with-coverage --cover-erase -vv
+
 env:
   matrix:
-  - python=2.7  CONDA_PY=27
-  - python=3.4  CONDA_PY=34
+    - python=2.7  CONDA_PY=27
+    - python=3.4  CONDA_PY=34
   global:
-    secure: I/lGWwQgnRX7UuikhyK0PCwRXIyzT5M5hU0ojnNsNBTiTf0CCj4qJK5K+aBI4yrLIKRAF+uHKYEhnIdA3rTi6Mk4FdM9DEecv9+9m2UDbB1mQcuYmimoaHG90lVXXzfP7wsA05JbshOEQPSUocQvmGksN2NyX+lu79NUsOQRaPs=
+    - secure: I/lGWwQgnRX7UuikhyK0PCwRXIyzT5M5hU0ojnNsNBTiTf0CCj4qJK5K+aBI4yrLIKRAF+uHKYEhnIdA3rTi6Mk4FdM9DEecv9+9m2UDbB1mQcuYmimoaHG90lVXXzfP7wsA05JbshOEQPSUocQvmGksN2NyX+lu79NUsOQRaPs=
+
 after_success:
-- echo "after_success"
-- source tools/ci/after_sucess.sh
+  - echo "after_success"
+  - source tools/ci/after_sucess.sh
