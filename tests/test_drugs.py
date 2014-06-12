@@ -1,5 +1,6 @@
 from unittest import skipIf
 from gaff2xml import utils
+import os
 
 @skipIf(os.environ.get("TRAVIS", None) == 'true', "Skip testing of entire drug database on Travis.")
 def test_drugs():
