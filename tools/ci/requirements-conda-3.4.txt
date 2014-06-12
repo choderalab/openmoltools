@@ -1,12 +1,9 @@
 python==3.4
-pip
 numpy
 scipy
 pytables
 cython
 pandas
+pyyaml
 pip
 nose
-mdtraj-dev
-ambermini
-openmm
