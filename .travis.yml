@@ -13,7 +13,6 @@ script:
   - conda install $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
   - conda list -e
   - nosetests --with-coverage --cover-erase -vv
-#  - pydir=$(which python); $precmd $(dirname $pydir)/nosetests --with-coverage --cover-erase -vv
 
 env:
   matrix:
