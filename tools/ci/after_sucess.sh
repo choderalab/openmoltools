@@ -1,5 +1,3 @@
-coveralls
-
 echo $TRAVIS_PULL_REQUEST $TRAVIS_BRANCH
 
 if [[ "$TRAVIS_PULL_REQUEST" == "true" ]]; then
