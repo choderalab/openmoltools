@@ -1,4 +1,4 @@
-python=3.4
+python==3.4
 pip
 numpy
 scipy
