@@ -9,4 +9,4 @@ nose
 mdtraj-dev
 openmm
 ambermini
-jinja
+jinja2
