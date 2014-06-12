@@ -1,10 +1,10 @@
 import os
-import os.path
 import tempfile
 import logging
 from pkg_resources import resource_filename
 import contextlib
 import shutil
+import mdtraj as md
 
 try:
     from subprocess import getoutput  # If python 3
@@ -14,15 +14,36 @@ except ImportError:
 import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
+from distutils.spawn import find_executable
 
-from gaff2xml import amber_parser, gafftools, system_checker
+from gaff2xml import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-AMBERHOME = os.environ['AMBERHOME']
-GAFF_DAT_FILENAME = os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
 
+def find_gaff_dat():
+    AMBERHOME = None
+    
+    try:
+        AMBERHOME = os.environ['AMBERHOME']
+    except KeyError:
+        pass
+    
+    if AMBERHOME is None:
+        full_path = find_executable("parmchk2")
+        try:
+            AMBERHOME = os.path.split(full_path)[0]
+            AMBERHOME = os.path.join(AMBERHOME, "../")
+        except:
+            raise(ValueError("Cannot find AMBER GAFF"))
+
+    if AMBERHOME is None:
+        raise(ValueError("Cannot find AMBER GAFF"))
+
+    return os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
+
+GAFF_DAT_FILENAME = find_gaff_dat()
 
 @contextlib.contextmanager
 def enter_temp_directory():
@@ -41,7 +62,7 @@ def parse_ligand_filename(filename):
 
 
 def run_antechamber(molecule_name, input_filename, charge_method=None):
-    """Run AmberTools antechamber and parmchk to create GAFF mol2 and frcmod files.
+    """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
     ----------
@@ -78,7 +99,7 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
     output = getoutput(cmd)
     logger.debug(output)
 
-    cmd = "parmchk -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
+    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
     logger.debug(cmd)
 
     output = getoutput(cmd)
@@ -219,8 +240,9 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     outfile.write(ffxml_stream.read())
     outfile.close()
 
-    mol2 = gafftools.Mol2Parser(gaff_mol2_filename)  # Read mol2 file.
-    (topology, positions) = mol2.to_openmm()
+    traj = md.load(gaff_mol2_filename)  # Read mol2 file.
+    positions = traj.openmm_positions(0)  # Extract OpenMM-united positions of first (and only) trajectory frame
+    topology = traj.top.to_openmm()
 
     # Create System object.
     forcefield = app.ForceField(ffxml_filename)
@@ -276,7 +298,7 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     return simulation
 
 
-def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energy_epsilon=0.5):
+def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
 
 
@@ -289,8 +311,6 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energ
     charge_method : str, default=None
         If None, use charges in existing MOL2.  Otherwise, use a charge
         model when running antechamber.
-    energy_epsilon : float, default=0.5 (units assumed to be KJ / mol)
-        Raise error if energy difference is above this value.
     """
 
     # Generate GAFF parameters.
@@ -303,10 +323,9 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None, energ
     # Compare simulations.
     syscheck = system_checker.SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
-
+    
+    groups0, groups1 = syscheck.check_energy_groups()
     energy0, energy1 = syscheck.check_energies()
-    delta = abs((energy0 - energy1) / units.kilojoules_per_mole)
-    assert delta < energy_epsilon, "Error, energy difference (%f) is greater than %f" % (delta, energy_epsilon)
 
 
 def get_data_filename(relative_path):

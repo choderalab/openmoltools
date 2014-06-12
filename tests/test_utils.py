@@ -1,11 +1,8 @@
-#!/usr/bin/env python
-
 from unittest import skipIf
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-import openeye.oechem
 from mdtraj.testing import eq
 from gaff2xml import utils
 

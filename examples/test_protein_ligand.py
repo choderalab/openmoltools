@@ -1,8 +1,7 @@
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
-from gaff2xml import gafftools
-import mdtraj
+import mdtraj as md
 
 ligand_name = "sustiva"
 pdb_filename = "./chemicals/1vii.pdb"
@@ -13,16 +12,13 @@ temperature = 300 * u.kelvin
 friction = 0.3 / u.picosecond
 timestep = 2.0 * u.femtosecond
 
-protein_traj = mdtraj.load(pdb_filename)
+protein_traj = md.load(pdb_filename)
 protein_traj.center_coordinates()
 
 protein_top = protein_traj.top.to_openmm()
 protein_xyz = protein_traj.openmm_positions(0)
 
-mol2 = gafftools.Mol2Parser(mol2_filename)
-ligand_top = mol2.to_openmm()[0]
-
-ligand_traj = mol2.to_mdtraj()
+ligand_traj = md.load(mol2_filename)
 ligand_traj.center_coordinates()
 
 #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
@@ -30,6 +26,7 @@ min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((pr
 ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
 ligand_xyz = ligand_traj.openmm_positions(0)
+ligand_top = ligand_traj.top.to_openmm()
 
 forcefield = app.ForceField("amber10.xml", xml_filename, "tip3p.xml")
 
