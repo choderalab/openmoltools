@@ -212,6 +212,29 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     return molecule_name, tripos_mol2_filename
 
 
+def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename):
+    """Process a gaff mol2 file and frcmod file using the XML conversion and write to an XML file.
+
+    Parameters
+    ----------
+    gaff_mol2_filename : str
+        The name of the gaff mol2 file
+    frcmod_filename : str
+        The name of the gaff frcmod file
+    ffxml_filename : str
+        Name of output ffxml file to generate
+
+    """
+
+    # Generate ffxml file.
+    parser = amber_parser.AmberParser()
+    parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
+
+    ffxml_stream = parser.generate_xml()
+    outfile = open(ffxml_filename, 'w')
+    outfile.write(ffxml_stream.read())
+    outfile.close()
+
 def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """Process a gaff mol2 file and frcmod file using the XML conversion, returning an OpenMM simulation.
 
@@ -234,11 +257,8 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     parser = amber_parser.AmberParser()
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
 
-    ffxml_stream = parser.generate_xml()
     ffxml_filename = molecule_name + '.ffxml'
-    outfile = open(ffxml_filename, 'w')
-    outfile.write(ffxml_stream.read())
-    outfile.close()
+    create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename)
 
     traj = md.load(gaff_mol2_filename)  # Read mol2 file.
     positions = traj.openmm_positions(0)  # Extract OpenMM-united positions of first (and only) trajectory frame
