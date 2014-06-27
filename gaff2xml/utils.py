@@ -61,7 +61,7 @@ def parse_ligand_filename(filename):
     return name, ext
 
 
-def run_antechamber(molecule_name, input_filename, charge_method=None):
+def run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=None):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -72,6 +72,9 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
         The molecule to be parameterized.  Must be tripos mol2 format.
     charge_method : str, optional
         If not None, the charge method string will be passed to Antechamber.
+    net_charge : int, optional
+        If not None, net charge of the molecule to be parameterized.
+        If None, Antechamber sums up partial charges from the input file.
 
     Returns
     -------
@@ -93,6 +96,9 @@ def run_antechamber(molecule_name, input_filename, charge_method=None):
     cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
     if charge_method is not None:
         cmd += ' -c %s' % charge_method
+
+    if net_charge is not None:
+        cmd += ' -nc %d' % net_charge
 
     logger.debug(cmd)
 
