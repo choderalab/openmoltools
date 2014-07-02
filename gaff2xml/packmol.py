@@ -47,16 +47,7 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     units.  The present function takes `tolerance` and `box_size` in 
     angstrom units, but the output trajectory will have data in nm.  
     Also note that OpenMM is pretty picky about the format of unit cell input, 
-    so use the example below to ensure that you do the right thing.
-    
-    Examples
-    --------
-    >>> import gaff2xml
-    >>> pdb_filename = gaff2xml.utils.get_data_filename("chemicals/benzene/benzene.pdb")
-    >>> trj = gaff2xml.packmol.pack_box([pdb_filename], [100])
-    >>> xyz = trj.openmm_positions(0)
-    >>> top = trj.top.to_openmm()
-    >>> top.setUnitCellDimensions(mm.Vec3(*trj.unitcell_lengths[0]) * u.nanometer)
+    so use the example in tests/test_packmol.py to ensure that you do the right thing.
 
     """    
     assert len(pdb_filenames) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
