@@ -51,7 +51,9 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     
     Examples
     --------
-    >>> trj = gaff2xml.packmol.pack_box(["./monomer.pdb"], [100])
+    >>> import gaff2xml
+    >>> pdb_filename = gaff2xml.utils.get_data_filename("chemicals/benzene/benzene.pdb")
+    >>> trj = gaff2xml.packmol.pack_box([pdb_filename], [100])
     >>> xyz = trj.openmm_positions(0)
     >>> top = trj.top.to_openmm()
     >>> top.setUnitCellDimensions(mm.Vec3(*trj.unitcell_lengths[0]) * u.nanometer)
