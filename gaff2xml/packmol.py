@@ -55,6 +55,9 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     """    
     assert len(pdb_filenames) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
     
+    if PACKMOL_PATH is None:
+        raise(IOError("Packmol not found, cannot run pack_box()"))
+    
     output_filename = tempfile.mktemp(suffix=".pdb")
     
     header = HEADER_TEMPLATE % (tolerance, output_filename)
