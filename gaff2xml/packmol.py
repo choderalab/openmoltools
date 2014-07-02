@@ -4,6 +4,9 @@ import os
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 import tempfile
+from distutils.spawn import find_executable
+
+PACKMOL_PATH = find_executable("obabel")
 
 HEADER_TEMPLATE = """
 # Mixture 

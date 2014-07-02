@@ -8,22 +8,11 @@ from gaff2xml import utils, packmol
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
-from distutils.spawn import find_executable
-
-HAVE_RDKIT = True
-try:
-    from rdkit import Chem
-    from rdkit.Chem import AllChem
-except ImportError:
-    HAVE_RDKIT = False
-
-OBABEL_PATH = find_executable("obabel")
-SKIP_SMILES = not ((HAVE_RDKIT) & (OBABEL_PATH is not None))
 
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
-@skipIf(SKIP_SMILES, "Skipping testing of smiles conversion because openbabel or rdkit not found.")
+@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary():
     input_filename0 = utils.get_data_filename("chemicals/benzene/benzene.mol2")
     pdb_filename0 = tempfile.mktemp(suffix=".pdb")
