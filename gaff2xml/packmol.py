@@ -104,8 +104,3 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
     
     return trj
-
-
-def dipole_moment(traj, charges):
-    xyz = md.compute_displacements(traj, np.array([[0, i] for i in range(traj.n_atoms)])).astype('float')
-    return xyz.transpose(0, 2, 1).dot(charges)
