@@ -47,6 +47,8 @@ class AmberParser(object):
         ----------
         override_mol2_residue_name : str, default=None
             If given, use this name to override mol2 residue names.
+            Useful to ensure that multiple ligands have unique residue
+            names, as required by the OpenMM ffXML parser.
         """
         
         self.override_mol2_residue_name = override_mol2_residue_name
