@@ -40,8 +40,19 @@ skipClasses = ['OW', 'HW']  # Skip water atoms, since we define these in separat
 
 class AmberParser(object):
 
-    def __init__(self):
-        """Create an AmberParser object for converting amber force field files to XML format."""
+    def __init__(self, override_mol2_residue_name=None):
+        """Create an AmberParser object for converting amber force field files to XML format.
+        
+        Parameters
+        ----------
+        override_mol2_residue_name : str, default=None
+            If given, use this name to override mol2 residue names.
+            Useful to ensure that multiple ligands have unique residue
+            names, as required by the OpenMM ffXML parser.
+        """
+        
+        self.override_mol2_residue_name = override_mol2_residue_name
+        
         self.residueAtoms = {}
         self.residueBonds = {}
         self.residueConnections = {}
@@ -113,7 +124,11 @@ class AmberParser(object):
 
         """
         atoms, bonds = md.formats.mol2.mol2_to_dataframes(inputfile)
-        residue_name = atoms.resName[1]  # To Do: Add check for consistency
+        
+        if self.override_mol2_residue_name is None:
+            residue_name = atoms.resName[1]  # To Do: Add check for consistency
+        else:
+            residue_name = self.override_mol2_residue_name
 
         self.residueAtoms[residue_name] = []
         self.residueBonds[residue_name] = []
@@ -124,7 +139,7 @@ class AmberParser(object):
             full_name = residue_name + "_" + name
             element_symbol = md.formats.mol2.gaff_elements[atype]
             e = element.Element.getBySymbol(element_symbol)
-            self.addAtom(resname, name, atype, e, charge, use_numeric_types=False)  # use_numeric_types set to false to use string-based atom names, rather than numbers
+            self.addAtom(residue_name, name, atype, e, charge, use_numeric_types=False)  # use_numeric_types set to false to use string-based atom names, rather than numbers
             self.vdwEquivalents[full_name] = atype
 
         for (id0, id1, bond_type) in bonds.itertuples(False):

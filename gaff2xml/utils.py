@@ -5,6 +5,7 @@ from pkg_resources import resource_filename
 import contextlib
 import shutil
 import mdtraj as md
+from mdtraj.utils import enter_temp_directory
 
 try:
     from subprocess import getoutput  # If python 3
@@ -45,15 +46,6 @@ def find_gaff_dat():
 
 GAFF_DAT_FILENAME = find_gaff_dat()
 
-@contextlib.contextmanager
-def enter_temp_directory():
-    temp_dir = tempfile.mkdtemp()
-    cwd = os.getcwd()
-    os.chdir(temp_dir)
-    yield
-    os.chdir(cwd)
-    shutil.rmtree(temp_dir)
-
 
 def parse_ligand_filename(filename):
     """Split ligand filename into name and extension.  "./ligand.mol2" -> ("ligand", ".mol2")"""
@@ -61,7 +53,7 @@ def parse_ligand_filename(filename):
     return name, ext
 
 
-def run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=None):
+def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -120,8 +112,8 @@ def convert_molecule(in_filename, out_filename):
     molecule_name, ext_in = parse_ligand_filename(in_filename)
     molecule_name, ext_out = parse_ligand_filename(out_filename)
 
-    cmd = "obabel -i %s %s -o %s > %s" % (ext_in, in_filename, ext_out, out_filename)
-
+    cmd = "obabel -i %s %s -o %s -O %s" % (ext_in[1:], in_filename, ext_out[1:], out_filename)
+    print(cmd)
     output = getoutput(cmd)
     logger.debug(output)
 
@@ -218,7 +210,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     return molecule_name, tripos_mol2_filename
 
 
-def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename):
+def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename=None, override_mol2_residue_name=None):
     """Process a gaff mol2 file and frcmod file using the XML conversion and write to an XML file.
 
     Parameters
@@ -227,19 +219,32 @@ def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename):
         The name of the gaff mol2 file
     frcmod_filename : str
         The name of the gaff frcmod file
-    ffxml_filename : str
-        Name of output ffxml file to generate
+    ffxml_filename : str, optional, default=None
+        Optional name of output ffxml file to generate.  If None, no file 
+        will be generated.
+    override_mol2_residue_name : str, default=None
+            If given, use this name to override mol2 residue names.        
+    
+    Returns
+    -------
+    ffxml_stringio : str
+        StringIO representation of ffxml file.
 
     """
 
     # Generate ffxml file.
-    parser = amber_parser.AmberParser()
+    parser = amber_parser.AmberParser(override_mol2_residue_name=override_mol2_residue_name)
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
-
+    
     ffxml_stream = parser.generate_xml()
-    outfile = open(ffxml_filename, 'w')
-    outfile.write(ffxml_stream.read())
-    outfile.close()
+
+    if ffxml_filename is not None:
+        outfile = open(ffxml_filename, 'w')
+        outfile.write(ffxml_stream.read())
+        outfile.close()
+        ffxml_stream.seek(0)
+
+    return ffxml_stream
 
 def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """Process a gaff mol2 file and frcmod file using the XML conversion, returning an OpenMM simulation.
@@ -374,3 +379,54 @@ def get_data_filename(relative_path):
         raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
 
     return fn
+
+
+
+def smiles_to_mdtraj_ffxml(smiles_string, molecule_name="lig"):
+    """Generate an MDTraj object from a smiles string.
+    
+    Parameters
+    ----------
+    smiles_string : str
+        Smiles string to create molecule for
+    molecule_name : str, optional, default='lig'
+        Name of molecule to use inside parameter files.
+    
+    Returns
+    -------
+    traj : mdtraj.Trajectory
+        MDTraj object for molecule
+    ffxml : StringIO
+        StringIO representation of ffxml file.
+    
+    Notes
+    -----
+    ffxml can be directly input to OpenMM e.g. 
+    `forcefield = app.ForceField(ffxml)`
+    """
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+    except ImportError:
+        raise(ImportError("Must install rdkit to use smiles conversion."))
+
+    m = Chem.MolFromSmiles(smiles_string)
+    m = Chem.AddHs(m)
+    AllChem.EmbedMolecule(m)
+    AllChem.UFFOptimizeMolecule(m)
+
+    pdb_filename = tempfile.mktemp(suffix=".pdb")
+    Chem.MolToPDBFile(m, pdb_filename)
+    
+    mol2_filename = tempfile.mktemp(suffix=".mol2")
+    
+    convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
+    print(mol2_filename)
+
+    gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
+    traj = md.load(gaff_mol2_filename)
+
+    ffxml = create_ffxml_file(gaff_mol2_filename, frcmod_filename)
+
+    return traj, ffxml
+
