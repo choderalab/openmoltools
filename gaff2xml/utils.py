@@ -84,7 +84,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
 
     gaff_mol2_filename = molecule_name + '.gaff.mol2'
     frcmod_filename = molecule_name + '.frcmod'
-    
+
     cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
     if charge_method is not None:
         cmd += ' -c %s' % charge_method
