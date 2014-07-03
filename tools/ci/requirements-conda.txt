@@ -10,3 +10,4 @@ mdtraj-dev
 openmm
 ambermini
 jinja2
+rdkit
