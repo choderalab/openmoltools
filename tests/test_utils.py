@@ -61,7 +61,7 @@ def test_run_antechamber_charges():
 @skipIf(SKIP_SMILES, "Skipping testing of smiles conversion because openbabel or rdkit not found.")
 def test_smiles_conversion():
     pdb_filename = utils.get_data_filename("chemicals/proteins/1vii.pdb")
-    smiles = 'Cc1ccccc1'
+    smiles = 'Cc1ccccc1'  # Also known as toluene.
 
     temperature = 300 * u.kelvin
     friction = 0.3 / u.picosecond
@@ -75,6 +75,9 @@ def test_smiles_conversion():
 
     ligand_traj, ffxml = utils.smiles_to_mdtraj_ffxml(smiles)
     ligand_traj.center_coordinates()
+    
+    eq(ligand_traj.n_atoms, 15)
+    eq(ligand_traj.n_frames, 1)
 
     #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
     min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((protein_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + 0.3
