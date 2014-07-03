@@ -6,7 +6,7 @@ from mdtraj.utils import enter_temp_directory
 import tempfile
 from distutils.spawn import find_executable
 
-PACKMOL_PATH = find_executable("obabel")
+PACKMOL_PATH = find_executable("packmol")
 
 HEADER_TEMPLATE = """
 # Mixture 
@@ -79,7 +79,7 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     
     print(header)
 
-    os.system("/home/kyleb/src/Software/packmol/packmol < %s" % packmol_filename)
+    os.system("%s < %s" % (PACKMOL_PATH, packmol_filename))
 
     trj = md.load(output_filename)
     
