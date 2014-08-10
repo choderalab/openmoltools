@@ -426,7 +426,11 @@ def smiles_to_mdtraj_ffxml(smiles_string, molecule_name="lig"):
     gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
     traj = md.load(gaff_mol2_filename)
 
-    ffxml = create_ffxml_file(gaff_mol2_filename, frcmod_filename)
+    for atom in traj.top.atoms:
+        atom.residue.name = molecule_name
+
+
+    ffxml = create_ffxml_file(gaff_mol2_filename, frcmod_filename, override_mol2_residue_name=molecule_name)
 
     return traj, ffxml
 
