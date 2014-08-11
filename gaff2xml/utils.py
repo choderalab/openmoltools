@@ -210,7 +210,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
     return molecule_name, tripos_mol2_filename
 
 
-def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename=None, override_mol2_residue_name=None):
+def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
     """Process a gaff mol2 file and frcmod file using the XML conversion and write to an XML file.
 
     Parameters
@@ -234,7 +234,12 @@ def create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename=None, 
 
     # Generate ffxml file.
     parser = amber_parser.AmberParser(override_mol2_residue_name=override_mol2_residue_name)
-    parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
+
+    filenames = [GAFF_DAT_FILENAME]
+    filenames.extend([filename for filename in gaff_mol2_filenames])
+    filenames.extend([filename for filename in frcmod_filenames])
+
+    parser.parse_filenames(filenames)
     
     ffxml_stream = parser.generate_xml()
 
@@ -269,7 +274,7 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
 
     ffxml_filename = molecule_name + '.ffxml'
-    create_ffxml_file(gaff_mol2_filename, frcmod_filename, ffxml_filename)
+    create_ffxml_file([gaff_mol2_filename], [frcmod_filename], ffxml_filename)
 
     traj = md.load(gaff_mol2_filename)  # Read mol2 file.
     positions = traj.openmm_positions(0)  # Extract OpenMM-united positions of first (and only) trajectory frame
@@ -382,15 +387,15 @@ def get_data_filename(relative_path):
 
 
 
-def smiles_to_mdtraj_ffxml(smiles_string, molecule_name="lig"):
+def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
     """Generate an MDTraj object from a smiles string.
     
     Parameters
     ----------
-    smiles_string : str
-        Smiles string to create molecule for
-    molecule_name : str, optional, default='lig'
-        Name of molecule to use inside parameter files.
+    smiles_strings : list(str)
+        Smiles strings to create molecules for
+    base_molecule_name : str, optional, default='lig'
+        Base name of molecule to use inside parameter files.
     
     Returns
     -------
@@ -410,23 +415,37 @@ def smiles_to_mdtraj_ffxml(smiles_string, molecule_name="lig"):
     except ImportError:
         raise(ImportError("Must install rdkit to use smiles conversion."))
 
-    m = Chem.MolFromSmiles(smiles_string)
-    m = Chem.AddHs(m)
-    AllChem.EmbedMolecule(m)
-    AllChem.UFFOptimizeMolecule(m)
+    gaff_mol2_filenames = []
+    frcmod_filenames = []
+    trajectories = []
+    for k, smiles_string in enumerate(smiles_strings):
+        molecule_name = "%s-%d" % (base_molecule_name, k)
+        m = Chem.MolFromSmiles(smiles_string)
+        m = Chem.AddHs(m)
+        AllChem.EmbedMolecule(m)
+        AllChem.UFFOptimizeMolecule(m)
 
-    pdb_filename = tempfile.mktemp(suffix=".pdb")
-    Chem.MolToPDBFile(m, pdb_filename)
-    
-    mol2_filename = tempfile.mktemp(suffix=".mol2")
-    
-    convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
-    print(mol2_filename)
+        pdb_filename = tempfile.mktemp(suffix=".pdb")
+        Chem.MolToPDBFile(m, pdb_filename)
+        
+        mol2_filename = tempfile.mktemp(suffix=".mol2")
+        
+        convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
+        print(mol2_filename)
 
-    gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
-    traj = md.load(gaff_mol2_filename)
+        gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
+        traj = md.load(gaff_mol2_filename)
+        print(gaff_mol2_filename)
+        print(traj)
 
-    ffxml = create_ffxml_file(gaff_mol2_filename, frcmod_filename)
+        for atom in traj.top.atoms:
+            atom.residue.name = molecule_name
 
-    return traj, ffxml
+        gaff_mol2_filenames.append(gaff_mol2_filename)
+        frcmod_filenames.append(frcmod_filename)
+        trajectories.append(traj)
+
+    ffxml = create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, override_mol2_residue_name=molecule_name)
+
+    return trajectories, ffxml
 

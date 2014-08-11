@@ -73,7 +73,8 @@ def test_smiles_conversion():
     protein_top = protein_traj.top.to_openmm()
     protein_xyz = protein_traj.openmm_positions(0)
 
-    ligand_traj, ffxml = utils.smiles_to_mdtraj_ffxml(smiles)
+    ligand_trajectories, ffxml = utils.smiles_to_mdtraj_ffxml([smiles])
+    ligand_traj = ligand_trajectories[0]
     ligand_traj.center_coordinates()
     
     eq(ligand_traj.n_atoms, 15)
