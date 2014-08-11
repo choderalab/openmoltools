@@ -52,6 +52,7 @@ class AmberParser(object):
         """
         
         self.override_mol2_residue_name = override_mol2_residue_name
+        self.current_mol2 = 0
         
         self.residueAtoms = {}
         self.residueBonds = {}
@@ -129,6 +130,10 @@ class AmberParser(object):
             residue_name = atoms.resName[1]  # To Do: Add check for consistency
         else:
             residue_name = self.override_mol2_residue_name
+        
+        # Give each mol2 file a unique numbering to avoid conflicts.
+        residue_name = "%s-%d" % (residue_name, self.current_mol2)
+        self.current_mol2 += 1
 
         self.residueAtoms[residue_name] = []
         self.residueBonds[residue_name] = []
