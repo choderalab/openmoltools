@@ -38,6 +38,7 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
         The mininum spacing between molecules during packing.  In ANGSTROMS!
     box_size : float, optional, default=40.0
         The size of the box to generate.  In ANGSTROMS.
+        OVERWRITING (leaving as parameter for now to avoid input disagreement issues)
 
     Returns
     -------
@@ -59,7 +60,11 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
         raise(IOError("Packmol not found, cannot run pack_box()"))
     
     output_filename = tempfile.mktemp(suffix=".pdb")
-    
+
+    # approximating volume to initialize  box
+    box_size = approximate_volume(pdb_filenames, n_molecules_list)    
+
+
     header = HEADER_TEMPLATE % (tolerance, output_filename)
     for k in range(len(pdb_filenames)):
         filename = pdb_filenames[k]
@@ -79,9 +84,11 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     
     print(header)
 
-    os.system("%s < %s" % (PACKMOL_PATH, packmol_filename))
+    os.system("%s < %s" % (PACKMOL_PATH, packmol_filename)) 
 
     trj = md.load(output_filename)
+
+    assert trj.topology.n_chains == sum(n_molecules_list), "Packmol error: molecules missing from output"
     
     #Begin hack to introduce bonds for the MISSING CONECT ENTRIES THAT PACKMOL FAILS TO WRITE
     
@@ -104,3 +111,18 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
     
     return trj
+
+def approximate_volume(pdb_filenames, n_molecules_list):
+    rho = 1.3
+    volume = 0.0 # in cubic angstroms
+    for k, (pdb_file) in enumerate(pdb_filenames):
+        molecule_volume = 0.0
+        molecule_trj = md.load(pdb_filenames[k])
+        for atom in molecule_trj.topology.atoms:
+            if atom.element.symbol == 'H':
+                molecule_volume += 5.0 # approximated from bondi radius = 1.06 angstroms
+            else:
+                molecule_volume += 15.0 # approximated from bondi radius of carbon = 1.53 angstroms
+        volume += molecule_volume * n_molecules_list[k] * rho
+    box_size = volume**(1.0/3.0)
+    return box_size
