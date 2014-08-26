@@ -5,7 +5,6 @@ import simtk.openmm.app.element as element
 import simtk.unit as unit
 import subprocess
 import datetime
-import string
 from six.moves import cStringIO
 import mdtraj as md
 
@@ -543,4 +542,4 @@ class AmberParser(object):
         cmd_string = cmd_string.replace("<", " ")  #
         line = """<!-- %s -->\n""" % cmd_string
         self.provenance.append(line)
-        self.provenance = string.join(self.provenance, "")
+        self.provenance = "".join(self.provenance)
