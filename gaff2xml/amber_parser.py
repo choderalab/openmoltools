@@ -6,7 +6,7 @@ import simtk.unit as unit
 import subprocess
 import datetime
 import string
-import cStringIO
+from six.moves import cStringIO
 import mdtraj as md
 
 import logging
@@ -345,7 +345,7 @@ class AmberParser(object):
         outfile.close()
 
         """
-        stream = cStringIO.StringIO()
+        stream = cStringIO()
         write_stream = lambda x: stream.write(x + "\n")
         write_stream(self.provenance)
         write_stream("<ForceField>")
