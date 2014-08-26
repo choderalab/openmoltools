@@ -455,7 +455,7 @@ class AmberParser(object):
                 write_stream("""  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon))
         write_stream(" </NonbondedForce>")
         write_stream("</ForceField>")
-        stream.reset()
+        stream.seek(0)
 
         return stream
 
