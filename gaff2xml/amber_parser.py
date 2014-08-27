@@ -5,8 +5,7 @@ import simtk.openmm.app.element as element
 import simtk.unit as unit
 import subprocess
 import datetime
-import string
-import cStringIO
+from six.moves import cStringIO
 import mdtraj as md
 
 import logging
@@ -345,7 +344,7 @@ class AmberParser(object):
         outfile.close()
 
         """
-        stream = cStringIO.StringIO()
+        stream = cStringIO()
         write_stream = lambda x: stream.write(x + "\n")
         write_stream(self.provenance)
         write_stream("<ForceField>")
@@ -456,7 +455,7 @@ class AmberParser(object):
                 write_stream("""  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon))
         write_stream(" </NonbondedForce>")
         write_stream("</ForceField>")
-        stream.reset()
+        stream.seek(0)
 
         return stream
 
@@ -543,4 +542,4 @@ class AmberParser(object):
         cmd_string = cmd_string.replace("<", " ")  #
         line = """<!-- %s -->\n""" % cmd_string
         self.provenance.append(line)
-        self.provenance = string.join(self.provenance, "")
+        self.provenance = "".join(self.provenance)

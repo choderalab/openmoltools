@@ -82,7 +82,7 @@ def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
     connections = np.zeros((4, 4))
 
     mapping = {i0: 0, i1: 1, i2: 2, i3: 3}
-    inv_mapping = dict([(val, key) for key, val in mapping.iteritems()])
+    inv_mapping = dict([(val, key) for key, val in mapping.items()])
 
     for (a, b) in itertools.combinations([i0, i1, i2, i3], 2):
         if (a, b) in bond_set:
