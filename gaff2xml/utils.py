@@ -150,7 +150,7 @@ quit
 
 """ % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
 
-    file_handle = tempfile.NamedTemporaryFile()
+    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
     file_handle.writelines(tleap_input)
     file_handle.flush()
 
