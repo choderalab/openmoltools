@@ -124,5 +124,5 @@ def approximate_volume(pdb_filenames, n_molecules_list):
             else:
                 molecule_volume += 15.0 # approximated from bondi radius of carbon = 1.53 angstroms
         volume += molecule_volume * n_molecules_list[k] * rho
-    box_size = volume**(1.0/3.0)
+    box_size = volume**(1.0/3.0) * 2.0
     return box_size
