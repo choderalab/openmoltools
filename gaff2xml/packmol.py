@@ -66,7 +66,6 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     if box_size is None:
         box_size = approximate_volume(pdb_filenames, n_molecules_list)    
 
-
     header = HEADER_TEMPLATE % (tolerance, output_filename)
     for k in range(len(pdb_filenames)):
         filename = pdb_filenames[k]

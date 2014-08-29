@@ -150,7 +150,7 @@ quit
 
 """ % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
 
-    file_handle = tempfile.NamedTemporaryFile()
+    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
     file_handle.writelines(tleap_input)
     file_handle.flush()
 
@@ -215,10 +215,10 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
 
     Parameters
     ----------
-    gaff_mol2_filename : str
-        The name of the gaff mol2 file
-    frcmod_filename : str
-        The name of the gaff frcmod file
+    gaff_mol2_filenames : list of str
+        The names of the gaff mol2 files
+    frcmod_filenames : str
+        The names of the gaff frcmod files
     ffxml_filename : str, optional, default=None
         Optional name of output ffxml file to generate.  If None, no file 
         will be generated.
@@ -228,7 +228,7 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
     Returns
     -------
     ffxml_stringio : str
-        StringIO representation of ffxml file.
+        StringIO representation of ffxml file containing residue entries for each molecule.
 
     """
 
