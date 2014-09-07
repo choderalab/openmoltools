@@ -130,10 +130,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
 
     Returns
     -------
-    gaff_mol2_filename : str
-        GAFF format mol2 filename produced by antechamber
-    frcmod_filename : str
-        Amber frcmod file produced by prmchk
+    prmtop_filename : str
+        Amber prmtop file produced by tleap
+    inpcrd_filename : str
+        Amber inpcrd file produced by tleap
     """
 
     prmtop_filename = "%s.prmtop" % molecule_name
