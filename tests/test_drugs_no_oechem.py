@@ -20,5 +20,5 @@ def test_drugs():
         mol2_filename = "%s/%s.mol2" % (path, molecule_name)
         cmd = """sed -i "s/<0>/LIG/" %s""" % mol2_filename
         os.system(cmd)  # Have to remove the <0> because it leads to invalid XML in the forcefield files.
-        with utils.enter_temp_directory():        
-             yield lambda : utils.test_molecule("LIG", mol2_filename)
+        with utils.enter_temp_directory():
+            yield utils.tag_description(lambda : utils.test_molecule("LIG", mol2_filename), "Testing drugs %s" % molecule_name)

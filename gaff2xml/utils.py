@@ -449,3 +449,8 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
 
     return trajectories, ffxml
 
+
+def tag_description(lambda_function, description):
+    """Add a description flag to a lambda function for nose testing."""
+    lambda_function.description = description
+    return lambda_function
