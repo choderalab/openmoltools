@@ -211,7 +211,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
 
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
-    """Process a gaff mol2 file and frcmod file using the XML conversion and write to an XML file.
+    """Process multiple gaff mol2 files and frcmod files using the XML conversion and write to an XML file.
 
     Parameters
     ----------
