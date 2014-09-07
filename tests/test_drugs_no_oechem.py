@@ -3,7 +3,7 @@ import tempfile
 import os
 from gaff2xml import utils
 
-CHARGE_MODEL = "bcc"
+CHARGE_METHOD = "bcc"
 
 def test_drugs():
     path = tempfile.mkdtemp()
@@ -16,7 +16,7 @@ def test_drugs():
     n_molecules = 3404
     if os.environ.get("TRAVIS", None) == 'true':
         n_molecules = 25  # If running on travis, only test the first 25 molecules due to speed.
-        CHARGE_MODEL = None  # Travis is actually too slow to do a single calculation!
+        CHARGE_METHOD = None  # Travis is actually too slow to do a single calculation!
 
     for k in range(n_molecules):
         molecule_name = "molecule_%d" % k
@@ -24,4 +24,4 @@ def test_drugs():
         cmd = """sed -i "s/<0>/LIG/" %s""" % mol2_filename
         os.system(cmd)  # Have to remove the <0> because it leads to invalid XML in the forcefield files.
         with utils.enter_temp_directory():
-            yield utils.tag_description(lambda : utils.test_molecule("LIG", mol2_filename, charge_model=CHARGE_MODEL), "Testing drugs %s" % molecule_name)
+            yield utils.tag_description(lambda : utils.test_molecule("LIG", mol2_filename, charge_method=CHARGE_METHOD), "Testing drugs %s" % molecule_name)
