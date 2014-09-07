@@ -334,7 +334,7 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     return simulation
 
 
-def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
+def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
 
 
@@ -344,7 +344,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
         Name of the molecule
     tripos_mol2_filename : str
         Filename of input mol2 file
-    charge_method : str, default=None
+    charge_method : str, default="bcc"
         If None, use charges in existing MOL2.  Otherwise, use a charge
         model when running antechamber.
     """
