@@ -32,4 +32,4 @@ def test_load_freesolv_gaffmol2_vs_sybylmol2_vs_obabelpdb():
             t_gaff = md.load(gaff_filename)
 
             with utils.enter_temp_directory():        
-                 yield lambda : utils.test_molecule("LIG", gaff_filename)
+                 yield utils.tag_description(lambda : utils.test_molecule("LIG", gaff_filename), "Testing freesolv %s" % key)
