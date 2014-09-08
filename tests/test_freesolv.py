@@ -21,6 +21,10 @@ def test_load_freesolv_gaffmol2_vs_sybylmol2_vs_obabelpdb():
         tar = tarfile.open(tar_filename, mode="r:bz2")
         tar.extractall()
         tar.close()
+        
+        CHARGE_METHOD = "bcc"
+        if os.environ.get("TRAVIS", None) == 'true':
+            CHARGE_METHOD = None  # Travis is actually too slow to do a single bcc calculation!        
 
         database = pickle.load(open("./v0.3/database.pickle"))
         for key in database:
@@ -33,4 +37,4 @@ def test_load_freesolv_gaffmol2_vs_sybylmol2_vs_obabelpdb():
                 t_gaff = md.load(gaff_filename)
 
                 with utils.enter_temp_directory():        
-                     yield utils.tag_description(lambda : utils.test_molecule("LIG", gaff_filename), "Testing freesolv %s %s" % (directory, key))
+                     yield utils.tag_description(lambda : utils.test_molecule("LIG", gaff_filename, charge_method=CHARGE_METHOD), "Testing freesolv %s %s with charge model %s" % (directory, key, CHARGE_METHOD))
