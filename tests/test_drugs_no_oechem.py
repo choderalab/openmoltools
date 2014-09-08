@@ -3,8 +3,6 @@ import tempfile
 import os
 from gaff2xml import utils
 
-CHARGE_METHOD = "bcc"
-
 def test_drugs():
     path = tempfile.mkdtemp()
     database_filename = utils.get_data_filename("chemicals/drugs/Zdd.mol2.gz")
@@ -14,6 +12,7 @@ def test_drugs():
     os.system(cmd)
     
     n_molecules = 3404
+    CHARGE_METHOD = "bcc"
     if os.environ.get("TRAVIS", None) == 'true':
         n_molecules = 25  # If running on travis, only test the first 25 molecules due to speed.
         CHARGE_METHOD = None  # Travis is actually too slow to do a single bcc calculation!
