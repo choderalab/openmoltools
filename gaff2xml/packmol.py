@@ -114,7 +114,7 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     return trj
 
 def approximate_volume(pdb_filenames, n_molecules_list):
-    rho = 2.2
+    rho = 2.0
     volume = 0.0 # in cubic angstroms
     for k, (pdb_file) in enumerate(pdb_filenames):
         molecule_volume = 0.0
