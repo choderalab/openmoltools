@@ -113,7 +113,7 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     
     return trj
 
-def approximate_volume(pdb_filenames, n_molecules_list):
+def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
     """Approximate the appropriate box size based on the number and types of atoms present.
 
     Parameters
@@ -122,6 +122,8 @@ def approximate_volume(pdb_filenames, n_molecules_list):
         List of pdb filenames for each component of mixture.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
+    box_scaleup_factor : float, optional, default = 2.0
+        Factor by which the estimated box size is increased
 
     Returns
     -------
@@ -130,10 +132,9 @@ def approximate_volume(pdb_filenames, n_molecules_list):
 
     Notes
     -----
-    Boxes are very large for increased stability, and therefore may require extra 
-    time for energy minimization and equilibration.
+    By default, boxes are very large for increased stability, and therefore may 
+    require extra time for energy minimization and equilibration.
     """
-    box_scaleup_factor = 2.0
     volume = 0.0 # in cubic angstroms
     for k, (pdb_file) in enumerate(pdb_filenames):
         molecule_volume = 0.0
