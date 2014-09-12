@@ -130,10 +130,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
 
     Returns
     -------
-    gaff_mol2_filename : str
-        GAFF format mol2 filename produced by antechamber
-    frcmod_filename : str
-        Amber frcmod file produced by prmchk
+    prmtop_filename : str
+        Amber prmtop file produced by tleap
+    inpcrd_filename : str
+        Amber inpcrd file produced by tleap
     """
 
     prmtop_filename = "%s.prmtop" % molecule_name
@@ -211,7 +211,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None):
 
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
-    """Process a gaff mol2 file and frcmod file using the XML conversion and write to an XML file.
+    """Process multiple gaff mol2 files and frcmod files using the XML conversion and write to an XML file.
 
     Parameters
     ----------
@@ -334,7 +334,7 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     return simulation
 
 
-def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
+def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
 
 
@@ -344,7 +344,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method=None):
         Name of the molecule
     tripos_mol2_filename : str
         Filename of input mol2 file
-    charge_method : str, default=None
+    charge_method : str, default="bcc"
         If None, use charges in existing MOL2.  Otherwise, use a charge
         model when running antechamber.
     """
@@ -449,3 +449,8 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
 
     return trajectories, ffxml
 
+
+def tag_description(lambda_function, description):
+    """Add a description flag to a lambda function for nose testing."""
+    lambda_function.description = description
+    return lambda_function

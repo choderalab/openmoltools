@@ -10,7 +10,7 @@ def test_drugs():
     for molecule in ifs.GetOEGraphMols():
         with utils.enter_temp_directory():
             molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule)
-            yield lambda : utils.test_molecule(molecule_name, tripos_mol2_filename)  # Cute trick to iteratively run this test over entire database.
+            yield utils.tag_description(lambda : utils.test_molecule(molecule_name, tripos_mol2_filename), "Testing drugs %s" % molecule_name)
 
 @skipIf(os.environ.get("TRAVIS", None) == 'true', "Skip testing of entire drug database on Travis.")
 def test_drug():
@@ -20,5 +20,5 @@ def test_drug():
     for molecule in ifs.GetOEGraphMols():
         with utils.enter_temp_directory():
             molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule)
-            yield lambda : utils.test_molecule(molecule_name, tripos_mol2_filename)  # Cute trick to iteratively run this test over entire database.
+            yield utils.tag_description(lambda : utils.test_molecule(molecule_name, tripos_mol2_filename), "Testing drugs %s" % molecule_name)
         break
