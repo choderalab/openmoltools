@@ -113,8 +113,28 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     
     return trj
 
-def approximate_volume(pdb_filenames, n_molecules_list):
-    rho = 2.2
+def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
+    """Approximate the appropriate box size based on the number and types of atoms present.
+
+    Parameters
+    ----------
+    pdb_filenames : list(str)
+        List of pdb filenames for each component of mixture.
+    n_molecules_list : list(int)
+        The number of molecules of each mixture component.
+    box_scaleup_factor : float, optional, default = 2.0
+        Factor by which the estimated box size is increased
+
+    Returns
+    -------
+    box_size : float
+        The size of the box to generate.  In ANGSTROMS.
+
+    Notes
+    -----
+    By default, boxes are very large for increased stability, and therefore may 
+    require extra time for energy minimization and equilibration.
+    """
     volume = 0.0 # in cubic angstroms
     for k, (pdb_file) in enumerate(pdb_filenames):
         molecule_volume = 0.0
@@ -125,5 +145,5 @@ def approximate_volume(pdb_filenames, n_molecules_list):
             else:
                 molecule_volume += 15.0 # approximated from bondi radius of carbon = 1.53 angstroms
         volume += molecule_volume * n_molecules_list[k]
-    box_size = volume**(1.0/3.0) * rho
+    box_size = volume**(1.0/3.0) * box_scaleup_factor
     return box_size
