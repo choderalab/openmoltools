@@ -25,7 +25,7 @@ structure %s
 end structure
 """
 
-def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
+def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     """Run packmol to generate a box containing a mixture of molecules.
 
     Parameters
@@ -36,9 +36,10 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
         The number of molecules of each mixture component.
     tolerance : float, optional, default=2.0
         The mininum spacing between molecules during packing.  In ANGSTROMS!
-    box_size : float, optional, default=40.0
+    box_size : float, optional
         The size of the box to generate.  In ANGSTROMS.
-        OVERWRITING (leaving as parameter for now to avoid input disagreement issues)
+        Default generates boxes that are very large for increased stability.
+        May require extra time for energy minimization and equilibration.
 
     Returns
     -------
@@ -62,8 +63,8 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     output_filename = tempfile.mktemp(suffix=".pdb")
 
     # approximating volume to initialize  box
-    box_size = approximate_volume(pdb_filenames, n_molecules_list)    
-
+    if box_size is None:
+        box_size = approximate_volume(pdb_filenames, n_molecules_list)    
 
     header = HEADER_TEMPLATE % (tolerance, output_filename)
     for k in range(len(pdb_filenames)):
@@ -112,8 +113,28 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=40.):
     
     return trj
 
-def approximate_volume(pdb_filenames, n_molecules_list):
-    rho = 1.3
+def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
+    """Approximate the appropriate box size based on the number and types of atoms present.
+
+    Parameters
+    ----------
+    pdb_filenames : list(str)
+        List of pdb filenames for each component of mixture.
+    n_molecules_list : list(int)
+        The number of molecules of each mixture component.
+    box_scaleup_factor : float, optional, default = 2.0
+        Factor by which the estimated box size is increased
+
+    Returns
+    -------
+    box_size : float
+        The size of the box to generate.  In ANGSTROMS.
+
+    Notes
+    -----
+    By default, boxes are very large for increased stability, and therefore may 
+    require extra time for energy minimization and equilibration.
+    """
     volume = 0.0 # in cubic angstroms
     for k, (pdb_file) in enumerate(pdb_filenames):
         molecule_volume = 0.0
@@ -123,6 +144,6 @@ def approximate_volume(pdb_filenames, n_molecules_list):
                 molecule_volume += 5.0 # approximated from bondi radius = 1.06 angstroms
             else:
                 molecule_volume += 15.0 # approximated from bondi radius of carbon = 1.53 angstroms
-        volume += molecule_volume * n_molecules_list[k] * rho
-    box_size = volume**(1.0/3.0)
+        volume += molecule_volume * n_molecules_list[k]
+    box_size = volume**(1.0/3.0) * box_scaleup_factor
     return box_size

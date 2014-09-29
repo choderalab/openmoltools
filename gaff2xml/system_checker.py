@@ -82,7 +82,7 @@ def reorder_improper_torsions(i0, i1, i2, i3, bond_set):
     connections = np.zeros((4, 4))
 
     mapping = {i0: 0, i1: 1, i2: 2, i3: 3}
-    inv_mapping = dict([(val, key) for key, val in mapping.iteritems()])
+    inv_mapping = dict([(val, key) for key, val in mapping.items()])
 
     for (a, b) in itertools.combinations([i0, i1, i2, i3], 2):
         if (a, b) in bond_set:
@@ -376,8 +376,12 @@ class SystemChecker(object):
 
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
+        
+        if force0.getNumTorsions() == 0 and force1.getNumTorsions() == 0:
+            return  # Must leave now, otherwise try to access torsions that don't exist.
 
-        i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
+        F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
+        i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
         phase_unit, k0_unit = phase.unit, k0.unit
 
         dict0, dict1 = {}, {}
@@ -476,7 +480,11 @@ class SystemChecker(object):
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
 
-        i0, i1, i2, i3, per, phase, k0 = force0.getTorsionParameters(0)
+        if force0.getNumTorsions() == 0 and force1.getNumTorsions() == 0:
+            return  # Must leave now, otherwise try to access torsions that don't exist.
+
+        F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
+        i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
         phase_unit, k0_unit = phase.unit, k0.unit
 
         dict0, dict1 = {}, {}
