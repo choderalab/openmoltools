@@ -123,7 +123,7 @@ def find_conformer_for_charges(molecule, verbose = False):
         if atom.GetName()=='':
             assignNames = True #In this case we are missing an atom name and will need to assign
     if assignNames:
-        if verbose: print "Assigning TRIPOS names to atoms"
+        if verbose: print("Assigning TRIPOS names to atoms")
         oechem.OETriposAtomNames(molecule)
 
     # Check input pameters.
