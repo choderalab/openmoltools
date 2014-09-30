@@ -45,7 +45,9 @@ def iupac_to_oemol(iupac_name):
     # Create an OEMol molecule from IUPAC name.
     molecule = oechem.OEMol() # create a molecule
     status = oeiupac.OEParseIUPACName(molecule, iupac_name) # populate the molecule from the IUPAC name
-    
+    if not status:
+        raise Exception("The supplied IUPAC name '%s' could not be parsed." % iupac_name)
+
     normalize_molecule(molecule)
     
     return molecule
