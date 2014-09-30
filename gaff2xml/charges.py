@@ -47,7 +47,7 @@ def iupac_to_oemol(iupac_name):
 
     # Populate the MoleCule from the IUPAC name
     if not oeiupac.OEParseIUPACName(molecule, iupac_name):
-        raise Exception("The supplied IUPAC name '%s' could not be parsed." % iupac_name)
+        raise ValueError("The supplied IUPAC name '%s' could not be parsed." % iupac_name)
 
     normalize_molecule(molecule)
 
@@ -66,7 +66,7 @@ def smiles_to_oemol(smiles):
     
     molecule = oechem.OEMol()
     if not oechem.OEParseSmiles(molecule, smiles):
-        raise Exception("The supplied SMILES '%s' could not be parsed." % smiles)
+        raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
 
     normalize_molecule(molecule)
 
