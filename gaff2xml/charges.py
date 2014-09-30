@@ -44,27 +44,30 @@ def iupac_to_oemol(iupac_name):
 
     # Create an OEMol molecule from IUPAC name.
     molecule = oechem.OEMol() # create a molecule
-    status = oeiupac.OEParseIUPACName(molecule, iupac_name) # populate the molecule from the IUPAC name
-    if not status:
+
+    # Populate the MoleCule from the IUPAC name
+    if not oeiupac.OEParseIUPACName(molecule, iupac_name):
         raise Exception("The supplied IUPAC name '%s' could not be parsed." % iupac_name)
 
     normalize_molecule(molecule)
-    
+
     return molecule
 
-def smiles_to_oemol(obj, smiles):
+def smiles_to_oemol(smiles):
     """Create a OEMolBuilder from a smiles string.
     
     Parameters
     ----------
-    iupac_name : str
-        IUPAC name of desired molecule.
+    smiles : str
+        SMILES representation of desired molecule.
     """        
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
     
     molecule = oechem.OEMol()
-    oechem.OEParseSmiles(molecule, smiles)
+    if not oechem.OEParseSmiles(molecule, smiles):
+        raise Exception("The supplied SMILES '%s' could not be parsed." % smiles)
+
     normalize_molecule(molecule)
 
     return molecule
