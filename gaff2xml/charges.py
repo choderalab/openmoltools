@@ -1,5 +1,4 @@
 from utils import import_
-from copy import deepcopy
 
 def normalize_molecule(molecule):
     """Normalize a copy of the molecule by checking aromaticity, adding explicit hydrogens, and renaming by IUPAC name.
@@ -12,12 +11,11 @@ def normalize_molecule(molecule):
     molecule = readMolecule('molecule.sdf')
     normalizeMolecule(molecule)
     """
-    molcopy = deepcopy(molecule)
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))   
     oeiupac = import_("openeye.oeiupac")
     if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))    
-   
+    molcopy = oechem.OEMol(molecule)
     # Assign aromaticity.
     oechem.OEAssignAromaticFlags(molcopy, oechem.OEAroModelOpenEye)
 
@@ -91,10 +89,11 @@ def generate_conformers(molecule, max_conformers, strictStereo=True):
     molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
     molecule = generate_conformers(molecule, 5, strictStereo=True)
     """
-    molcopy = deepcopy(molecule)
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
     oeomega = import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
-    
+    molcopy = oechem.OEMol(molecule)
     omega = oeomega.OEOmega()
     omega.SetStrictStereo(strictStereo)
 
