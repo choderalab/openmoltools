@@ -199,7 +199,7 @@ def minimize_conformers(conformer_list, use_charges=True):
 
     return minimized_conformers
 
-def absolute_carges(molecule):
+def absolute_charges(molecule):
     """Set partial charges to the absolute value."""
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
