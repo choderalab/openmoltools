@@ -1,7 +1,8 @@
 from utils import import_
+from copy import deepcopy
 
 def normalize_molecule(molecule):
-    """Normalize the molecule by checking aromaticity, adding explicit hydrogens, and renaming by IUPAC name.
+    """Normalize a copy of the molecule by checking aromaticity, adding explicit hydrogens, and renaming by IUPAC name.
 
     ARGUMENTS
     molecule (OEMol) - the molecule to be normalized.
@@ -11,22 +12,23 @@ def normalize_molecule(molecule):
     molecule = readMolecule('molecule.sdf')
     normalizeMolecule(molecule)
     """
+    molcopy = deepcopy(molecule)
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))   
     oeiupac = import_("openeye.oeiupac")
     if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))    
    
     # Assign aromaticity.
-    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)   
+    oechem.OEAssignAromaticFlags(molcopy, oechem.OEAroModelOpenEye)
 
     # Add hydrogens.
-    oechem.OEAddExplicitHydrogens(molecule)
+    oechem.OEAddExplicitHydrogens(molcopy)
 
     # Set title to IUPAC name.
-    name = oeiupac.OECreateIUPACName(molecule)
-    molecule.SetTitle(name)
+    name = oeiupac.OECreateIUPACName(molcopy)
+    molcopy.SetTitle(name)
 
-    return molecule
+    return molcopy
 
 
 def iupac_to_oemol(iupac_name):
@@ -43,7 +45,7 @@ def iupac_to_oemol(iupac_name):
     if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
 
     # Create an OEMol molecule from IUPAC name.
-    molecule = oechem.OEMol() # create a molecule
+    molecule = oechem.OEMol()  # create a molecule
 
     # Populate the MoleCule from the IUPAC name
     if not oeiupac.OEParseIUPACName(molecule, iupac_name):
@@ -72,7 +74,8 @@ def smiles_to_oemol(smiles):
 
     return molecule
 
-def generate_conformers(oemol, max_conformers, strictStereo=True):
+def generate_conformers(molecule, max_conformers, strictStereo=True):
+    molcopy = deepcopy(molecule)
     oeomega = import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     
@@ -82,10 +85,11 @@ def generate_conformers(oemol, max_conformers, strictStereo=True):
     #if strictTyping != None:
     #    omega.SetStrictAtomTypes(strictTyping)
    
-    omega.SetIncludeInput(False) # don't include input
+    omega.SetIncludeInput(False)  # don't include input
     omega.SetMaxConfs(max_conformers)
-    omega(oemol) # generate conformation
+    omega(molcopy)  # generate conformation
 
+    return molcopy
 
 
 def find_conformer_for_charges(molecule, verbose = False):
