@@ -75,6 +75,22 @@ def smiles_to_oemol(smiles):
     return molecule
 
 def generate_conformers(molecule, max_conformers, strictStereo=True):
+    """Generate conformations for the supplied molecule
+
+    Parameters
+    ----------
+    molecule : OEMol
+        Molecule for which to generate conformers
+    max_conformers : int
+        Max number of conformers to generate
+    strictStereo : bool, optional, default=True
+        Adhere to strict specification of stereo isomer
+
+    Examples
+    --------
+    molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
+    molecule = generate_conformers(molecule, 5, strictStereo=True)
+    """
     molcopy = deepcopy(molecule)
     oeomega = import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
