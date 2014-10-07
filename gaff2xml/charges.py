@@ -195,15 +195,14 @@ def minimize_conformers(conformer_list, use_charges=True):
     minimized_conformers = list()
     for conformer in conformer_list:
         conformer_copy = oechem.OEMol(conformer)
-        minimized_conformers.append(szybki(conformer_copy))
-
+        szybki(conformer_copy)
+        minimized_conformers.append(conformer_copy)
     return minimized_conformers
 
 def absolute_charges(molecule):
     """Set partial charges to the absolute value."""
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
-
     molcopy = oechem.OEMol(molecule)
 
     for atom in molcopy.GetAtoms():
@@ -211,6 +210,40 @@ def absolute_charges(molecule):
 
     return molcopy
 
+def generate_extended_conformers(molecule, max_conformers, strictStereo=True):
+    """Generate extended conformations for the supplied molecule using conformers minimized by absolute charges.
+
+    Parameters
+    ----------
+    molecule : OEMol
+        Molecule for which to generate conformers
+    max_conformers : int
+        Max number of conformers to generate
+    strictStereo : bool, optional, default=True
+        Adhere to strict specification of stereo isomer
+
+    Examples
+    --------
+    >>> molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
+    >>> extended_conformers = generate_extended_conformers(molecule, 5, strictStereo=True)
+    """
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
+
+    molcopy = oechem.OEMol(molecule)
+    molecule_w_conformers = generate_conformers(molcopy, max_conformers, strictStereo)
+    charged_conformers = generate_conformer_charges_am1bcc(molecule_w_conformers)
+    minimized_charged_conformers = minimize_conformers(charged_conformers, use_charges=False)
+    absolute_charged_conformers = list()
+    for x in minimized_charged_conformers:
+        print x
+    # print type(minimized_charged_conformers)
+    # for charged_conf in minimized_charged_conformers:
+    #     print type(charged_conf)
+    #     absolute_charged_conformers.append(absolute_charges(charged_conf))
+    # extended_conformers = minimize_conformers(absolute_charged_conformers)
+
+    # return extended_conformers
 
 def find_conformer_for_charges(molecule, verbose = False):
     """Pick an optimal extended conformer to be used for AM1BCC charging in antechamber.
