@@ -171,7 +171,7 @@ def get_oeszybki_minimizer(use_charges=True):
 
 
 def minimize_conformers(conformer_list, use_charges=True):
-    """Minimize the absolute value of charges
+    """Minimize the conformations in a list of conformers.
 
     Parameters
     ----------
