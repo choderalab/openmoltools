@@ -163,9 +163,9 @@ def get_oeszybki_minimizer(use_charges=True):
     szybki.SetRunType(oeszybki.OERunType_CartesiansOpt)  # Set the runtype to minimizer
 
     if use_charges:
-        szybki.SetUseCurrentCharges(True)  # use charges for minimization
+        szybki.SetUseCurrentCharges(True)  # use partial charges for minimization
     else:
-        szybki.SetUseCurrentCharges(False)
+        szybki.SetUseCurrentCharges(False) # use mmff94 charges for minimization
 
     return szybki
 
@@ -193,11 +193,16 @@ def minimize_conformers(conformer_list, use_charges=True):
     szybki = get_oeszybki_minimizer(use_charges)
 
     minimized_conformers = list()
+    conformer_energies = list()
     for conformer in conformer_list:
         conformer_copy = oechem.OEMol(conformer)
-        szybki(conformer_copy)
+        szybki_result = szybki(conformer_copy)
         minimized_conformers.append(conformer_copy)
-    return minimized_conformers
+        lastresult = None
+        for lastresult in szybki_result:
+            pass
+        conformer_energies.append(lastresult.GetTotalEnergy()) # Unit is kcal / mol ?
+    return minimized_conformers, conformer_energies
 
 def absolute_charges(molecule):
     """Set partial charges to the absolute value."""
@@ -224,23 +229,40 @@ def generate_extended_conformers(molecule, max_conformers, strictStereo=True):
 
     Examples
     --------
-    >>> molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
-    >>> extended_conformers = generate_extended_conformers(molecule, 5, strictStereo=True)
+    >>> molecule = iupac_to_oemol("7-azaniumylheptanoate")
+    >>> extended_conformers = generate_extended_conformers(molecule, 50, strictStereo=True)
+    >>> z = zip(*extended_conformers)
+    >>> for p in z: print p[1]- p[2] # debug change in energy after minimization with abs charge
     """
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
 
     molcopy = oechem.OEMol(molecule)
+
     molecule_w_conformers = generate_conformers(molcopy, max_conformers, strictStereo)
     charged_conformers = generate_conformer_charges_am1bcc(molecule_w_conformers)
-    minimized_charged_conformers = minimize_conformers(charged_conformers, use_charges=False)
-    absolute_charged_conformers = list()
-    for x in minimized_charged_conformers:
-        print x
-    # print type(minimized_charged_conformers)
-    # for charged_conf in minimized_charged_conformers:
-    #     print type(charged_conf)
-    #     absolute_charged_conformers.append(absolute_charges(charged_conf))
-    # extended_conformers = minimize_conformers(absolute_charged_conformers)
+    minimized_charged_conformers, min_energies = minimize_conformers(charged_conformers, use_charges=True)
 
-    # return extended_conformers
+    absolute_charged_conformers = list()
+    print get_mol_atoms_type_charge(minimized_charged_conformers[0])  # debug
+    for charged_conf in minimized_charged_conformers:
+        absolute_charged_conformers.append(absolute_charges(charged_conf))
+
+    print get_mol_atoms_type_charge(absolute_charged_conformers[0]) #debug
+    extended_conformers, ext_energies = minimize_conformers(absolute_charged_conformers, use_charges=True)
+
+    return extended_conformers, ext_energies, min_energies
+
+def get_mol_atoms_type_charge(oemol):
+    """
+    Print type and partial charge for every atom in OEMol
+    """
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
+    molcopy = oechem.OEMol(oemol)
+    molrepr = str()
+    for at in molcopy.GetAtoms():
+        tp = at.GetType()
+        pc = at.GetPartialCharge()
+        molrepr += "%s %f \n" % (tp,pc)
+    return molrepr
