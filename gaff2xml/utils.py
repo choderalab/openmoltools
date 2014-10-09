@@ -6,6 +6,7 @@ import contextlib
 import shutil
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
+from mdtraj.utils.delay_import import import_
 
 try:
     from subprocess import getoutput  # If python 3
