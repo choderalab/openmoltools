@@ -1,4 +1,9 @@
 from gaff2xml.utils import import_
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
@@ -196,3 +201,54 @@ def get_names_to_charges(molecule):
         data[name] = charge
         molrepr += "%s %f \n" % (name, charge)
     return data, molrepr
+
+
+def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0):
+    """Convert OE molecule to tripos mol2 file.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEGraphMol
+        The molecule to be converted.
+    tripos_mol2_filename : str, optional, default=None
+        Output filename.  If None, will create a filename similar to 
+        name.tripos.mol2, where name is the name of the OE molecule.
+    conformer : int, optional, default=0
+        Save this frame
+
+    Returns
+    -------
+    tripos_mol2_filename : str
+        Filename of output tripos mol2 file
+    
+    """
+    
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
+    
+    # Get molecule name.
+    molecule_name = molecule.GetTitle()
+    logger.debug(molecule_name)
+
+    # Write molecule as Tripos mol2.
+    if tripos_mol2_filename is None:
+        tripos_mol2_filename = molecule_name + '.tripos.mol2'
+
+    ofs = oechem.oemolostream(tripos_mol2_filename)
+    ofs.SetFormat(oechem.OEFormat_MOL2H)
+    for k, mol in enumerate(molecule.GetConfs()):
+        if k == conformer:
+            oechem.OEWriteMolecule(ofs, mol)
+    
+    ofs.close()
+
+    # Replace <0> substructure names with valid text.
+    infile = open(tripos_mol2_filename, 'r')
+    lines = infile.readlines()
+    infile.close()
+    newlines = [line.replace('<0>', 'MOL') for line in lines]
+    outfile = open(tripos_mol2_filename, 'w')
+    outfile.writelines(newlines)
+    outfile.close()
+
+    return molecule_name, tripos_mol2_filename
