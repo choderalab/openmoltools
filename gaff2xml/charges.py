@@ -1,4 +1,4 @@
-from utils import import_
+from gaff2xml.utils import import_
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
