@@ -91,10 +91,6 @@ def iupac_to_oemol(iupac_name):
     molecule : OEMol
         A normalized molecule with desired iupac name
 
-    Examples
-    --------
-    >>> molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
-
     """
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
@@ -125,9 +121,6 @@ def smiles_to_oemol(smiles):
     molecule : OEMol
         A normalized molecule with desired smiles string.
     
-    Examples
-    --------
-    >>> molecule = smiles_to_oemol("c1ccncc1")
     """        
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
@@ -157,10 +150,6 @@ def generate_conformers(molecule, max_confs=None, strictStereo=True):
     molcopy : OEMol
         A multi-conformer molecule with up to max_confs conformers.
 
-    Examples
-    --------
-    >>> molecule = iupac_to_oemol("trans-2-fluoro-3-methylpent-2-ene")
-    >>> molecule_w_conformers = generate_conformers(molecule, 5, strictStereo=True)
     """
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
