@@ -2,16 +2,15 @@ from utils import import_
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
-def get_charges(molecule, max_confs=200):
+def get_charges(molecule, max_confs=None):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
     ----------
     molecule : OEMol
-        Molecule for which to generate conformers.  If molecule.NumConfs() <= 1
-        and max_confs > 1, then Omega will be used to generate max_confs
-        conformations.  
-    max_confs : int
+        Molecule for which to generate conformers.  If molecule.NumConfs() <= 1,
+        then Omega will be used to generate max_confs conformations.  
+    max_confs : int, default=None
         Max number of conformers to generate
     
     Returns
@@ -31,7 +30,7 @@ def get_charges(molecule, max_confs=200):
     
     molecule = normalize_molecule(molecule)
     
-    if molecule.NumConfs() <= 1 and max_confs > 1:
+    if molecule.NumConfs() <= 1:
         charged_copy = generate_conformers(molecule, max_confs=max_confs)  # Generate up to max_confs conformers
     else:
         charged_copy = molecule  # Just charge the input molecule
@@ -141,15 +140,15 @@ def smiles_to_oemol(smiles):
 
     return molecule
 
-def generate_conformers(molecule, max_confs=100, strictStereo=True):
+def generate_conformers(molecule, max_confs=None, strictStereo=True):
     """Generate conformations for the supplied molecule
 
     Parameters
     ----------
     molecule : OEMol
         Molecule for which to generate conformers
-    max_confs : int
-        Max number of conformers to generate
+    max_confs : int, optional, default=None
+        Max number of conformers to generate.  If None, use default OE Value.
     strictStereo : bool, optional, default=True
         Adhere to strict specification of stereo isomer
 
@@ -173,7 +172,8 @@ def generate_conformers(molecule, max_confs=100, strictStereo=True):
     omega.SetStrictStereo(strictStereo)
    
     omega.SetIncludeInput(False)  # don't include input
-    omega.SetMaxConfs(max_confs)
+    if max_confs is not None:
+        omega.SetMaxConfs(max_confs)
     omega(molcopy)  # generate conformation
 
     return molcopy
