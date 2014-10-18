@@ -1,4 +1,6 @@
-from gaff2xml.utils import import_
+import os
+import mdtraj as md
+from gaff2xml.utils import import_, enter_temp_directory, run_antechamber, create_ffxml_file
 import logging
 
 logger = logging.getLogger(__name__)
@@ -252,3 +254,63 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0):
     outfile.close()
 
     return molecule_name, tripos_mol2_filename
+
+
+def oemols_to_ffxml(molecules, base_molecule_name="lig"):
+    """Generate an OpenMM ffxml object and MDTraj trajectories from multiple OEMols
+    
+    Parameters
+    ----------
+    molecules : list(OEMole)
+        Molecules WITH CHARGES.  Each can have multiple conformations.
+        WILL GIVE UNDEFINED RESULTS IF NOT CHARGED.
+    base_molecule_name : str, optional, default='lig'
+        Base name of molecule to use inside parameter files.
+    
+    Returns
+    -------
+    trajectories : list(mdtraj.Trajectory)
+        List of MDTraj Trajectories for molecule.  May contain multiple frames
+    ffxml : StringIO
+        StringIO representation of ffxml file.
+    
+    Notes
+    -----
+    We allow multiple different molecules at once so that they can all be
+    included in a single ffxml file, which is currently the only recommended
+    way to simulate multiple GAFF molecules in a single simulation.  For most
+    applications, you will have just a single molecule: 
+    e.g. molecules = [my_oemol]
+    The resulting ffxml StringIO object can be directly input to OpenMM e.g. 
+    `forcefield = app.ForceField(ffxml)`
+    
+    This will generate a lot of temporary files, so you may want to use
+    utils.enter_temp_directory() to avoid clutter.
+    """
+    all_trajectories = []
+    gaff_mol2_filenames = []
+    frcmod_filenames = []
+
+    print(os.getcwd())
+    for i, molecule in enumerate(molecules):
+        trajectories = []
+        for j in range(molecule.NumConfs()):
+            molecule_name = "%s-%d-%d" % (base_molecule_name, i, j)
+            mol2_filename = "./%s.mol2" % molecule_name
+            _unused = molecule_to_mol2(molecule, mol2_filename, conformer=j)
+            gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename, charge_method=None)  # It's redundant to run antechamber on each frame, fix me later.
+
+            traj = md.load(gaff_mol2_filename)
+            trajectories.append(traj)
+
+            if j == 0:  # Only need 1 frame of forcefield files
+                gaff_mol2_filenames.append(gaff_mol2_filename)
+                frcmod_filenames.append(frcmod_filename)
+                    
+        # Create a trajectory with all frames of the current molecule
+        traj = trajectories[0].join(trajectories[1:])
+    all_trajectories.append(traj)
+
+    ffxml = create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, override_mol2_residue_name=base_molecule_name)
+
+    return all_trajectories, ffxml
