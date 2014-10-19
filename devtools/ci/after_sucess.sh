@@ -12,7 +12,7 @@ fi
 
 if [[ "2.7 3.3" =~ "$python" ]]; then
     conda install --yes binstar
-    binstar -t $BINSTAR_TOKEN  upload --force -u omnia -p gaff2xml-dev $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
+    binstar -t $BINSTAR_TOKEN  upload --force -u omnia -p gaff2xml $HOME/miniconda/conda-bld/linux-64/gaff2xml-*
 fi
 
 if [[ "$python" != "2.7" ]]; then
