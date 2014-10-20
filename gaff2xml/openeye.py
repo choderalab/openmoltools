@@ -42,7 +42,7 @@ def get_charges(molecule, max_confs=None):
     else:
         charged_copy = molecule  # Just charge the input molecule
     
-    oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSymSPt)  # AM1BCCSymSPt recommended by Chris Bayly to KAB, Oct. 15 2014.
+    oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)  # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
 
     return charged_copy
 
