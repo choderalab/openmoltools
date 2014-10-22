@@ -122,12 +122,17 @@ def test_ffxml():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml_simulation():
-    """Test converting toluene smiles to oemol to ffxml to openmm simulation."""
+    """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
     with utils.enter_temp_directory():    
         m0 = gaff2xml.openeye.smiles_to_oemol("Cc1ccccc1")
         charged0 = gaff2xml.openeye.get_charges(m0)
+        m1 = gaff2xml.openeye.smiles_to_oemol("c1ccccc1")
+        charged1 = gaff2xml.openeye.get_charges(m1)
+        ligands = [charged0, charged1]
+        n_atoms = [15,12]
 
-        trajectories, ffxml = gaff2xml.openeye.oemols_to_ffxml([charged0])
+        trajectories, ffxml = gaff2xml.openeye.oemols_to_ffxml(ligands)
+        eq(len(trajectories),len(ligands))
 
         pdb_filename = utils.get_data_filename("chemicals/proteins/1vii.pdb")
 
@@ -141,30 +146,32 @@ def test_ffxml_simulation():
         protein_top = protein_traj.top.to_openmm()
         protein_xyz = protein_traj.openmm_positions(0)
 
-        ligand_traj = trajectories[0]
-        ligand_traj.center_coordinates()
+        for k, ligand in enumerate(ligands):
+            ligand_traj = trajectories[k]
+            ligand_traj.center_coordinates()
         
-        eq(ligand_traj.n_atoms, 15)
-        eq(ligand_traj.n_frames, 1)
+            eq(ligand_traj.n_atoms, n_atoms[k])
+            eq(ligand_traj.n_frames, 1)
 
-        #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
-        min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((protein_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + 0.3
-        ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
+            #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
+            min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((protein_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + 0.3
+            ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
-        ligand_xyz = ligand_traj.openmm_positions(0)
-        ligand_top = ligand_traj.top.to_openmm()
+            ligand_xyz = ligand_traj.openmm_positions(0)
+            ligand_top = ligand_traj.top.to_openmm()
 
-        forcefield = app.ForceField("amber10.xml", ffxml, "tip3p.xml")
+            ffxml.seek(0)
+            forcefield = app.ForceField("amber10.xml", ffxml, "tip3p.xml")
 
-        model = app.modeller.Modeller(protein_top, protein_xyz)
-        model.add(ligand_top, ligand_xyz)
-        model.addSolvent(forcefield, padding=0.4 * u.nanometer)
+            model = app.modeller.Modeller(protein_top, protein_xyz)
+            model.add(ligand_top, ligand_xyz)
+            model.addSolvent(forcefield, padding=0.4 * u.nanometer)
 
-        system = forcefield.createSystem(model.topology, nonbondedMethod=app.PME, nonbondedCutoff=1.0 * u.nanometers, constraints=app.HAngles)
+            system = forcefield.createSystem(model.topology, nonbondedMethod=app.PME, nonbondedCutoff=1.0 * u.nanometers, constraints=app.HAngles)
 
-        integrator = mm.LangevinIntegrator(temperature, friction, timestep)
+            integrator = mm.LangevinIntegrator(temperature, friction, timestep)
 
-        simulation = app.Simulation(model.topology, system, integrator)
-        simulation.context.setPositions(model.positions)
-        print("running")
-        simulation.step(1)
+            simulation = app.Simulation(model.topology, system, integrator)
+            simulation.context.setPositions(model.positions)
+            print("running")
+            simulation.step(1)

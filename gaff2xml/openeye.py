@@ -309,7 +309,7 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
                     
         # Create a trajectory with all frames of the current molecule
         traj = trajectories[0].join(trajectories[1:])
-    all_trajectories.append(traj)
+        all_trajectories.append(traj)
 
     ffxml = create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, override_mol2_residue_name=base_molecule_name)
 
