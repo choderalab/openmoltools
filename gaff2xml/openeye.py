@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
-def get_charges(molecule, max_confs=None):
+def get_charges(molecule, max_confs=None, strictStereo=True):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
@@ -19,6 +19,8 @@ def get_charges(molecule, max_confs=None):
         then Omega will be used to generate max_confs conformations.  
     max_confs : int, default=None
         Max number of conformers to generate
+    strictStereo : bool, optional, default=True
+        Adhere to strict specification of stereo isomer
     
     Returns
     -------
@@ -38,7 +40,7 @@ def get_charges(molecule, max_confs=None):
     molecule = normalize_molecule(molecule)
     
     if molecule.NumConfs() <= 1:
-        charged_copy = generate_conformers(molecule, max_confs=max_confs)  # Generate up to max_confs conformers
+        charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
     else:
         charged_copy = molecule  # Just charge the input molecule
     
