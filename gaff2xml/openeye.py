@@ -19,6 +19,8 @@ def get_charges(molecule, max_confs=None, strictStereo=True):
         then Omega will be used to generate max_confs conformations.  
     max_confs : int, default=None
         Max number of conformers to generate
+    strictStereo : bool, optional, default=True
+        Adhere to strict specification of stereo isomer
     
     Returns
     -------
