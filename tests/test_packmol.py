@@ -23,6 +23,7 @@ def test_packmol_simulation_ternary():
         ligand_traj.save(pdb_filename)
         pdb_filenames.append(pdb_filename)
 
+    pdb_filenames = pdb_filenames[0:2] + [ligand_traj]  # Test passing BOTH pdb filenames and trajectories as input.
     trj = packmol.pack_box(pdb_filenames, [6, 11, 23])
 
     xyz = trj.openmm_positions(0)
