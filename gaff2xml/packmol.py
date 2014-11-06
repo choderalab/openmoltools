@@ -25,13 +25,15 @@ structure %s
 end structure
 """
 
-def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
+def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box_size=None):
     """Run packmol to generate a box containing a mixture of molecules.
 
     Parameters
     ----------
-    pdb_filenames : list(str)
-        List of pdb filenames for each component of mixture.
+    pdb_filenames_or_trajectories : list({str, Trajectory})
+        List of pdb filenames or trajectories for each component of mixture.  If this is
+        a list of trajectories, the trajectories will be saved to as
+        temporary files to be run in packmol.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
     tolerance : float, optional, default=2.0
@@ -53,9 +55,29 @@ def pack_box(pdb_filenames, n_molecules_list, tolerance=2.0, box_size=None):
     angstrom units, but the output trajectory will have data in nm.  
     Also note that OpenMM is pretty picky about the format of unit cell input, 
     so use the example in tests/test_packmol.py to ensure that you do the right thing.
-
+    pdb_filenames = []
+    for obj in pdb_filenames:
+        try:  # See if MDTraj Trajectory
+            tmp_filename = tempfile.mktemp(suffix=".pdb")
+            obj.save_pdb(tmp_filename)
+            pdb_filenames.append(tmp_filename)
+        except AttributeError:  # Not an MDTraj Trajectory, assume filename
+            pdb_filenames.append(obj)
+    
+    print(pdb_filenames)
     """    
-    assert len(pdb_filenames) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
+    assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
+    
+    pdb_filenames = []
+    for obj in pdb_filenames_or_trajectories:
+        try:  # See if MDTraj Trajectory
+            tmp_filename = tempfile.mktemp(suffix=".pdb")
+            obj.save_pdb(tmp_filename)
+            pdb_filenames.append(tmp_filename)
+        except AttributeError:  # Not an MDTraj Trajectory, assume filename
+            pdb_filenames.append(obj)
+    
+    print(pdb_filenames)
     
     if PACKMOL_PATH is None:
         raise(IOError("Packmol not found, cannot run pack_box()"))
