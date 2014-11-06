@@ -55,17 +55,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     angstrom units, but the output trajectory will have data in nm.  
     Also note that OpenMM is pretty picky about the format of unit cell input, 
     so use the example in tests/test_packmol.py to ensure that you do the right thing.
-    pdb_filenames = []
-    for obj in pdb_filenames:
-        try:  # See if MDTraj Trajectory
-            tmp_filename = tempfile.mktemp(suffix=".pdb")
-            obj.save_pdb(tmp_filename)
-            pdb_filenames.append(tmp_filename)
-        except AttributeError:  # Not an MDTraj Trajectory, assume filename
-            pdb_filenames.append(obj)
-    
-    print(pdb_filenames)
-    """    
+    """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
     
     pdb_filenames = []
