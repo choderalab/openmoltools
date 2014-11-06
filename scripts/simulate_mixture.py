@@ -8,13 +8,16 @@ import simtk.openmm as mm
 m0 = gaff2xml.openeye.smiles_to_oemol("CCCCC")
 charged0 = gaff2xml.openeye.get_charges(m0, keep_confs=1)
 
-ligands = [charged0]
+m1 = gaff2xml.openeye.smiles_to_oemol("CCCCCCC")
+charged1 = gaff2xml.openeye.get_charges(m0, keep_confs=1)
+
+ligands = [charged0, charged1]
 
 with gaff2xml.utils.enter_temp_directory():  # Supress antechamber output files
     trajectories, ffxml = gaff2xml.openeye.oemols_to_ffxml(ligands)
 
 open("./ff.xml", 'w').write(ffxml.read())
-traj = gaff2xml.packmol.pack_box(trajectories, [400])
+traj = gaff2xml.packmol.pack_box(trajectories, [200, 200])
 traj.save("./box.pdb")
 
 temperature = 300 * u.kelvin
