@@ -67,8 +67,6 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
         except AttributeError:  # Not an MDTraj Trajectory, assume filename
             pdb_filenames.append(obj)
     
-    print(pdb_filenames)
-    
     if PACKMOL_PATH is None:
         raise(IOError("Packmol not found, cannot run pack_box()"))
     
