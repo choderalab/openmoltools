@@ -42,7 +42,7 @@ simulation.step(10000)
 integrator.setStepSize(timestep)
 
 simulation.reporters.append(app.DCDReporter('out.dcd', 500))
-simulation.reporters.append(app.StateDataReporter("out.csv", 500, step=True, temperature=True, density=True, energy=True, totalSteps=1000, separator=","))
+simulation.reporters.append(app.StateDataReporter("out.csv", 500, step=True, temperature=True, density=True, potentialEnergy=True, totalSteps=1000, separator=","))
 
 print("running")
 simulation.step(10000000)
