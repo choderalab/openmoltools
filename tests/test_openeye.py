@@ -28,7 +28,7 @@ def test_butanol_keepconfs():
     m0 = gaff2xml.openeye.iupac_to_oemol("butanol")
     m1 = gaff2xml.openeye.get_charges(m0, keep_confs=1)
     eq(m0.NumAtoms(), m1.NumAtoms())
-    assert m1.NumConfs() == 1, "Butanol should have multiple conformers."
+    assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
 
 
