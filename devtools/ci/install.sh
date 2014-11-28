@@ -6,8 +6,7 @@ bash Miniconda-3.6.0-Linux-x86_64.sh -b
 PIP_ARGS="-U"
 
 export PATH=$HOME/miniconda/bin:$PATH
-echo "PYTHON IS "
-echo ${python}
+
 conda update --yes conda
 conda config --add channels http://conda.binstar.org/omnia
 conda config --add channels https://conda.binstar.org/ric
