@@ -6,6 +6,7 @@ import contextlib
 import shutil
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
+from mdtraj.utils.delay_import import import_
 
 try:
     from subprocess import getoutput  # If python 3
@@ -163,51 +164,6 @@ quit
     file_handle.close()
 
     return prmtop_filename, inpcrd_filename
-
-
-def molecule_to_mol2(molecule, tripos_mol2_filename=None):
-    """Convert OE molecule to tripos mol2 file.
-
-    Parameters
-    ----------
-    molecule : openeye.oechem.OEGraphMol
-        The molecule to be converted.
-
-    Returns
-    -------
-    tripos_mol2_filename : str
-        Filename of output tripos mol2 file
-    
-    """
-    
-    try:
-        import openeye.oechem
-    except ImportError:
-        raise(ImportError("Must install OpenEye tools to process OpenEye MOL2 files."))
-    
-    # Get molecule name.
-    molecule_name = molecule.GetTitle()
-    logger.debug(molecule_name)
-
-    # Write molecule as Tripos mol2.
-    if tripos_mol2_filename is None:
-        tripos_mol2_filename = molecule_name + '.tripos.mol2'
-
-    ofs = openeye.oechem.oemolostream(tripos_mol2_filename)
-    ofs.SetFormat(openeye.oechem.OEFormat_MOL2H)
-    openeye.oechem.OEWriteMolecule(ofs, molecule)
-    ofs.close()
-
-    # Replace <0> substructure names with valid text.
-    infile = open(tripos_mol2_filename, 'r')
-    lines = infile.readlines()
-    infile.close()
-    newlines = [line.replace('<0>', 'MOL') for line in lines]
-    outfile = open(tripos_mol2_filename, 'w')
-    outfile.writelines(newlines)
-    outfile.close()
-
-    return molecule_name, tripos_mol2_filename
 
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
@@ -454,3 +410,9 @@ def tag_description(lambda_function, description):
     """Add a description flag to a lambda function for nose testing."""
     lambda_function.description = description
     return lambda_function
+
+
+def molecule_to_mol2(*args, **kwargs):
+    print("Warning: molecule_to_mol2 has been moved to gaff2xml.openeye.")
+    import gaff2xml.openeye 
+    return gaff2xml.openeye.molecule_to_mol2(*args, **kwargs)
