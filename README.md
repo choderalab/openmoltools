@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/choderalab/gaff2xml.svg)](https://travis-ci.org/choderalab/gaff2xml)
+[![Code Health](https://landscape.io/github/bas-rustenburg/gaff2xml/landscape/landscape.svg)](https://landscape.io/github/bas-rustenburg/gaff2xml/landscape)
 
 ## gaff2xml: Converting Antechamber GAFF files to OpenMM XML format
 
