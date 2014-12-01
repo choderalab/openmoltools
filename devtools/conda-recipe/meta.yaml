@@ -10,17 +10,17 @@ requirements:
     - numpy
     - scipy
     - setuptools
-    - mdtraj-dev
-    - openmm    
-    - ambermini    
+    - mdtraj
+    - openmm
+    - ambermini
 
   run:
     - python
     - pandas
     - scipy
-    - mdtraj-dev
-    - openmm    
-    - ambermini    
+    - mdtraj
+    - openmm
+    - ambermini
 
 about:
   home: https://github.com/choderalab/gaff2xml
