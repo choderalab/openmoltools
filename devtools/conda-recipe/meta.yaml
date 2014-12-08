@@ -1,26 +1,42 @@
 package:
-  name: gaff2xml
-  version: !!str dev
+  name: gaff2xml-dev
+  version: !!str 3.0.0
 
+#source:
+#  fn: master.zip
+#  url: https://github.com/choderalab/gaff2xml/archive/master.zip
+
+build:
+  preserve_egg_dir: True
+  number: 0
 
 requirements:
   build:
     - python
-    - cython
+    - setuptools
+    - mdtraj
     - numpy
     - scipy
+    - openmm    
+    - ambermini
+  run:
+    - python
     - setuptools
-    - mdtraj-dev
+    - pandas
+    - six
+    - mdtraj
+    - numpydoc
+    - scipy
     - openmm    
     - ambermini    
 
-  run:
-    - python
-    - pandas
-    - scipy
-    - mdtraj-dev
-    - openmm    
-    - ambermini    
+test:
+  requires:
+    - nose
+  imports:
+    - gaff2xml
+  commands:
+    - nosetests gaff2xml -v
 
 about:
   home: https://github.com/choderalab/gaff2xml
