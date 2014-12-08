@@ -1,10 +1,13 @@
 [![Build Status](https://travis-ci.org/choderalab/gaff2xml.svg)](https://travis-ci.org/choderalab/gaff2xml)
 [![Code Health](https://landscape.io/github/choderalab/gaff2xml/master/landscape.svg)](https://landscape.io/github/choderalab/gaff2xml/master)
 
-## gaff2xml: Converting Antechamber GAFF files to OpenMM XML format
+## gaff2xml: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
-This set of tools allows users to automate the conversion of ligand
-force field parameters from Antechamber formats to OpenMM XML format.
+This set of tools allows users to automate the conversion of GAFF ligand
+force field parameters from Antechamber formats to OpenMM XML format.  
+It also contains several python tools for working with small molecules,
+packing boxes (python wrappers for packmol), and parameterizing small
+molecules.
 
 This tool is in BETA testing: use at your own risk!
 
@@ -13,7 +16,21 @@ Installation:
 
 ```
 python setup.py install
+
+or
+
+conda config --add channels http://conda.binstar.org/omnia
+conda config --add channels https://conda.binstar.org/rdkit
+conda install gaff2xml
+
 ```
+
+To test your installation, use the following command:
+
+```
+nosetests gaff2xml -v
+```
+
 
 Usage:
 
