@@ -21,6 +21,7 @@ requirements:
     - openmm
     - ambermini
     - jinja2
+    - rdkit    
   run:
     - python
     - setuptools
@@ -31,7 +32,8 @@ requirements:
     - scipy
     - openmm
     - ambermini
-    - jinja2    
+    - jinja2
+    - rdkit    
 
 test:
   requires:
