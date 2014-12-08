@@ -24,6 +24,3 @@ env:
 after_success:
   - echo "after_success"
   - source devtools/ci/after_sucess.sh
-
-
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
