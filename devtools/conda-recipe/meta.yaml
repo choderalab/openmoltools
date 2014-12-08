@@ -14,11 +14,11 @@ requirements:
   build:
     - python
     - setuptools
-    - mdtraj>=1.2
+    - mdtraj
     - numpy
     - scipy
     - pandas    
-    - openmm>=6.1
+    - openmm
     - ambermini
     - jinja2
   run:
@@ -26,12 +26,12 @@ requirements:
     - setuptools
     - pandas
     - six
-    - mdtraj>=1.2
+    - mdtraj
     - numpydoc
     - scipy
-    - openmm>=6.1
+    - openmm
     - ambermini
-
+    - jinja2    
 
 test:
   requires:
