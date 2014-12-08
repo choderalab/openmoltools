@@ -14,21 +14,24 @@ requirements:
   build:
     - python
     - setuptools
-    - mdtraj
+    - mdtraj>=1.2
     - numpy
     - scipy
-    - openmm    
+    - pandas    
+    - openmm>=6.1
     - ambermini
+    - jinja2
   run:
     - python
     - setuptools
     - pandas
     - six
-    - mdtraj
+    - mdtraj>=1.2
     - numpydoc
     - scipy
-    - openmm    
-    - ambermini    
+    - openmm>=6.1
+    - ambermini
+
 
 test:
   requires:
@@ -41,4 +44,3 @@ test:
 about:
   home: https://github.com/choderalab/gaff2xml
   license: GNU Lesser General Public License v2 or later (LGPLv2+)
-
