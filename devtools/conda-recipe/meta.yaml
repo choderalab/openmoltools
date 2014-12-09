@@ -1,28 +1,48 @@
 package:
-  name: gaff2xml
-  version: !!str dev
+  name: gaff2xml-dev
+  version: !!str 3.0.0
 
+#source:
+#  fn: master.zip
+#  url: https://github.com/choderalab/gaff2xml/archive/master.zip
+
+build:
+  preserve_egg_dir: True
+  number: 0
 
 requirements:
   build:
     - python
-    - cython
+    - setuptools
+    - mdtraj
     - numpy
     - scipy
-    - setuptools
-    - mdtraj-dev
-    - openmm    
-    - ambermini    
-
+    - pandas    
+    - openmm
+    - ambermini
+    - jinja2
+#    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
+    - setuptools
     - pandas
+    - six
+    - mdtraj
+    - numpydoc
     - scipy
-    - mdtraj-dev
-    - openmm    
-    - ambermini    
+    - openmm
+    - ambermini
+    - jinja2
+#    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+
+test:
+  requires:
+    - nose
+  imports:
+    - gaff2xml
+  commands:
+    - nosetests gaff2xml -v
 
 about:
   home: https://github.com/choderalab/gaff2xml
   license: GNU Lesser General Public License v2 or later (LGPLv2+)
-

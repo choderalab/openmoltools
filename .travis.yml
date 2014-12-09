@@ -1,18 +1,16 @@
 language: c
 
+branches:
+  only:
+    - master
+
 install:
   - source devtools/ci/install.sh
   - export PYTHONUNBUFFERED=true
 
 script:
-  - export CC="gcc -std=c89"
-  - source deactivate
-  - conda install --yes conda-build
+  # this builds the binary, unpacks it, and runs the tests
   - conda build devtools/conda-recipe
-  - source activate $python
-  - conda install $HOME/miniconda/conda-bld/linux-64/gaff2xml-dev-*
-  - conda list -e
-  - nosetests
 
 env:
   matrix:
@@ -26,5 +24,3 @@ env:
 after_success:
   - echo "after_success"
   - source devtools/ci/after_sucess.sh
-
-
