@@ -14,6 +14,7 @@ import numpy as np
 
 @skipIf(find_executable('obabel') is None, 'You need obabel installed to run this test')
 @skipIf(os.environ.get("TRAVIS", None) == 'true', "Skip testing of entire FreeSolv database on Travis.")
+@skipIf(os.environ.get("JENKINS_URL", None) is not None, "Skip testing of entire FreeSolv database on Jenkins.")
 def test_load_freesolv_gaffmol2_vs_sybylmol2_vs_obabelpdb():
     with utils.enter_temp_directory():        
         
