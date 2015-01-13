@@ -13,7 +13,7 @@ def test_drugs():
     
     n_molecules = 3404
     CHARGE_METHOD = "bcc"
-    if (os.environ.get("TRAVIS", None) == 'true') or (os.environ.get("JENKINS_URL", None) is not None), "Skip testing of entire FreeSolv database on Jenkins."):
+    if (os.environ.get("TRAVIS", None) == 'true') or (os.environ.get("JENKINS_URL", None) is not None):
         n_molecules = 25  # If running on travis, only test the first 25 molecules due to speed.
         CHARGE_METHOD = None  # Travis is actually too slow to do a single bcc calculation!
 
