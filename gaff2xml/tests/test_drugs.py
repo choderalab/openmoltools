@@ -1,3 +1,4 @@
+from nose.plugins.attrib import attr
 from unittest import skipIf
 from gaff2xml import utils
 import os
@@ -17,6 +18,7 @@ except:
 
 
 @skipIf(not HAVE_OE, "Cannot run test_drugs() module without OpenEye tools.")
+@attr('slow')
 def test_drugs():
     import openeye.oechem
     database_filename = utils.get_data_filename("chemicals/drugs/Zdd.mol2.gz")

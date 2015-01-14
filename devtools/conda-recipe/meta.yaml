@@ -1,6 +1,6 @@
 package:
-  name: gaff2xml-dev
-  version: !!str 3.0.0
+  name: gaff2xml
+  version: !!str dev
 
 #source:
 #  fn: master.zip
@@ -41,7 +41,7 @@ test:
   imports:
     - gaff2xml
   commands:
-    - nosetests gaff2xml -v
+    - nosetests gaff2xml -v -a '!slow'
 
 about:
   home: https://github.com/choderalab/gaff2xml
