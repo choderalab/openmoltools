@@ -1,6 +1,6 @@
 package:
-  name: gaff2xml-dev
-  version: !!str 3.0.0
+  name: gaff2xml
+  version: !!str dev
 
 #source:
 #  fn: master.zip
@@ -20,7 +20,6 @@ requirements:
     - pandas    
     - openmm
     - ambermini
-    - jinja2
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
@@ -32,7 +31,6 @@ requirements:
     - scipy
     - openmm
     - ambermini
-    - jinja2
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
@@ -41,7 +39,7 @@ test:
   imports:
     - gaff2xml
   commands:
-    - nosetests gaff2xml -v
+    - nosetests gaff2xml -v -a '!slow'
 
 about:
   home: https://github.com/choderalab/gaff2xml
