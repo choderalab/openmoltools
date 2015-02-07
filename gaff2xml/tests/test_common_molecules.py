@@ -37,5 +37,7 @@ def test_common_molecules():
         molecule = gaff2xml.openeye.iupac_to_oemol(molecule_name)
         molecule = gaff2xml.openeye.get_charges(molecule)
         with utils.enter_temp_directory():
-            molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule)
-            yield utils.tag_description(lambda : utils.test_molecule(molecule_name, tripos_mol2_filename), "Testing molecule %s" % molecule_name)
+            tripos_mol2_filename = 'molecule.mol2'
+            molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule, tripos_mol2_filename=tripos_mol2_filename)
+            yield utils.tag_description(lambda : utils.test_molecule('molecule', tripos_mol2_filename), "Testing molecule %s" % molecule_name)
+
