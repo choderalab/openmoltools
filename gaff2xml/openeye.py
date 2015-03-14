@@ -333,8 +333,10 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
     return all_trajectories, ffxml
 
 
-def smiles_to_gaff_mol2(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL"):
-    """Generate GAFF mol2 and frcmod files from a smiles string.
+def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL"):
+    """Build a molecule from a smiles string and run antechamber, 
+    generating GAFF mol2 and frcmod files from a smiles string.  Charges
+    will be generated using the OpenEye QuacPac AM1-BCC implementation.
     
     Parameters
     ----------
