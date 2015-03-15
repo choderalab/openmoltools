@@ -2,9 +2,7 @@ import numpy as np
 import mdtraj as md
 from unittest import skipIf
 import logging
-from mdtraj.testing import eq
 from gaff2xml import utils, amber,packmol
-import simtk.openmm as mm
 from distutils.spawn import find_executable
 
 
