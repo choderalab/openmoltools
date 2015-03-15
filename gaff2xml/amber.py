@@ -43,9 +43,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         Filenames of GAFF flavored mol2 files.  Each must contain exactly
         ONE ligand.
     frcmod_filenames : str
-        Filename of input (GAFF!) mol2 file
+        Filename of input GAFF frcmod filenames.
     box_filename : str
-        Use this frcmod filename
+        Filename of PDB containing an arbitrary box of the mol2 molecules.
     prmtop_filename : str
         output prmtop filename.  Should have suffix .prmtop
     inpcrd_filename : str
