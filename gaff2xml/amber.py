@@ -33,7 +33,9 @@ quit
 
 
 def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename):
-    """Create a prmtop and inpcrd for an arbitrary mixture of liquids.
+    """Create a prmtop and inpcrd from a collection of mol2 and frcmod files
+    as well as a single box PDB.  We have used this for setting up
+    simulations of neat liquids or binary mixtures.  
 
     Parameters
     ----------
