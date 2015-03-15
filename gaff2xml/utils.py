@@ -293,7 +293,6 @@ def create_leap_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
 def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """Create a GAFF molecule via LEAP and ffXML and compare force terms.
 
-
     Parameters
     ----------
     molecule_name : str
