@@ -24,4 +24,4 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from gaff2xml import amber_parser, system_checker, utils, packmol, openeye
+from gaff2xml import amber_parser, system_checker, utils, packmol, openeye, amber, cirpy

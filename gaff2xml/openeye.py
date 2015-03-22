@@ -1,3 +1,4 @@
+import shutil
 import os
 import mdtraj as md
 from gaff2xml.utils import import_, enter_temp_directory, run_antechamber, create_ffxml_file
@@ -217,7 +218,7 @@ def get_names_to_charges(molecule):
     return data, molrepr
 
 
-def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0):
+def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_name="MOL"):
     """Convert OE molecule to tripos mol2 file.
 
     Parameters
@@ -229,6 +230,10 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0):
         name.tripos.mol2, where name is the name of the OE molecule.
     conformer : int, optional, default=0
         Save this frame
+    residue_name : str, optional, default="MOL"
+        OpenEye writes mol2 files with <0> as the residue / ligand name.
+        This chokes many mol2 parsers, so we replace it with a string of
+        your choosing.  
 
     Returns
     -------
@@ -260,7 +265,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0):
     infile = open(tripos_mol2_filename, 'r')
     lines = infile.readlines()
     infile.close()
-    newlines = [line.replace('<0>', 'MOL') for line in lines]
+    newlines = [line.replace('<0>', residue_name) for line in lines]
     outfile = open(tripos_mol2_filename, 'w')
     outfile.writelines(newlines)
     outfile.close()
@@ -326,3 +331,38 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
     ffxml = create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, override_mol2_residue_name=base_molecule_name)
 
     return all_trajectories, ffxml
+
+
+def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL"):
+    """Build a molecule from a smiles string and run antechamber, 
+    generating GAFF mol2 and frcmod files from a smiles string.  Charges
+    will be generated using the OpenEye QuacPac AM1-BCC implementation.
+    
+    Parameters
+    ----------
+    smiles_string : str
+        Smiles string of molecule to construct and charge
+    gaff_mol2_filename : str
+        Filename of mol2 file output of antechamber, with charges
+        created from openeye
+    frcmod_filename : str
+        Filename of frcmod file output of antechamber.  Most likely
+        this file will be almost empty, at least for typical molecules.
+    residue_name : str, optional, default="MOL"
+        OpenEye writes mol2 files with <0> as the residue / ligand name.
+        This chokes many mol2 parsers, so we replace it with a string of
+        your choosing.  This might be useful for downstream applications
+        if the residue names are required to be unique.
+    """
+    # Get the absolute path so we can find these filenames from inside a temporary directory.
+    gaff_mol2_filename = os.path.abspath(gaff_mol2_filename)
+    frcmod_filename = os.path.abspath(frcmod_filename)
+    
+    m = smiles_to_oemol(smiles_string)
+    m = get_charges(m, strictStereo=False, keep_confs=1)
+    
+    with enter_temp_directory():  # Avoid dumping 50 antechamber files in local directory.    
+        _unused = molecule_to_mol2(m, "./tmp.mol2", residue_name=residue_name)
+        tmp_gaff_mol2_filename, tmp_frcmod_filename = run_antechamber("tmp", "./tmp.mol2", charge_method=None)  # USE OE AM1BCC charges!
+        shutil.copy(tmp_gaff_mol2_filename, gaff_mol2_filename)
+        shutil.copy(tmp_frcmod_filename, frcmod_filename)
