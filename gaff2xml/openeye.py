@@ -187,9 +187,8 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     omega.SetCanonOrder(False)
 
     omega.SetSampleHydrogens(True)  # Word to the wise: skipping this step can lead to significantly different charges!
-
     omega.SetEnergyWindow(ewindow)
-    omega.SetRMSThreshold(rms_threshold)    
+    omega.SetRMSThreshold(rms_threshold)  # Word to the wise: skipping this step can lead to significantly different charges!
     
     omega.SetStrictStereo(strictStereo)
     
