@@ -54,7 +54,7 @@ def parse_ligand_filename(filename):
     return name, ext
 
 
-def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None):
+def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -68,6 +68,12 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     net_charge : int, optional
         If not None, net charge of the molecule to be parameterized.
         If None, Antechamber sums up partial charges from the input file.
+    gaff_mol2_filename : str, optional, default=None
+        Name of GAFF mol2 filename to output.  If None, uses local directory
+        and molecule_name
+    frcmod_filename : str, optional, default=None
+        Name of GAFF frcmod filename to output.  If None, uses local directory
+        and molecule_name
 
     Returns
     -------
@@ -83,8 +89,11 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     if filetype != "mol2":
         raise(ValueError("Must input mol2 filename"))
 
-    gaff_mol2_filename = molecule_name + '.gaff.mol2'
-    frcmod_filename = molecule_name + '.frcmod'
+
+    if gaff_mol2_filename is None:
+        gaff_mol2_filename = molecule_name + '.gaff.mol2'
+    if frcmod_filename is None:
+        frcmod_filename = molecule_name + '.frcmod'
 
     cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
     if charge_method is not None:
@@ -119,7 +128,7 @@ def convert_molecule(in_filename, out_filename):
     logger.debug(output)
 
 
-def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None):
     """Run AmberTools tleap to create simulation files for AMBER
 
     Parameters
@@ -128,6 +137,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
         GAFF format mol2 filename produced by antechamber
     frcmod_filename : str
         Amber frcmod file produced by prmchk
+    prmtop_filename : str, optional, default=None
+        Amber prmtop file produced by tleap, defaults to molecule_name
+    inpcrd_filename : str, optional, default=None
+        Amber inpcrd file produced by tleap, defaults to molecule_name  
 
     Returns
     -------
@@ -136,9 +149,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename):
     inpcrd_filename : str
         Amber inpcrd file produced by tleap
     """
-
-    prmtop_filename = "%s.prmtop" % molecule_name
-    inpcrd_filename = "%s.inpcrd" % molecule_name
+    if prmtop_filename is None:
+        prmtop_filename = "%s.prmtop" % molecule_name
+    if inpcrd_filename is None:
+        inpcrd_filename = "%s.inpcrd" % molecule_name
 
     tleap_input = """
 source leaprc.ff99SB
