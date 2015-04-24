@@ -187,12 +187,13 @@ def test_ffxml_simulation():
             print("running")
             simulation.step(1)
 
-
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
 def test_charge_fail1():
     with utils.enter_temp_directory():
         gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
 def test_charge_fail2():
     m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
