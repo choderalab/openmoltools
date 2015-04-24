@@ -204,7 +204,7 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     status = omega(molcopy)  # generate conformation
     
     if not status:
-        raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
+        raise(RuntimeError("omega returned error code %d" % status))
         
 
     return molcopy
