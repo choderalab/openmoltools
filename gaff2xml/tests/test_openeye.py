@@ -199,10 +199,12 @@ def test_charge_fail2():
     m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = gaff2xml.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
     with utils.enter_temp_directory():    
         gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success2():
     m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = gaff2xml.openeye.get_charges(m, strictStereo=False)
