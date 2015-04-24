@@ -21,7 +21,7 @@ def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
     max_confs : int, optional, default=800
         Max number of conformers to generate
     strictStereo : bool, optional, default=True
-        Adhere to strict specification of stereo isomer
+        If False, permits smiles strings with unspecificied stereochemistry.
         See https://docs.eyesopen.com/omega/usage.html
     keep_confs : int, optional, default=None
         If not None, only keep this many conformations in the final
@@ -164,7 +164,7 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     max_confs : int, optional, default=800
         Max number of conformers to generate.  If None, use default OE Value.
     strictStereo : bool, optional, default=True
-        Adhere to strict specification of stereo isomer
+        If False, permits smiles strings with unspecificied stereochemistry.
 
     Returns
     -------
@@ -376,7 +376,7 @@ def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, re
         your choosing.  This might be useful for downstream applications
         if the residue names are required to be unique.
     strictStereo : bool, optional, default=False
-        Adhere to strict specification of stereo isomer
+        If False, permits smiles strings with unspecificied stereochemistry.
         See https://docs.eyesopen.com/omega/usage.html
     """
     oechem = import_("openeye.oechem")    
