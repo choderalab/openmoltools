@@ -9,6 +9,9 @@ import os
 import gaff2xml.openeye
 import pandas as pd
 import mdtraj as md
+from mdtraj.testing import raises
+
+smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(=C=[N-])C=[NH+]3"
 
 try:
     oechem = utils.import_("openeye.oechem")
@@ -183,3 +186,22 @@ def test_ffxml_simulation():
             simulation.context.setPositions(model.positions)
             print("running")
             simulation.step(1)
+
+
+@raises(RuntimeError)
+def test_charge_fail1():
+    with utils.enter_temp_directory():
+        gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
+
+@raises(RuntimeError)
+def test_charge_fail2():
+    m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+    m = gaff2xml.openeye.get_charges(m, strictStereo=True, keep_confs=1)
+
+def test_charge_success1():
+    with utils.enter_temp_directory():    
+        gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
+
+def test_charge_success2():
+    m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+    m = gaff2xml.openeye.get_charges(m, strictStereo=False)

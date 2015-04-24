@@ -22,6 +22,7 @@ def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
         Max number of conformers to generate
     strictStereo : bool, optional, default=True
         Adhere to strict specification of stereo isomer
+        See https://docs.eyesopen.com/omega/usage.html
     keep_confs : int, optional, default=None
         If not None, only keep this many conformations in the final
         charged OEMol.  Multiple conformations are still used to *determine*
@@ -199,7 +200,12 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     omega.SetIncludeInput(False)  # don't include input
     if max_confs is not None:
         omega.SetMaxConfs(max_confs)
-    omega(molcopy)  # generate conformation
+    
+    status = omega(molcopy)  # generate conformation
+    
+    if not status:
+        raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
+        
 
     return molcopy
 
@@ -349,7 +355,7 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
     return all_trajectories, ffxml
 
 
-def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL"):
+def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL", strictStereo=False):
     """Build a molecule from a smiles string and run antechamber, 
     generating GAFF mol2 and frcmod files from a smiles string.  Charges
     will be generated using the OpenEye QuacPac AM1-BCC implementation.
@@ -369,16 +375,22 @@ def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, re
         This chokes many mol2 parsers, so we replace it with a string of
         your choosing.  This might be useful for downstream applications
         if the residue names are required to be unique.
+    strictStereo : bool, optional, default=False
+        Adhere to strict specification of stereo isomer
+        See https://docs.eyesopen.com/omega/usage.html
     """
+    oechem = import_("openeye.oechem")    
+
     # Get the absolute path so we can find these filenames from inside a temporary directory.
     gaff_mol2_filename = os.path.abspath(gaff_mol2_filename)
     frcmod_filename = os.path.abspath(frcmod_filename)
     
     m = smiles_to_oemol(smiles_string)
-    m = get_charges(m, strictStereo=False, keep_confs=1)
+    m = get_charges(m, strictStereo=strictStereo, keep_confs=1)
     
     with enter_temp_directory():  # Avoid dumping 50 antechamber files in local directory.    
         _unused = molecule_to_mol2(m, "./tmp.mol2", residue_name=residue_name)
-        tmp_gaff_mol2_filename, tmp_frcmod_filename = run_antechamber("tmp", "./tmp.mol2", charge_method=None)  # USE OE AM1BCC charges!
+        net_charge = oechem.OENetCharge(m)
+        tmp_gaff_mol2_filename, tmp_frcmod_filename = run_antechamber("tmp", "./tmp.mol2", charge_method=None, net_charge=net_charge)  # USE OE AM1BCC charges!        
         shutil.copy(tmp_gaff_mol2_filename, gaff_mol2_filename)
         shutil.copy(tmp_frcmod_filename, frcmod_filename)
