@@ -379,7 +379,8 @@ def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, re
         If False, permits smiles strings with unspecificied stereochemistry.
         See https://docs.eyesopen.com/omega/usage.html
     """
-    oechem = import_("openeye.oechem")    
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))    
 
     # Get the absolute path so we can find these filenames from inside a temporary directory.
     gaff_mol2_filename = os.path.abspath(gaff_mol2_filename)
