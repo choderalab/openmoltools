@@ -48,7 +48,10 @@ def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
 
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
     
-    oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)  # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+    status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)  # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+    
+    if not status:
+        raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
     
     for k, conf in enumerate(charged_copy.GetConfs()):
         if keep_confs is not None and k > keep_confs - 1:
