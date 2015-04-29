@@ -1,8 +1,4 @@
-"""gaff2xml: a python library for convert antechamber to XML
-
-gaff2xml allows users to convert small molecule force field parameters
-into XML format for use in the OpenMM simulation package.
-
+"""moltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 """
 
 from __future__ import print_function
@@ -52,20 +48,20 @@ Operating System :: MacOS
 
 extensions = []
 
-setup(name='gaff2xml',
+setup(name='moltools',
       author='Kyle A. Beauchamp',
       author_email='kyleabeauchamp@gmail.com',
       description=DOCLINES[0],
       long_description="\n".join(DOCLINES[2:]),
       version=__version__,
       license='GPLv3+',
-      url='http://github.com/choderalab/gaff2xml',
+      url='http://github.com/choderalab/moltools',
       platforms=['Linux', 'Mac OS-X', 'Unix'],
       classifiers=CLASSIFIERS.splitlines(),
-      packages=["gaff2xml", "gaff2xml.tests"],
+      packages=["moltools", "moltools.tests"],
       zip_safe=False,
       scripts=['scripts/generate_example_data.py', 'scripts/processAmberForceField.py'],
       ext_modules=extensions,
-      package_data={'gaff2xml': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
+      package_data={'moltools': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
       **setup_kwargs
       )

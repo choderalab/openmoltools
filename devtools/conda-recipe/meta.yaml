@@ -1,10 +1,10 @@
 package:
-  name: gaff2xml
+  name: moltools
   version: !!str dev
 
 #source:
 #  fn: master.zip
-#  url: https://github.com/choderalab/gaff2xml/archive/master.zip
+#  url: https://github.com/choderalab/moltools/archive/master.zip
 
 build:
   preserve_egg_dir: True
@@ -37,10 +37,10 @@ test:
   requires:
     - nose
   imports:
-    - gaff2xml
+    - moltools
   commands:
-    - nosetests gaff2xml -v -a '!slow'
+    - nosetests moltools -v -a '!slow'
 
 about:
-  home: https://github.com/choderalab/gaff2xml
+  home: https://github.com/choderalab/moltools
   license: GNU Lesser General Public License v2 or later (LGPLv2+)
