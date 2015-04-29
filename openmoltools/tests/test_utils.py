@@ -3,7 +3,7 @@ import mdtraj as md
 from unittest import skipIf
 import logging
 from mdtraj.testing import eq
-from moltools import utils
+from openmoltools import utils
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
