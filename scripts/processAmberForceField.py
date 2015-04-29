@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from moltools import amber_parser
+from openmoltools import amber_parser
 
 if __name__ == "__main__":
     if len(sys.argv[1:]) <= 1:

@@ -1,7 +1,7 @@
-[![Build Status](https://travis-ci.org/choderalab/moltools.svg)](https://travis-ci.org/choderalab/moltools)
-[![Code Health](https://landscape.io/github/choderalab/moltools/master/landscape.svg)](https://landscape.io/github/choderalab/moltools/master)
+[![Build Status](https://travis-ci.org/choderalab/openmoltools.svg)](https://travis-ci.org/choderalab/openmoltools)
+[![Code Health](https://landscape.io/github/choderalab/openmoltools/master/landscape.svg)](https://landscape.io/github/choderalab/openmoltools/master)
 
-## moltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
+## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
 This set of tools allows users to automate various tasks related to
 simulating small molecules using various molecules dynamics techniques.
@@ -27,12 +27,12 @@ python setup.py install
 or
 
 conda config --add channels http://conda.binstar.org/omnia
-conda install moltools
+conda install openmoltools
 
 ```
 
 To test your installation, use the following command:
 
 ```
-nosetests moltools -v
+nosetests openmoltools -v
 ```

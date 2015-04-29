@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-moltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
+openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
 COPYRIGHT AND LICENSE
 

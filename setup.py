@@ -1,4 +1,4 @@
-"""moltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
+"""openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 """
 
 from __future__ import print_function
@@ -48,20 +48,20 @@ Operating System :: MacOS
 
 extensions = []
 
-setup(name='moltools',
+setup(name='openmoltools',
       author='Kyle A. Beauchamp',
       author_email='kyleabeauchamp@gmail.com',
       description=DOCLINES[0],
       long_description="\n".join(DOCLINES[2:]),
       version=__version__,
       license='GPLv3+',
-      url='http://github.com/choderalab/moltools',
+      url='http://github.com/choderalab/openmoltools',
       platforms=['Linux', 'Mac OS-X', 'Unix'],
       classifiers=CLASSIFIERS.splitlines(),
-      packages=["moltools", "moltools.tests"],
+      packages=["openmoltools", "openmoltools.tests"],
       zip_safe=False,
       scripts=['scripts/generate_example_data.py', 'scripts/processAmberForceField.py'],
       ext_modules=extensions,
-      package_data={'moltools': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
+      package_data={'openmoltools': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
       **setup_kwargs
       )
