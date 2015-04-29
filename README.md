@@ -8,7 +8,8 @@ simulating small molecules using various molecules dynamics techniques.
 It also contains several python tools for working with small molecules,
 packing boxes (python wrappers for packmol), and parameterizing small
 molecules.  It also contains tools for creating OpenMM XML forcefield files
-for small molecules.
+for small molecules, although we currently focus on the use of AMBER 
+prmtop and inpcrd files due to their widespread use.
 
 Our goal with this project is to have modular components that are both 
 documented and well-tested.  
@@ -34,5 +35,5 @@ conda install openmoltools
 To test your installation, use the following command:
 
 ```
-nosetests openmoltools -v
+nosetests openmoltools -v --exe
 ```
