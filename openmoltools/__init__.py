@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-gaff2xml, a utility for using GAFF files in OpenMM
+openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
 COPYRIGHT AND LICENSE
 
@@ -24,4 +24,4 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from gaff2xml import amber_parser, system_checker, utils, packmol, openeye, amber, cirpy
+from openmoltools import amber_parser, system_checker, utils, packmol, openeye, amber, cirpy

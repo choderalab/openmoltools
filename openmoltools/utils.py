@@ -18,7 +18,7 @@ from simtk.openmm import app
 import simtk.unit as units
 from distutils.spawn import find_executable
 
-from gaff2xml import amber_parser, system_checker
+from openmoltools import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
@@ -336,18 +336,18 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
 def get_data_filename(relative_path):
     """Get the full path to one of the reference files shipped for testing
 
-    In the source distribution, these files are in ``gaff2xml/chemicals/*/``,
+    In the source distribution, these files are in ``openmoltools/chemicals/*/``,
     but on installation, they're moved to somewhere in the user's python
     site-packages directory.
 
     Parameters
     ----------
     name : str
-        Name of the file to load (with respect to the gaff2xml folder).
+        Name of the file to load (with respect to the openmoltools folder).
 
     """
 
-    fn = resource_filename('gaff2xml', relative_path)
+    fn = resource_filename('openmoltools', relative_path)
 
     if not os.path.exists(fn):
         raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
@@ -426,6 +426,6 @@ def tag_description(lambda_function, description):
 
 
 def molecule_to_mol2(*args, **kwargs):
-    print("Warning: molecule_to_mol2 has been moved to gaff2xml.openeye.")
-    import gaff2xml.openeye 
-    return gaff2xml.openeye.molecule_to_mol2(*args, **kwargs)
+    print("Warning: molecule_to_mol2 has been moved to openmoltools.openeye.")
+    import openmoltools.openeye 
+    return openmoltools.openeye.molecule_to_mol2(*args, **kwargs)

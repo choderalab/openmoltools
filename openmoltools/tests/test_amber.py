@@ -2,7 +2,7 @@ import numpy as np
 import mdtraj as md
 from unittest import skipIf
 import logging
-from gaff2xml import utils, amber,packmol
+from openmoltools import utils, amber,packmol
 from distutils.spawn import find_executable
 
 

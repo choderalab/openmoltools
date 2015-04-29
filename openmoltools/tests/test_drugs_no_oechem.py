@@ -2,7 +2,7 @@ from nose.plugins.attrib import attr
 from unittest import skipIf
 import tempfile
 import os
-from gaff2xml import utils
+from openmoltools import utils
 
 def _drug_tester(n_molecules=3404, charge_method="bcc"):
     """Helper function for running various versions of the drug parameterization benchmark."""

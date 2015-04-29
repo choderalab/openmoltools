@@ -1,7 +1,7 @@
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
-from gaff2xml import gafftools, system_checker
+from openmoltools import gafftools, system_checker
 
 ligand_name = "sustiva"
 ligand_path = "./chemicals/%s/" % ligand_name

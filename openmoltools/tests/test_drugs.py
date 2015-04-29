@@ -1,6 +1,6 @@
 from nose.plugins.attrib import attr
 from unittest import skipIf
-from gaff2xml import utils
+from openmoltools import utils
 import os
 
 try:

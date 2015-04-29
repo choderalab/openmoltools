@@ -4,9 +4,9 @@ import simtk.openmm as mm
 import numpy as np
 from mdtraj.testing import eq
 from unittest import skipIf
-from gaff2xml import utils
+from openmoltools import utils
 import os
-import gaff2xml.openeye
+import openmoltools.openeye
 import pandas as pd
 import mdtraj as md
 from mdtraj.testing import raises
@@ -28,8 +28,8 @@ except:
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol_keepconfs():
-    m0 = gaff2xml.openeye.iupac_to_oemol("butanol")
-    m1 = gaff2xml.openeye.get_charges(m0, keep_confs=1)
+    m0 = openmoltools.openeye.iupac_to_oemol("butanol")
+    m1 = openmoltools.openeye.get_charges(m0, keep_confs=1)
     eq(m0.NumAtoms(), m1.NumAtoms())
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
@@ -37,15 +37,15 @@ def test_butanol_keepconfs():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol():
-    m0 = gaff2xml.openeye.iupac_to_oemol("butanol")
-    m1 = gaff2xml.openeye.get_charges(m0)
+    m0 = openmoltools.openeye.iupac_to_oemol("butanol")
+    m1 = openmoltools.openeye.get_charges(m0)
     eq(m0.NumAtoms(), m1.NumAtoms())
     assert m1.NumConfs() >= 2, "Butanol should have multiple conformers."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
     
     all_data = {}
     for k, molecule in enumerate(m1.GetConfs()):
-        names_to_charges, str_repr = gaff2xml.openeye.get_names_to_charges(molecule)
+        names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(molecule)
         all_data[k] = names_to_charges
         eq(sum(names_to_charges.values()), 0.0, decimal=7)  # Net charge should be zero
     
@@ -57,14 +57,14 @@ def test_butanol():
     
     with utils.enter_temp_directory():
         # Try saving to disk as mol2
-        gaff2xml.openeye.molecule_to_mol2(m1, "out.mol2")
+        openmoltools.openeye.molecule_to_mol2(m1, "out.mol2")
         # Make sure MDTraj can read the output
         t = md.load("out.mol2")
         # Make sure MDTraj can read the charges / topology info
         atoms, bonds = md.formats.mol2.mol2_to_dataframes("out.mol2")
 
         # Finally, make sure MDTraj and OpenEye report the same charges.
-        names_to_charges, str_repr = gaff2xml.openeye.get_names_to_charges(m1)
+        names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(m1)
         q = atoms.set_index("name").charge
         q0 = pd.Series(names_to_charges)
         delta = q - q0  # An object containing the charges, with atom names as indices
@@ -73,26 +73,26 @@ def test_butanol():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_benzene():
-    m0 = gaff2xml.openeye.iupac_to_oemol("benzene")
-    m1 = gaff2xml.openeye.get_charges(m0)
+    m0 = openmoltools.openeye.iupac_to_oemol("benzene")
+    m1 = openmoltools.openeye.get_charges(m0)
     eq(m0.NumAtoms(), m1.NumAtoms())
     print(m1.NumConfs())
     assert m1.NumConfs() == 1, "Benezene should have 1 conformer"
     assert m1.NumAtoms() == 12, "Benezene should have 12 atoms"
     
-    names_to_charges, str_repr = gaff2xml.openeye.get_names_to_charges(m1)
+    names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(m1)
     eq(sum(names_to_charges.values()), 0.0, decimal=7)  # Net charge should be zero
     
     with utils.enter_temp_directory():
         # Try saving to disk as mol2
-        gaff2xml.openeye.molecule_to_mol2(m1, "out.mol2")
+        openmoltools.openeye.molecule_to_mol2(m1, "out.mol2")
         # Make sure MDTraj can read the output
         t = md.load("out.mol2")
         # Make sure MDTraj can read the charges / topology info
         atoms, bonds = md.formats.mol2.mol2_to_dataframes("out.mol2")
 
         # Finally, make sure MDTraj and OpenEye report the same charges.
-        names_to_charges, str_repr = gaff2xml.openeye.get_names_to_charges(m1)
+        names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(m1)
         q = atoms.set_index("name").charge
         q0 = pd.Series(names_to_charges)
         delta = q - q0  # An object containing the charges, with atom names as indices
@@ -101,8 +101,8 @@ def test_benzene():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_link_in_utils():    
-    m0 = gaff2xml.openeye.iupac_to_oemol("benzene")
-    m1 = gaff2xml.openeye.get_charges(m0)
+    m0 = openmoltools.openeye.iupac_to_oemol("benzene")
+    m1 = openmoltools.openeye.get_charges(m0)
     with utils.enter_temp_directory():
         # This function was moved from utils to openeye, so check that the old link still works.
         utils.molecule_to_mol2(m1, "out.mol2")
@@ -110,11 +110,11 @@ def test_link_in_utils():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_smiles():
-    m0 = gaff2xml.openeye.smiles_to_oemol("CCCCO")
-    charged0 = gaff2xml.openeye.get_charges(m0)
+    m0 = openmoltools.openeye.smiles_to_oemol("CCCCO")
+    charged0 = openmoltools.openeye.get_charges(m0)
 
-    m1 = gaff2xml.openeye.iupac_to_oemol("butanol")
-    charged1 = gaff2xml.openeye.get_charges(m1)
+    m1 = openmoltools.openeye.iupac_to_oemol("butanol")
+    charged1 = openmoltools.openeye.get_charges(m1)
 
     eq(charged0.NumAtoms(), charged1.NumAtoms())
 
@@ -122,12 +122,12 @@ def test_smiles():
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml():
     with utils.enter_temp_directory():    
-        m0 = gaff2xml.openeye.smiles_to_oemol("CCCCO")
-        charged0 = gaff2xml.openeye.get_charges(m0)
-        m1 = gaff2xml.openeye.smiles_to_oemol("ClC(Cl)(Cl)Cl")
-        charged1 = gaff2xml.openeye.get_charges(m1)
+        m0 = openmoltools.openeye.smiles_to_oemol("CCCCO")
+        charged0 = openmoltools.openeye.get_charges(m0)
+        m1 = openmoltools.openeye.smiles_to_oemol("ClC(Cl)(Cl)Cl")
+        charged1 = openmoltools.openeye.get_charges(m1)
 
-        trajectories, ffxml = gaff2xml.openeye.oemols_to_ffxml([charged0, charged1])
+        trajectories, ffxml = openmoltools.openeye.oemols_to_ffxml([charged0, charged1])
 
 
 
@@ -135,14 +135,14 @@ def test_ffxml():
 def test_ffxml_simulation():
     """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
     with utils.enter_temp_directory():    
-        m0 = gaff2xml.openeye.smiles_to_oemol("Cc1ccccc1")
-        charged0 = gaff2xml.openeye.get_charges(m0)
-        m1 = gaff2xml.openeye.smiles_to_oemol("c1ccccc1")
-        charged1 = gaff2xml.openeye.get_charges(m1)
+        m0 = openmoltools.openeye.smiles_to_oemol("Cc1ccccc1")
+        charged0 = openmoltools.openeye.get_charges(m0)
+        m1 = openmoltools.openeye.smiles_to_oemol("c1ccccc1")
+        charged1 = openmoltools.openeye.get_charges(m1)
         ligands = [charged0, charged1]
         n_atoms = [15,12]
 
-        trajectories, ffxml = gaff2xml.openeye.oemols_to_ffxml(ligands)
+        trajectories, ffxml = openmoltools.openeye.oemols_to_ffxml(ligands)
         eq(len(trajectories),len(ligands))
 
         pdb_filename = utils.get_data_filename("chemicals/proteins/1vii.pdb")
@@ -191,20 +191,20 @@ def test_ffxml_simulation():
 @raises(RuntimeError)
 def test_charge_fail1():
     with utils.enter_temp_directory():
-        gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
+        openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
 def test_charge_fail2():
-    m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
-    m = gaff2xml.openeye.get_charges(m, strictStereo=True, keep_confs=1)
+    m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+    m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
     with utils.enter_temp_directory():    
-        gaff2xml.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
+        openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success2():
-    m = gaff2xml.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
-    m = gaff2xml.openeye.get_charges(m, strictStereo=False)
+    m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+    m = openmoltools.openeye.get_charges(m, strictStereo=False)
