@@ -1,10 +1,10 @@
 package:
-  name: moltools
+  name: openmoltools
   version: !!str dev
 
 #source:
 #  fn: master.zip
-#  url: https://github.com/choderalab/moltools/archive/master.zip
+#  url: https://github.com/choderalab/openmoltools/archive/master.zip
 
 build:
   preserve_egg_dir: True
@@ -37,10 +37,10 @@ test:
   requires:
     - nose
   imports:
-    - moltools
+    - openmoltools
   commands:
-    - nosetests moltools -v -a '!slow'
+    - nosetests openmoltools -v -a '!slow'
 
 about:
-  home: https://github.com/choderalab/moltools
+  home: https://github.com/choderalab/openmoltools
   license: GNU Lesser General Public License v2 or later (LGPLv2+)
