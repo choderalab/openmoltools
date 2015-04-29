@@ -154,7 +154,7 @@ def smiles_to_oemol(smiles):
 
     return molecule
 
-def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0, rms_threshold=1.0, stricTypes = False):
+def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0, rms_threshold=1.0, strictTypes = True):
     """Generate conformations for the supplied molecule
 
     Parameters
@@ -165,7 +165,7 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
         Max number of conformers to generate.  If None, use default OE Value.
     strictStereo : bool, optional, default=True
         If False, permits smiles strings with unspecified stereochemistry.
-    strictTypes : bool, optional, default=False
+    strictTypes : bool, optional, default=True
         If True, requires that Omega have exact MMFF types for atoms in molecule; otherwise, allows the closest atom type of the same element to be used. 
 
     Returns
