@@ -3,10 +3,10 @@ Test some common molecules using OpenEye tools.
 
 """
 
-import gaff2xml.openeye
+import moltools.openeye
 from nose.plugins.attrib import attr
 from unittest import skipIf
-from gaff2xml import utils
+from moltools import utils
 import os
 
 try:
@@ -34,8 +34,8 @@ molecules = [
 def test_common_molecules():
     import openeye.oechem
     for molecule_name in molecules:
-        molecule = gaff2xml.openeye.iupac_to_oemol(molecule_name)
-        molecule = gaff2xml.openeye.get_charges(molecule)
+        molecule = moltools.openeye.iupac_to_oemol(molecule_name)
+        molecule = moltools.openeye.get_charges(molecule)
         with utils.enter_temp_directory():
             tripos_mol2_filename = 'molecule.mol2'
             molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule, tripos_mol2_filename=tripos_mol2_filename)

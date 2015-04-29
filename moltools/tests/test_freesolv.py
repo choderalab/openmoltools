@@ -2,7 +2,7 @@ from nose.plugins.attrib import attr
 from unittest import skipIf
 import tempfile
 import os
-from gaff2xml import utils
+from moltools import utils
 import numpy as np
 import mdtraj as md
 from distutils.spawn import find_executable

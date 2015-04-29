@@ -4,7 +4,7 @@ import mdtraj as md
 from unittest import skipIf
 import logging
 from mdtraj.testing import eq
-from gaff2xml import utils, packmol
+from moltools import utils, packmol
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
