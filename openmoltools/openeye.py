@@ -1,7 +1,7 @@
 import shutil
 import os
 import mdtraj as md
-from gaff2xml.utils import import_, enter_temp_directory, run_antechamber, create_ffxml_file
+from openmoltools.utils import import_, enter_temp_directory, run_antechamber, create_ffxml_file
 import logging
 
 logger = logging.getLogger(__name__)
