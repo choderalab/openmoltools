@@ -1,5 +1,4 @@
 [![Build Status](https://travis-ci.org/choderalab/openmoltools.svg)](https://travis-ci.org/choderalab/openmoltools)
-[![Code Health](https://landscape.io/github/choderalab/openmoltools/master/landscape.svg)](https://landscape.io/github/choderalab/openmoltools/master)
 
 ## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
