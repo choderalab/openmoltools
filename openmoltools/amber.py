@@ -80,7 +80,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     if len(all_names) != len(mol2_filenames):
         raise(ValueError("Must have UNIQUE residue names in each mol2 file."))
     
-    all_names = list(all_names)
+    all_names = [md.load(filename).top.residue(0).name for filename in mol2_filenames]
     
     mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(mol2_filenames))
     amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(frcmod_filenames))
