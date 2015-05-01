@@ -30,7 +30,7 @@ except:
 try:
     import chemistry
     HAVE_PARMED = True
-except IOError:
+except ImportError:
     HAVE_PARMED = False
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
