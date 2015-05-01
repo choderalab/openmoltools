@@ -1,3 +1,4 @@
+from nose.plugins.attrib import attr
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
@@ -208,3 +209,43 @@ def test_charge_success1():
 def test_charge_success2():
     m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = openmoltools.openeye.get_charges(m, strictStereo=False)
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@attr("quick")
+def test_binary_mixture_rename():
+    smiles_string0 = "CCCCCC"
+    smiles_string1 = "CCCCCCCCC"
+
+    with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
+        mol2_filename0 = "./A.mol2"
+        frcmod_filename0 = "./A.frcmod"
+
+        mol2_filename1 = "./B.mol2"
+        frcmod_filename1 = "./B.frcmod"
+
+        gaff_mol2_filenames = [mol2_filename0, mol2_filename1]
+        frcmod_filenames = [frcmod_filename0, frcmod_filename1]
+
+        prmtop_filename = "./box.prmtop"
+        inpcrd_filename = "./box.inpcrd"
+
+        openmoltools.openeye.smiles_to_antechamber(smiles_string0, mol2_filename0, frcmod_filename0)
+        openmoltools.openeye.smiles_to_antechamber(smiles_string1, mol2_filename1, frcmod_filename1)
+
+        openmoltools.utils.randomize_mol2_residue_names(gaff_mol2_filenames)
+
+        box_pdb_filename = "./box.pdb"
+
+        gaff_mol2_filenames = [mol2_filename0, mol2_filename1]
+        n_monomers = [10, 20]
+
+        packed_trj = openmoltools.packmol.pack_box([md.load(mol2) for mol2 in gaff_mol2_filenames], n_monomers)
+        packed_trj.save(box_pdb_filename)
+
+        tleap_cmd = openmoltools.amber.build_mixture_prmtop(gaff_mol2_filenames, frcmod_filenames, box_pdb_filename, prmtop_filename, inpcrd_filename)
+
+        prmtop = app.AmberPrmtopFile(prmtop_filename)
+        inpcrd = app.AmberInpcrdFile(inpcrd_filename)
+
+        system = prmtop.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1.0*u.nanometers, constraints=app.HBonds)

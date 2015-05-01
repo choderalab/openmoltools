@@ -1,3 +1,6 @@
+import random
+import itertools
+import string
 import os
 import tempfile
 import logging
@@ -429,3 +432,49 @@ def molecule_to_mol2(*args, **kwargs):
     print("Warning: molecule_to_mol2 has been moved to openmoltools.openeye.")
     import openmoltools.openeye 
     return openmoltools.openeye.molecule_to_mol2(*args, **kwargs)
+
+def get_unique_names(n_molecules):
+    """Generate unique random residue names for use in mixture mol2 / pdb files.
+
+    Parameters
+    ----------
+    n_molecules : int
+        Number of unique names to generate
+
+    Notes
+    -----
+    Names will start with Z to avoid conflicts with common macromolecule
+    residue names.
+    """
+    for i in itertools.count():
+        names = ["Z" + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(2)) for i in range(n_molecules)]
+        if len(set(names)) == n_molecules:
+            return names
+
+def OLD_randomize_mol2_residue_names(mol2_filenames):
+    """Find unique residue names for a list of MOL2 files.  Then
+    re-write the MOL2 files using OpenEYE with the unique identifiers.
+    """
+    
+    names = get_unique_names(len(mol2_filenames))
+
+    for k, filename in enumerate(mol2_filenames):
+        ifs = oechem.oemolistream()
+        ifs.open(filename)
+        for mol in ifs.GetOEMols():
+            break
+        molecule_to_mol2(mol, tripos_mol2_filename=filename, residue_name=names[k])
+
+
+def randomize_mol2_residue_names(mol2_filenames):
+    """Find unique residue names for a list of MOL2 files.  Then
+    re-write the MOL2 files using ParmEd with the unique identifiers.
+    """
+    import chemistry    
+    names = get_unique_names(len(mol2_filenames))
+
+    for k, filename in enumerate(mol2_filenames):
+        struct = chemistry.load_file(filename)
+        struct.name = names[k]
+        mol2file = chemistry.formats.Mol2File
+        mol2file.write(struct, filename) 
