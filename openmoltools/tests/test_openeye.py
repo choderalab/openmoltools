@@ -219,6 +219,7 @@ def test_charge_success2():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @skipIf(not HAVE_PARMED, "Cannot test without Parmed Chemistry.")
+@attr("parmed")
 def test_binary_mixture_rename():
     smiles_string0 = "CCCCCC"
     smiles_string1 = "CCCCCCCCC"
