@@ -447,7 +447,7 @@ def get_unique_names(n_molecules):
     residue names.
     """
     for i in itertools.count():
-        names = ["Z" + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(2)) for i in range(n_molecules)]
+        names = ["Z" + ''.join(random.choice(string.ascii_uppercase) for _ in range(2)) for i in range(n_molecules)]
         if len(set(names)) == n_molecules:
             return names
 
