@@ -451,20 +451,6 @@ def get_unique_names(n_molecules):
         if len(set(names)) == n_molecules:
             return names
 
-def OLD_randomize_mol2_residue_names(mol2_filenames):
-    """Find unique residue names for a list of MOL2 files.  Then
-    re-write the MOL2 files using OpenEYE with the unique identifiers.
-    """
-    
-    names = get_unique_names(len(mol2_filenames))
-
-    for k, filename in enumerate(mol2_filenames):
-        ifs = oechem.oemolistream()
-        ifs.open(filename)
-        for mol in ifs.GetOEMols():
-            break
-        molecule_to_mol2(mol, tripos_mol2_filename=filename, residue_name=names[k])
-
 
 def randomize_mol2_residue_names(mol2_filenames):
     """Find unique residue names for a list of MOL2 files.  Then
