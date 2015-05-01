@@ -444,7 +444,11 @@ def get_unique_names(n_molecules):
     Notes
     -----
     Names will start with Z to avoid conflicts with common macromolecule
-    residue names.
+    residue names.  This may be improved in the future.
+    
+    THIS FUNCTION will enter an INFINITE LOOP if you request many
+    (hundreds) of unique residue names, as it becomes harder or impossible
+    to generate many unique names.
     """
     for i in itertools.count():
         names = ["Z" + ''.join(random.choice(string.ascii_uppercase) for _ in range(2)) for i in range(n_molecules)]
