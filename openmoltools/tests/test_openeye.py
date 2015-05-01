@@ -27,6 +27,12 @@ try:
 except:
     HAVE_OE = False
 
+try:
+    import chemistry
+    HAVE_PARMED = True
+except IOError:
+    HAVE_PARMED = False
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol_keepconfs():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
@@ -212,7 +218,7 @@ def test_charge_success2():
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-@attr("quick")
+@skipIf(not HAVE_PARMED, "Cannot test openeye module without OpenEye tools.")
 def test_binary_mixture_rename():
     smiles_string0 = "CCCCCC"
     smiles_string1 = "CCCCCCCCC"
