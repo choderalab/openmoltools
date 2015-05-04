@@ -10,6 +10,7 @@ import shutil
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
+import openmoltools.acpype as acpype
 
 try:
     from subprocess import getoutput  # If python 3
@@ -136,6 +137,8 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
 
     Parameters
     ----------
+    molecule_name : str
+        The name of the molecule    
     gaff_mol2_filename : str
         GAFF format mol2 filename produced by antechamber
     frcmod_filename : str
@@ -181,6 +184,77 @@ quit
     file_handle.close()
 
     return prmtop_filename, inpcrd_filename
+
+def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, debug = False, is_sorted = False ):
+    """Use acpype.py (Sousa Da Silva et al., BMC Research Notes 5:367 (2012)) to convert AMBER prmtop and crd files to GROMACS format using amb2gmx mode. Writes to GROMACS 4.5 (and later) format, rather than the format for earlier GROMACS versions.
+
+
+    Parameters
+    ----------
+    molecule_name : str
+        String specifying name of molecule
+    in_prmtop : str
+        String specifying path to AMBER-format parameter/topology (parmtop) file
+    in_crd : str
+        String specifying path to AMBER-format coordinate file
+    out_top : str, optional, default = None
+        String specifying path to GROMACS-format topology file which will be written out. If none is provided, created based on molecule_name.
+    out_gro : str, optional, default = None
+        String specifying path to GROMACS-format coordinate (.gro) file which will be written out. If none is provided, created based on molecule_name.
+    debug : bool, optional, default = False
+        Print debug info? If not specified, do not. 
+    is_sorted : bool, optional, default = False
+        Sort resulting topology file        
+
+    Returns
+    -------
+    out_top : str
+        GROMACS topology file produced by acpype 
+    out_gro : str
+        GROMACS coordinate file produced by acpype
+    """
+
+    #Create output file names if needed
+    if out_top is None:
+        out_top = "%s.top" % molecule_name        
+    if out_gro is None:
+        out_gro = "%s.gro" % molecule_name
+
+    #Create temporary output dir for acpype output
+    outdir = tempfile.mkdtemp()
+    #Define basename for output
+    basename = os.path.join( outdir, 'output')   
+
+ 
+    #Set up acpype
+    system = acpype.MolTopol( acFileXyz = in_crd, acFileTop = in_prmtop, basename = basename, is_sorted = is_sorted, gmx45 = True, disam = True )  
+
+    #Print debug info if desired
+    if debug: 
+        print system.printDebug('prmtop and inpcrd files parsed')
+
+    #Write results
+    system.writeGromacsTopolFiles( amb2gmx = True ) 
+
+    #Acpype names various things in the topology and coordinate file after the base name of the file used as input. Replace these names with an at-least-legible string while writing to desired output
+    top_in = open(basename+"_GMX.top", 'r')
+    top_out = open( out_top, 'w')
+    for line in top_in.readlines():
+        top_out.write( line.replace( basename, molecule_name) )
+    top_in.close()
+    top_out.close()
+    gro_in = open(basename+"_GMX.gro", 'r')
+    gro_out = open( out_gro, 'w')
+    for line in gro_in.readlines():
+        gro_out.write( line.replace( basename, molecule_name) )
+    gro_in.close()
+    gro_out.close()
+    
+    #Check if files exist and are not empty; return True if so
+    if os.stat( out_top).st_size == 0 or os.stat( out_gro ) == 0:
+        raise(ValueError("ACPYPE conversion failed."))
+
+    return out_top, out_gro 
 
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
