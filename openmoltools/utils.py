@@ -231,7 +231,7 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
 
     #Print debug info if desired
     if debug: 
-        print system.printDebug('prmtop and inpcrd files parsed')
+        print(system.printDebug('prmtop and inpcrd files parsed'))
 
     #Write results
     system.writeGromacsTopolFiles( amb2gmx = True ) 
