@@ -58,6 +58,15 @@ def test_run_antechamber_charges():
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         gaff_mol2_filename, frcmod_filename = utils.run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=-1)
 
+def test_acpype_conversion():
+    molecule_name = 'sustiva'
+    input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
+    with utils.enter_temp_directory(): # Prevents creating tons of GAFF files everywhere.
+        gaff_mol2_filename, frcmod_filename = utils.run_antechamber(molecule_name, input_filename, charge_method=None)
+        prmtop, inpcrd = utils.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
+        out_top, out_gro = utils.convert_via_acpype( molecule_name, prmtop, inpcrd ) 
+
+
 @skipIf(SKIP_SMILES, "Skipping testing of smiles conversion because openbabel or rdkit not found.")
 def test_smiles_conversion():
     pdb_filename = utils.get_data_filename("chemicals/proteins/1vii.pdb")

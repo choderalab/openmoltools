@@ -7,6 +7,7 @@ COPYRIGHT AND LICENSE
 
 @author John D. Chodera <jchodera@gmail.com>
 @author Kyle A. Beauchamp <kyleabeauchamp@gmail.com>
+@author David L. Mobley <dmobley@mobleylab.org>
 
 All code in this repository is released under the GNU General Public License.
 
