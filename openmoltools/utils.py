@@ -11,7 +11,6 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
-import commands
 
 try:
     from subprocess import getoutput  # If python 3
@@ -589,7 +588,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
         oechem.OEWriteMolecule( ofs, mol )
         ofs.close()
         #Run checkmol
-        groups = commands.getoutput('%s %s' % (executable_name, fname) )
+        groups = getoutput('%s %s' % (executable_name, fname) )
         #Split to separate groups
         groups = groups.split('\n')
         #Store results
