@@ -11,6 +11,7 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
+import commands
 
 try:
     from subprocess import getoutput  # If python 3
@@ -541,4 +542,68 @@ def randomize_mol2_residue_names(mol2_filenames):
         struct = chemistry.load_file(filename)
         struct.name = names[k]
         mol2file = chemistry.formats.Mol2File
-        mol2file.write(struct, filename) 
+        mol2file.write(struct, filename)
+
+def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
+    """For a specified molecule file, return a list of functional groups as assigned by checkmol for the molecule(s) present. The first entry in the list will correspond to the groups in the first molecule, the second gives groups in the second (if present) and so on. Raises an exception if checkmol is not found.
+ 
+    Parameters
+    ----------
+    molecule_filename : str
+        Specifies name of file to read
+    executable_name : str, default = 'checkmol'
+        Specify name (or full path) of execuable for checkmol
+
+    Returns
+    -------
+    descriptors : list (of lists of strings)
+        Checkmol functional group assignments for each molecule(s) in the input file, where descriptors[0] gives the descriptors for the first molecule, etc.
+
+    Notes
+    -----
+    This should properly handle single-molecule and multiple-molecule files; however, multiple-conformer files may result in each conformer appearing (rather than each molecule) appearing in the list of descriptors, which may or may not be the expected behavior.
+    """
+
+    oechem = import_("openeye.oechem") 
+ 
+    status = find_executable( executable_name )
+    if status==None:
+        raise(ValueError("Cannot find checkmol; cannot assign checkmol descriptors without it."))
+
+
+    #Open input file
+    ifs = oechem.oemolistream( molecule_filename )
+    #Input molecule
+    mol = oechem.OEGraphMol( )
+
+    #Set up temporary file for molecule output
+    fname = tempfile.mktemp( suffix = '.sdf' ) 
+
+    #Storage for descriptors
+    descriptors = []
+
+    #Read/write/run checkmol
+    while oechem.OEReadMolecule( ifs, mol ):
+        #Dump molecule out
+        ofs = oechem.oemolostream( fname )
+        oechem.OEWriteMolecule( ofs, mol )
+        ofs.close()
+        #Run checkmol
+        groups = commands.getoutput('%s %s' % (executable_name, fname) )
+        #Split to separate groups
+        groups = groups.split('\n')
+        #Store results
+        descriptors.append( groups )
+ 
+    #Raise an exception if the whole list is empty
+    fnd = False
+    for elem in descriptors:
+        if len(elem)>0:
+            fnd = True
+    if not fnd:
+        raise(ValueError("checkmol only produced empty descriptors for your molecule. Something is wrong; please check your input file and checkmol installation."))
+
+    #Delete temporary file
+    os.remove( fname )
+ 
+    return descriptors
