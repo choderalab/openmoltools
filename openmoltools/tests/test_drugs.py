@@ -29,6 +29,7 @@ def test_drugs():
             yield utils.tag_description(lambda : utils.test_molecule(molecule_name, tripos_mol2_filename), "Testing drugs %s" % molecule_name)
 
 @skipIf(not HAVE_OE, "Cannot test test_drug() without OpenEye tools.")
+@attr('slow')
 def test_drug():
     import openeye.oechem
     database_filename = utils.get_data_filename("chemicals/drugs/Zdd.mol2.gz")
