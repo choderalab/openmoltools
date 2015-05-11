@@ -3,9 +3,9 @@ import shutil
 import os
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
+from mdtraj.utils.delay_import import import_
 import tempfile
 from distutils.spawn import find_executable
-from openeye.oechem import *
 
 PACKMOL_PATH = find_executable("packmol")
 
@@ -184,15 +184,19 @@ def approximate_volume_by_density( pdb_filenames, n_molecules_list, density = 1.
     By default, boxes are only modestly large. This approach has not been extensively tested for stability but has been used in th Mobley lab for perhaps ~100 different systems without substantial problems.
     """
 
+    oechem = import_("openeye.oechem")
+
     #Load molecules to get molecular weights
     wts = []
     mass = 0.0 #For calculating total mass
     for (idx,filenm) in enumerate(pdb_filenames):
-        mol = OEMol()
-        istr = oemolistream( pdb_filenames[i] )
-        OEReadMolecule( istr, mol )
-        wts.append( OECalculateMolecularWeight(mol) )
+        mol = oechem.OEMol()
+        istr = oechem.oemolistream( pdb_filenames[idx] )
+        oechem.OEReadMolecule( istr, mol )
+        wts.append( oechem.OECalculateMolecularWeight(mol) )
         mass += n_molecules_list[idx] * wts[idx] * 1./6.022e23
+    print(wts)
+    print(mass)
 
     #Estimate volume based on mass and density
     #Density = mass/volume so volume = mass/density (volume units are ml)
