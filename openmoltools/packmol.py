@@ -160,13 +160,13 @@ def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
     return box_size
 
 
-def approximate_volume_by_density( pdb_filenames, n_molecules_list, density = 1.0, box_scaleup_factor = 1.1):
+def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1.0, box_scaleup_factor = 1.1):
     """Generate an approximate box size based on the number and molecular weight of molecules present, and a target density for the final solvated mixture. If no density is specified, the target density is assumed to be 1 g/ml.
 
     Parameters
     ---------- 
-    pdb_filenames : list(str)
-        List of pdb filenames for each component of mixture.
+    smiles_strings : list(str)
+        List of smiles strings for each component of mixture.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
     box_scaleup_factor : float, optional, default = 1.1
@@ -189,10 +189,9 @@ def approximate_volume_by_density( pdb_filenames, n_molecules_list, density = 1.
     #Load molecules to get molecular weights
     wts = []
     mass = 0.0 #For calculating total mass
-    for (idx,filenm) in enumerate(pdb_filenames):
+    for (idx,smi) in enumerate(smiles_strings):
         mol = oechem.OEMol()
-        istr = oechem.oemolistream( pdb_filenames[idx] )
-        oechem.OEReadMolecule( istr, mol )
+        oechem.OEParseSmiles(mol, smi)
         wts.append( oechem.OECalculateMolecularWeight(mol) )
         mass += n_molecules_list[idx] * wts[idx] * 1./6.022e23
     print(wts)
