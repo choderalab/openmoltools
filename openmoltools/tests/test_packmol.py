@@ -63,7 +63,8 @@ def test_packmol_simulation_ternary_bydensity():
         pdb_filenames.append(pdb_filename)
 
     pdb_filenames = pdb_filenames[0:2] + [ligand_traj]  # Test passing BOTH pdb filenames and trajectories as input.
-    trj = packmol.pack_box(pdb_filenames, [6, 11, 23], estimator = 'density')
+    size = packmol.approximate_volume_by_density( smiles_list, [12, 22, 46] )
+    trj = packmol.pack_box(pdb_filenames, [12, 22, 46], box_size = size)
 
     xyz = trj.openmm_positions(0)
     top = trj.top.to_openmm()
@@ -81,4 +82,6 @@ def test_packmol_simulation_ternary_bydensity():
 
     simulation = app.Simulation(top, system, integrator)
     simulation.context.setPositions(xyz)
+
+    simulation.step(25)
 
