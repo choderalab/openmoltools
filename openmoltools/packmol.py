@@ -5,6 +5,7 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 import tempfile
 from distutils.spawn import find_executable
+from openeye.oechem import *
 
 PACKMOL_PATH = find_executable("packmol")
 
@@ -156,4 +157,50 @@ def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
                 molecule_volume += 15.0 # approximated from bondi radius of carbon = 1.53 angstroms
         volume += molecule_volume * n_molecules_list[k]
     box_size = volume**(1.0/3.0) * box_scaleup_factor
+    return box_size
+
+
+def approximate_volume_by_density( pdb_filenames, n_molecules_list, density = 1.0, box_scaleup_factor = 1.1):
+    """Generate an approximate box size based on the number and molecular weight of molecules present, and a target density for the final solvated mixture. If no density is specified, the target density is assumed to be 1 g/ml.
+
+    Parameters
+    ---------- 
+    pdb_filenames : list(str)
+        List of pdb filenames for each component of mixture.
+    n_molecules_list : list(int)
+        The number of molecules of each mixture component.
+    box_scaleup_factor : float, optional, default = 1.1
+        Factor by which the estimated box size is increased
+    density : float, optional, default 1.0
+        Target density for final system in g/ml
+
+    Returns
+    -------
+    box_size : float
+        The size (edge length) of the box to generate.  In ANGSTROMS.
+
+    Notes
+    -----
+    By default, boxes are only modestly large. This approach has not been extensively tested for stability but has been used in th Mobley lab for perhaps ~100 different systems without substantial problems.
+    """
+
+    #Load molecules to get molecular weights
+    wts = []
+    mass = 0.0 #For calculating total mass
+    for (idx,filenm) in enumerate(pdb_filenames):
+        mol = OEMol()
+        istr = oemolistream( pdb_filenames[i] )
+        OEReadMolecule( istr, mol )
+        wts.append( OECalculateMolecularWeight(mol) )
+        mass += n_molecules_list[idx] * wts[idx] * 1./6.022e23
+
+    #Estimate volume based on mass and density
+    #Density = mass/volume so volume = mass/density (volume units are ml)
+    vol = mass/density
+    #Convert to box length in angstroms
+    edge = vol**(1./3.)/1.e-8
+
+    #Compute final box size
+    box_size = edge*box_scaleup_factor
+
     return box_size
