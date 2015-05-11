@@ -206,7 +206,5 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
 
     #Compute final box size
     box_size = edge*box_scaleup_factor/units.angstroms
-    print box_size
-    raw_input()
 
     return box_size
