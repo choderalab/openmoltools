@@ -51,3 +51,34 @@ def test_packmol_simulation_ternary():
     simulation.context.setPositions(xyz)
 
     simulation.step(25)
+
+def test_packmol_simulation_ternary_bydensity():
+    smiles_list = ["Cc1ccccc1", "c1ccccc1", "CC"]
+    pdb_filenames = []
+    ligand_trajectories, ffxml = utils.smiles_to_mdtraj_ffxml(smiles_list)
+
+    for k, ligand_traj in enumerate(ligand_trajectories):
+        pdb_filename = tempfile.mktemp(suffix=".pdb")
+        ligand_traj.save(pdb_filename)
+        pdb_filenames.append(pdb_filename)
+
+    pdb_filenames = pdb_filenames[0:2] + [ligand_traj]  # Test passing BOTH pdb filenames and trajectories as input.
+    trj = packmol.pack_box(pdb_filenames, [6, 11, 23], estimator = 'density')
+
+    xyz = trj.openmm_positions(0)
+    top = trj.top.to_openmm()
+    top.setUnitCellDimensions(mm.Vec3(*trj.unitcell_lengths[0])*u.nanometer)
+
+    forcefield = app.ForceField(ffxml)
+
+    temperature = 300 * u.kelvin
+    friction = 0.1 / u.picosecond
+    timestep = 0.1 * u.femtosecond
+
+    system = forcefield.createSystem(top, nonbondedMethod=app.PME, nonbondedCutoff=1.0 * u.nanometers, constraints=None)
+
+    integrator = mm.LangevinIntegrator(temperature, friction, timestep)
+
+    simulation = app.Simulation(top, system, integrator)
+    simulation.context.setPositions(xyz)
+
