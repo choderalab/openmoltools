@@ -256,6 +256,35 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
 
     return out_top, out_gro 
 
+def do_solvate(grofile, topfile, grosolv, topsolv, box = 'cubic', box_dim = 1.0, water = 'spc216.gro'):
+    
+    os.environ['GMX_MAXBACKUP'] = '-1'
+    
+    cmdgmx = 'gmx editconf -f %s -o %s -c -d %3.2f -bt %s' % (grofile, grosolv, box_dim, box)
+    
+    os.system(cmdgmx)
+    
+    shutil.copyfile(topfile,topsolv)
+    
+    cmdgmx = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (grosolv, water, grosolv, topsolv)
+    
+    os.system(cmdgmx)
+    
+    file = open( topsolv, 'r')
+    text = file.readlines()
+    file.close()
+    
+    idx = 0
+    
+    while '[ system ]' not in text[idx]:
+        idx+=1
+    
+    text[idx-1] = '\n#include "amber99sb-ildn.ff/tip3p.itp"\n\n'
+
+    file = open( topsolv, 'w')
+    file.writelines( text )
+    file.close()
+
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
     """Process multiple gaff mol2 files and frcmod files using the XML conversion and write to an XML file.
