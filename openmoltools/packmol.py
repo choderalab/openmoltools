@@ -6,6 +6,7 @@ from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import tempfile
 from distutils.spawn import find_executable
+import simtk.unit as units
 
 PACKMOL_PATH = find_executable("packmol")
 
@@ -186,24 +187,26 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
 
     oechem = import_("openeye.oechem")
 
+    density = density * units.grams/units.milliliter
+
     #Load molecules to get molecular weights
     wts = []
-    mass = 0.0 #For calculating total mass
+    mass = 0.0*units.grams/units.mole * 1./units.AVOGADRO_CONSTANT_NA #For calculating total mass
     for (idx,smi) in enumerate(smiles_strings):
         mol = oechem.OEMol()
         oechem.OEParseSmiles(mol, smi)
-        wts.append( oechem.OECalculateMolecularWeight(mol) )
-        mass += n_molecules_list[idx] * wts[idx] * 1./6.022e23
-    print(wts)
-    print(mass)
+        wts.append( oechem.OECalculateMolecularWeight(mol)*units.grams/units.mole )
+        mass += n_molecules_list[idx] * wts[idx] * 1./units.AVOGADRO_CONSTANT_NA
 
     #Estimate volume based on mass and density
     #Density = mass/volume so volume = mass/density (volume units are ml)
     vol = mass/density
     #Convert to box length in angstroms
-    edge = vol**(1./3.)/1.e-8
+    edge = vol**(1./3.)
 
     #Compute final box size
-    box_size = edge*box_scaleup_factor
+    box_size = edge*box_scaleup_factor/units.angstroms
+    print box_size
+    raw_input()
 
     return box_size
