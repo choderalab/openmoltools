@@ -115,7 +115,8 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
 
 def build_prmtop(mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename):
-    """Create a prmtop and inpcrd from mol2 and frcmod files
+    """Create a prmtop and inpcrd for a molecule from mol2 and frcmod files
+       without solvating the molecule
 
     Parameters
     ----------
