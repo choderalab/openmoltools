@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 # Run tLEaP with input file:
 # $ tleap -f commands.in
 
-TLEAP_TEMPLATE = """
+TLEAP_TEMPLATE_MIX = """
 source leaprc.gaff
 %(mol2_section)s
 box = loadPdb %(box_filename)s
@@ -20,6 +20,16 @@ setbox box centers
 saveAmberParm box %(prmtop_filename)s %(inpcrd_filename)s
 quit
 """
+
+
+TLEAP_TEMPLATE = """
+source leaprc.gaff
+loadAmberParams %(amberparams_section)s
+peptide = loadMol2 %(mol2_section)s
+saveAmberParm peptide %(prmtop_filename)s %(inpcrd_filename)s
+quit
+"""
+
 
 #loadmol2_section will look something like this:
 #BMI = loadmol2 bmi.mol2
@@ -85,7 +95,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(mol2_filenames))
     amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(frcmod_filenames))
 
-    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=box_filename, prmtop_filename=prmtop_filename, inpcrd_filename=inpcrd_filename)
+    tleap_commands = TLEAP_TEMPLATE_MIX % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=box_filename, prmtop_filename=prmtop_filename, inpcrd_filename=inpcrd_filename)
     print(tleap_commands)
     
     file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
@@ -98,6 +108,52 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     output = getoutput(cmd)
     logger.debug(output)
 
+    file_handle.close()
+
+    return tleap_commands
+
+
+
+def build_prmtop(mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename):
+    """Create a prmtop and inpcrd from mol2 and frcmod files
+
+    Parameters
+    ----------
+    mol2_filename : str
+    Filename of GAFF flavored mol2 file.  
+    frcmod_filename : str
+    Filename of input GAFF frcmod filenames.
+    prmtop_filename : str
+    output prmtop filename.  Should have suffix .prmtop
+    inpcrd_filename : str
+    output inpcrd filename.  Should have suffix .inpcrd
+        
+    Returns
+    -------
+    tleap_commands : str
+    The string of commands piped to tleap for building the prmtop
+    and inpcrd files.  This will *already* have been run, but the
+    output can be useful for debugging or archival purposes.
+        
+    Notes
+    -----
+    This can be easily broken if there are missing, duplicated, or
+    inconsistent ligand residue names in the mol2, and frcmod files.
+    """
+
+    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_filename, amberparams_section=frcmod_filename, prmtop_filename=prmtop_filename, inpcrd_filename=inpcrd_filename)
+
+    file_handle = tempfile.NamedTemporaryFile('w')
+    file_handle.writelines(tleap_commands)
+    file_handle.flush()
+
+
+    cmd = "tleap -f %s " % file_handle.name
+    logger.debug(cmd)
+
+    output = getoutput(cmd)
+    logger.debug(output)
+    
     file_handle.close()
 
     return tleap_commands
