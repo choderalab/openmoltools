@@ -52,6 +52,8 @@ def test_packmol_simulation_ternary():
 
     simulation.step(25)
 
+@skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
+@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary_bydensity():
     smiles_list = ["Cc1ccccc1", "c1ccccc1", "CC"]
     pdb_filenames = []
