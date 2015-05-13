@@ -212,7 +212,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                     secname = elements[1]
                     if secname=='moleculetype':
                         if not found_moltype: found_moltype = True
-                        if found_moltype:
+                        elif found_moltype:
                             raise ValueError("merge_topologies requires single-molecule topology files. Multiple moelculetype definitions are found in in topology %s. Halting to avoid creating erroneous topologies." % (input_topologies[topnr]) )
 
 
@@ -222,7 +222,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     #Handle overall sections - atomtypes, defaults, moleculetype, (NOT sections for specific molecules - just those for the final whole system)
     #Note that `moleculetype` is only processed here for the purposes of checking exclusions; the individual moleculetypes will be handled later.
     section_names = [ 'defaults', 'atomtypes', 'moleculetype', 'molecules'  ]
-    sections_processed += section_names
+    sections_processed += section_names + ['system']
     section_contents = {}
     #For every section, store the lines to a list if they are not already present (and formatted identically). If they are already present, skip. No error checking is done (i.e. duplicate parameters which are not formatted identically will be included, and conflicting parameter definitions will also be included), EXCEPT that defaults and moleculetype sections are checked to ensure that combination rules/fudgeLJ/fudgeQQ and exclusions match. An exception is raised if not.
     for sec in section_names:
@@ -262,7 +262,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     molecule_sections = [ 'moleculetype', 'atoms', 'bonds', 'pairs', 'angles', 'dihedrals' ]
     sections_processed += molecule_sections
     topology_sections = {}
-    for sec in molecule_sections_names:
+    for sec in molecule_sections:
         topology_sections[sec] = {}
         for topnr in range(N_tops):
             topology_sections[sec][topnr] = []
@@ -332,7 +332,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     #Now handle stuff for the individual molecules present
     for topnr in range(N_tops):
         for secname in molecule_sections:
-            topology_lines += sections[ secname ] [ topnr ]          
+            topology_lines += topology_sections[ secname ] [ topnr ]          
 
 
     #Now add system name and molecules sections
