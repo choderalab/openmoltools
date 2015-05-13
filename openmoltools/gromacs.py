@@ -1,3 +1,5 @@
+import os
+
 def read_next_topo_section(textarray):
    """Process a text array containing contents of a GROMACS topology file, and return a 
     text array consisting of the header and contents of the next [ named ] section in the topology file, as well as a second text array consisting of anything prior to the next named section.
@@ -64,7 +66,7 @@ def read_next_topo_section(textarray):
    return section,extra
 
 def stripcomments(line):
-   """From a GROMACS topology formatted line, return (line, comments) with whitespace and comments stripped. Comments are given with ;.
+    """From a GROMACS topology formatted line, return (line, comments) with whitespace and comments stripped. Comments are given with ;.
 
     Parameters
     ----------
@@ -75,7 +77,7 @@ def stripcomments(line):
     -------
     line : str
         GROMACS line with comments and whitespace (leading/trailing) stripped
-   """
+    """
     # strip comments
     index = line.find(';')
     comments =''
@@ -90,7 +92,7 @@ def stripcomments(line):
 
 
 def extract_section(lines, section):
-   """Identify lines associate with a GROMACS topology section.
+    """Identify lines associate with a GROMACS topology section.
 
     Parameters
     ----------
@@ -106,7 +108,7 @@ def extract_section(lines, section):
     indices :  list (int)
         Line indices within lines belonging to section
 
-   """
+    """
 
     indices = list()
 
@@ -246,7 +248,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                     #If it's moleculetype and it's already there, check that the exclusions are OK
                     elif sec=='moleculetype':
                         tmp = line.split()
-                        for entry in section_contents[sec]
+                        for entry in section_contents[sec]:
                             line2, comments2 = stripcomments( entry )
                             if len(line2) > 1:
                                 if tmp[1] <> line2.split()[1]:
@@ -315,7 +317,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
             new_contents = []
             for line in section_contents['molecules']:
                 entry, comments = stripcomments(line)
-                new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] )
+                new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
             section_contents['molecules'] = new_contents
 
         #Otherwise we do nothing - we're just using existing section
