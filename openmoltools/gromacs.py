@@ -194,11 +194,19 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                     #If it's moleculetype and it's already there, check that the exclusions are OK
                     elif sec=='moleculetype':
                         tmp = line.split()
+                        identical = None
                         for entry in section_contents[sec]:
                             line2, comments2 = stripcomments( entry )
                             if len(line2) > 1:
-                                if tmp[1] <> line2.split()[1]:
+                                tmp2 = line2.split()
+                                if tmp[1] <> tmp2[1]:
+                                    identical = False
                                     raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
+                                else:
+                                    identical = True
+                        if not identical:
+                            section_contents[sec].append( thistop[index] )
+
                     #For everything else, if there is stuff here, store it if not already present
                     elif thistop[index] not in section_contents[sec]:
                         section_contents[sec].append( thistop[index] )
