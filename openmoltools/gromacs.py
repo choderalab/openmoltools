@@ -112,9 +112,10 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
 
     Notes
     -----
-    This simply takes the contents of provided topology files and consolidates them to make a single resulting topology file. Existing [ moleculetype ] definitions are preserved and molecules are kept separate. 
+    This simply takes the contents of provided topology files and consolidates them to make a single resulting topology file. Existing [ moleculetype ] definitions are preserved and molecules are kept separate.  
     This is not necessarily a particularly robust function, as it is expected to be replaced by functionality within ParmEd so we have not paid a great deal of attention to ensuring all possible topology file formats are handled.
     Provided topology files are required to be SINGLE-MOLECULE topology files.
+    Include files are not handled carefully. Initial include files at the top of topology files will be removed. Include files occurring after a molecule definition may be retained, but there is no checking whether these are duplicated or placed properly in the final topology file.
     Currently will NOT correctly handle a case where there might be multiple copies of a single section (i.e. multiple dihedrals sections) within a single molecule. Second and additional such sections will be ignored.
     """
 
@@ -168,52 +169,53 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         for topnr in range(N_tops):
             thistop = topology_text[topnr]
             status, indices = extract_section( thistop, sec )
-            for index in indices:
-                line, comments = stripcomments( thistop[index] )
-                if len(line) > 0:
-                    #If it's the [ molecules ] section, append even if duplicate since we'll change the names later
-                    if sec=='molecules':
-                        section_contents[sec].append( thistop[index] )
-                    #But if it's defaults and it's already there, check if it's OK
-                    elif sec=='defaults':
-                        tmp = line.split()
-                        identical = None
-                        for entry in section_contents[sec]:
-                            line2, comments2 = stripcomments( entry )
-                            if len(line2) > 2:
-                                tmp2 = line2.split()
-                                for idx in range(len(tmp)):
-                                    if tmp[idx] <> tmp2[idx]:
+            if status:
+                for index in indices:
+                    line, comments = stripcomments( thistop[index] )
+                    if len(line) > 0:
+                        #If it's the [ molecules ] section, append even if duplicate since we'll change the names later
+                        if sec=='molecules':
+                            section_contents[sec].append( thistop[index] )
+                        #But if it's defaults and it's already there, check if it's OK
+                        elif sec=='defaults':
+                            tmp = line.split()
+                            identical = None
+                            for entry in section_contents[sec]:
+                                line2, comments2 = stripcomments( entry )
+                                if len(line2) > 2:
+                                    tmp2 = line2.split()
+                                    for idx in range(len(tmp)):
+                                        if tmp[idx] <> tmp2[idx]:
+                                            identical = False
+                                            raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
+                                        else:
+                                            identical = True
+                            if not identical:
+                                section_contents[sec].append( thistop[index] )
+                            
+                        #If it's moleculetype and it's already there, check that the exclusions are OK
+                        elif sec=='moleculetype':
+                            tmp = line.split()
+                            identical = None
+                            for entry in section_contents[sec]:
+                                line2, comments2 = stripcomments( entry )
+                                if len(line2) > 1:
+                                    tmp2 = line2.split()
+                                    if tmp[1] <> tmp2[1]:
                                         identical = False
-                                        raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
+                                        raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
                                     else:
                                         identical = True
-                        if not identical:
-                            section_contents[sec].append( thistop[index] )
-                        
-                    #If it's moleculetype and it's already there, check that the exclusions are OK
-                    elif sec=='moleculetype':
-                        tmp = line.split()
-                        identical = None
-                        for entry in section_contents[sec]:
-                            line2, comments2 = stripcomments( entry )
-                            if len(line2) > 1:
-                                tmp2 = line2.split()
-                                if tmp[1] <> tmp2[1]:
-                                    identical = False
-                                    raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
-                                else:
-                                    identical = True
-                        if not identical:
-                            section_contents[sec].append( thistop[index] )
+                            if not identical:
+                                section_contents[sec].append( thistop[index] )
 
-                    #For everything else, if there is stuff here, store it if not already present
-                    elif thistop[index] not in section_contents[sec]:
-                        section_contents[sec].append( thistop[index] )
-                #If it's just comments, store it if it's not already there
-                elif len(comments) > 0:
-                    if thistop[index] not in section_contents[sec]:
-                        section_contents[sec].append( thistop[index] )
+                        #For everything else, if there is stuff here, store it if not already present
+                        elif thistop[index] not in section_contents[sec]:
+                            section_contents[sec].append( thistop[index] )
+                    #If it's just comments, store it if it's not already there
+                    elif len(comments) > 0:
+                        if thistop[index] not in section_contents[sec]:
+                            section_contents[sec].append( thistop[index] )
 
     #Now we've handled all the generic sections. Next handle all the per-molecule sections, tracking which topology they came from
     molecule_sections = [ 'moleculetype', 'atoms', 'bonds', 'pairs', 'angles', 'dihedrals' ]
@@ -297,10 +299,12 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     topology_lines = []
     #First handle stuff which occurs only once at the top of the topology file
     for sec in [ 'defaults', 'atomtypes']:
-        topology_lines.append( '[ %s ]\n' % sec )
-        for line in section_contents[sec]:
-            topology_lines.append( line ) 
-        topology_lines.append('\n')
+        #Only store these if the sections aren't empty - i.e. we might not have a defaults or atomtypes section.
+        if len( section_contents[sec] ) > 0:
+            topology_lines.append( '[ %s ]\n' % sec )
+            for line in section_contents[sec]:
+                topology_lines.append( line ) 
+            topology_lines.append('\n')
 
     #Now handle stuff for the individual molecules present
     for topnr in range(N_tops):
