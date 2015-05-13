@@ -248,7 +248,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
             new_contents = []
             for line in section_contents['molecules']:
                 entry, comments = stripcomments(line)
-                new_contents.append( '%s    %s\n' % (molecule_names[topnr], entry.split()[1] ) )         
+                if len(entry) > 1:
+                    new_contents.append( '%s    %s\n' % (molecule_names[topnr], entry.split()[1] ) )         
             section_contents['molecules'] = new_contents 
 
     #If names are not provided, use what we already have
@@ -258,7 +259,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
             new_contents = []
             for line in section_contents['molecules']:
                 entry, comments = stripcomments(line)
-                new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
+                if len(entry) > 1:
+                    new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
             section_contents['molecules'] = new_contents
 
         #Otherwise we do nothing - we're just using existing section
