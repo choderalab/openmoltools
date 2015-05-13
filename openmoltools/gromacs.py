@@ -106,9 +106,6 @@ def extract_section(lines, section):
     indices :  list (int)
         Line indices within lines belonging to section
 
-    Notes
-    -----
-    This returns only line indices corresponding to the first occurrence of a particular section. So, for example, if multiple [ dihedrals ] sections are present only one will be identified. Subsequent sections could be searched for by searching a later portion of the file.
    """
 
     indices = list()
@@ -153,7 +150,7 @@ def extract_section(lines, section):
 
 
 def merge_topologies( input_topologies, output_topology, system_name, molecule_names = None, molecule_numbers = None ):
-    """Merge GROMACS topology files specified in a list of input topologies and write the result into a final topology file specified. Optionally specify a list of molecule names to be used in the [ moleculetype ] and [ molecules ] sections, overriding what is already present.
+    """Merge GROMACS topology files specified in a list of input topologies and write the result into a final topology file specified. Currently these are required to be SINGLE-MOLECULE topology files. Optionally specify a list of molecule names to be used in the [ moleculetype ] and [ molecules ] sections, overriding what is already present.
 
     Parameters
     ----------
@@ -177,6 +174,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     -----
     This simply takes the contents of provided topology files and consolidates them to make a single resulting topology file. Existing [ moleculetype ] definitions are preserved and molecules are kept separate. 
     This is not necessarily a particularly robust function, as it is expected to be replaced by functionality within ParmEd so we have not paid a great deal of attention to ensuring all possible topology file formats are handled.
+    Provided topology files are required to be SINGLE-MOLECULE topology files.
+    Currently will NOT correctly handle a case where there might be multiple copies of a single section (i.e. multiple dihedrals sections) within a single molecule. Second and additional such sections will be ignored.
     """
 
     #PRELIMINARIES
@@ -197,6 +196,23 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         file = open(filenm, 'r')
         topology_text.append(file.readlines() )
         file.close()
+
+    #We require single-molecule topology files. Check that these are.
+    for topnr in range(N_tops):
+        thistop = topology_text[ topnr ]
+        found_moltype = False
+        for entry in thistop:
+            line, comments = stripcomments( entry )
+            elements = line.split()
+            #If this is a section name, check and see if it's a moleculetype 
+            if len(elements) == 3:
+                if (elements[0]=='[') and (elements[2]==']'):
+                    secname = elements[1]
+                    if secname=='moleculetype':
+                        if not found_moltype: found_moltype = True
+                        if found_moltype:
+                            raise ValueError("merge_topologies requires single-molecule topology files. Multiple moelculetype definitions are found in in topology %s. Halting to avoid creating erroneous topologies." % (input_topologies[topnr]) )
+
 
     #Store a list of sections processed so we make sure there are no sections we DON'T process (throw an exception if there is one we don't handle)
     sections_processed = [] 
@@ -249,8 +265,85 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         for topnr in range(N_tops):
             topology_sections[sec][topnr] = []
             thistop = topology_text[ topnr ]
+            status, indices = extract_section( thistop, sec )
+            if status:
+                for idx in indices[1:]:
+                    line, comments = stripcomments( thistop[idx] )
+                    #If this is a non-commented line in a moleculetype section and we were provided with names, we need to change the name
+                    if sec=='moleculetype' and molecule_names <> None and len( line ) >1:
+                        newline = '%s         %s\n' % ( molecule_names[topnr], line.split()[1] )
+                        topology_sections[sec][topnr].append( newline ) 
+                    else:
+                        topology_sections[sec][topnr].append( thistop[idx] )
 
-            #HERE
 
     #Check sections_processed against the actual sections present in the topology file and throw an exception if there are sections present in the topology file which we don't have here
+    for topnr in range(N_tops):
+        thistop = topology_text[ topnr ]
+        for entry in thistop:
+            line, comments = stripcomments( entry )
+            elements = line.split()
+            #If this is a section name, make sure it's one we know...
+            if len(elements) == 3:
+                if (elements[0]=='[') and (elements[2]==']'):
+                    secname = elements[1]
+                    if not secname in sections_processed:
+                        raise ValueError("Unprocessed section in topology %s; section name is %s. Halting to avoid creating erroneous topologies." % (input_topologies[topnr], secname) ) 
 
+  
+     
+    #Construct final molecules section
+    #If names are provided, construct section at least partially from scratch
+    if molecule_names <> None:
+        if molecule_numbers <> None: 
+            #If molecule numbers are also provided, build fully from scratch
+            section_contents['molecules'] = []
+            for topnr in range(N_tops):
+                section_contents['molecules'].append( '%s    %s\n' % (molecule_names[topnr], molecule_numbers[topnr] ) )
+                
+        else: #If they're not provided, use existing numbers
+            new_contents = []
+            for line in section_contents['molecules']:
+                entry, comments = stripcomments(line)
+                new_contents.append( '%s    %s\n' % (molecule_names[topnr], entry.split()[1] ) )         
+            section_contents['molecules'] = new_contents 
+
+    #If names are not provided, use what we already have
+    else:
+        if molecule_numbers <> None:
+            #If molecule numbers are provided, build with existing names and new numbers
+            new_contents = []
+            for line in section_contents['molecules']:
+                entry, comments = stripcomments(line)
+                new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] )
+            section_contents['molecules'] = new_contents
+
+        #Otherwise we do nothing - we're just using existing section
+
+    #Now build final topology file
+    topology_lines = []
+    #First handle stuff which occurs only once at the top of the topology file
+    for sec in [ 'defaults', 'atomtypes']:
+        for line in section_contents[sec]:
+            topology_lines.append( line ) 
+
+    #Now handle stuff for the individual molecules present
+    for topnr in range(N_tops):
+        for secname in molecule_sections:
+            topology_lines += sections[ secname ] [ topnr ]          
+
+
+    #Now add system name and molecules sections
+    topology_lines.append( '[ system ]\n')
+    topology_lines.append( '%s\n' % system_name )
+    topology_lines.append( '[ molecules ]\n' )
+    for line in section_contents['molecules']:
+        topology_lines.append( line ) 
+
+    #Write final topology file
+    file = open( output_topology, 'w')
+    file.writelines( topology_lines )
+    file.close()
+    
+
+    
