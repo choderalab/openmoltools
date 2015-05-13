@@ -63,6 +63,94 @@ def read_next_topo_section(textarray):
    extra=textarray[0:startline]
    return section,extra
 
+def stripcomments(line):
+   """From a GROMACS topology formatted line, return (line, comments) with whitespace and comments stripped. Comments are given with ;.
+
+    Parameters
+    ----------
+    line : str
+        GROMACS line to be stripped
+
+    Returns
+    -------
+    line : str
+        GROMACS line with comments and whitespace (leading/trailing) stripped
+   """
+    # strip comments
+    index = line.find(';')
+    comments =''
+    if index > -1:
+       comments = line[index:]
+       line = line[0:index]
+    # strip whitespace
+    line = line.strip()
+    comments = comments.strip()
+    # return stripped line
+    return line,comments
+
+
+def extract_section(lines, section):
+   """Identify lines associate with a GROMACS topology section.
+
+    Parameters
+    ----------
+    lines : list (str)
+        the lines in the file (or portion of a file) to search
+    section : str
+        The section name to locate, without formatters, i.e. "atoms"
+
+    Returns
+    -------
+    status : bool
+        Whether or not section is found. True if found, False if not. 
+    indices :  list (int)
+        Line indices within lines belonging to section
+
+    Notes
+    -----
+    This returns only line indices corresponding to the first occurrence of a particular section. So, for example, if multiple [ dihedrals ] sections are present only one will be identified. Subsequent sections could be searched for by searching a later portion of the file.
+   """
+
+    indices = list()
+
+    status = False
+
+    nlines = len(lines)
+    for start_index in range(nlines):
+       # get line
+       line,comments = stripcomments(lines[start_index])
+       # split into elements
+       elements = line.split()
+       # see if keyword is matched
+       if (len(elements) == 3):
+          if (elements[0]=='[') and (elements[1]==section) and (elements[2]==']'):
+             # increment counter to start of section data and abort search
+             start_index += 1
+             status = True
+             break
+
+    # print if section not found (for debugging)
+    if (start_index == nlines):
+       print( "Section %(section)s not found." % vars())
+       status = False
+
+    # Locate end of section.
+    for end_index in range(start_index, nlines):
+       # get line
+       line,comments = stripcomments(lines[end_index])
+       # split into elements
+       elements = line.split()
+       # see if keyword is matched
+       if (len(elements) == 3):
+          if (elements[0]=='['):
+             break
+
+    # compute indices of lines in section
+    indices = range(start_index, end_index)
+
+    # return these indices
+    return status, indices
+
 
 def merge_topologies( input_topologies, output_topology, system_name, molecule_names = None, molecule_numbers = None ):
     """Merge GROMACS topology files specified in a list of input topologies and write the result into a final topology file specified. Optionally specify a list of molecule names to be used in the [ moleculetype ] and [ molecules ] sections, overriding what is already present.
@@ -110,5 +198,59 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         topology_text.append(file.readlines() )
         file.close()
 
-    #
-     
+    #Store a list of sections processed so we make sure there are no sections we DON'T process (throw an exception if there is one we don't handle)
+    sections_processed = [] 
+
+    #Handle overall sections - atomtypes, defaults, moleculetype, (NOT sections for specific molecules - just those for the final whole system)
+    #Note that `moleculetype` is only processed here for the purposes of checking exclusions; the individual moleculetypes will be handled later.
+    section_names = [ 'defaults', 'atomtypes', 'moleculetype', 'molecules'  ]
+    sections_processed += section_names
+    section_contents = {}
+    #For every section, store the lines to a list if they are not already present (and formatted identically). If they are already present, skip. No error checking is done (i.e. duplicate parameters which are not formatted identically will be included, and conflicting parameter definitions will also be included), EXCEPT that defaults and moleculetype sections are checked to ensure that combination rules/fudgeLJ/fudgeQQ and exclusions match. An exception is raised if not.
+    for sec in section_names:
+        section_contents[sec] = []
+        for topnr in range(N_tops):
+            thistop = topology_text[topnr]
+            status, indices = extract_section( thistop, sec )
+            for index in indices:
+                line, comments = stripcomments( thistop[index] )
+                #If there is stuff here, store it if not already present
+                if len(line) > 0:
+                    if thistop[index] not in section_contents[sec]:
+                        section_contents[sec].append( thistop[index] )
+                    #But if it's defaults and it's already there, check if it's OK
+                    elif sec=='defaults':
+                        tmp = line.split()
+                        for entry in section_contents[sec]:
+                            line2, comments2 = stripcomments( entry )
+                            if len(line2) > 2:
+                                tmp2 = line2.split()
+                                if tmp2 <> tmp:
+                                    raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
+                    #If it's moleculetype and it's already there, check that the exclusions are OK
+                    elif sec=='moleculetype':
+                        tmp = line.split()
+                        for entry in section_contents[sec]
+                            line2, comments2 = stripcomments( entry )
+                            if len(line2) > 1:
+                                if tmp[1] <> line2.split()[1]:
+                                    raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
+                #If it's just comments, store it if it's not already there
+                elif len(comments) > 0:
+                    if thistop[index] not in section_contents[sec]:
+                        section_contents[sec].append( thistop[index] )
+            
+    #Now we've handled all the generic sections. Next handle all the per-molecule sections, tracking which topology they came from
+    molecule_sections = [ 'moleculetype', 'atoms', 'bonds', 'pairs', 'angles', 'dihedrals' ]
+    sections_processed += molecule_sections
+    topology_sections = {}
+    for sec in molecule_sections_names:
+        topology_sections[sec] = {}
+        for topnr in range(N_tops):
+            topology_sections[sec][topnr] = []
+            thistop = topology_text[ topnr ]
+
+            #HERE
+
+    #Check sections_processed against the actual sections present in the topology file and throw an exception if there are sections present in the topology file which we don't have here
+
