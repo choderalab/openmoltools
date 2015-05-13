@@ -134,6 +134,7 @@ def extract_section(lines, section):
        status = False
 
     # Locate end of section.
+    fnd_end = False
     for end_index in range(start_index, nlines):
        # get line
        line,comments = stripcomments(lines[end_index])
@@ -142,7 +143,9 @@ def extract_section(lines, section):
        # see if keyword is matched
        if (len(elements) == 3):
           if (elements[0]=='['):
+             fnd_end = True
              break
+    if not fnd_end: end_index = nlines
 
     # compute indices of lines in section
     indices = range(start_index, end_index)
@@ -236,6 +239,9 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                 if len(line) > 0:
                     if thistop[index] not in section_contents[sec]:
                         section_contents[sec].append( thistop[index] )
+                    #If it's the [ molecules ] section, append even if duplicate since we'll change the names later
+                    elif sec=='molecules':
+                        section_contents[sec].append( thistop[index] )
                     #But if it's defaults and it's already there, check if it's OK
                     elif sec=='defaults':
                         tmp = line.split()
@@ -257,7 +263,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                 elif len(comments) > 0:
                     if thistop[index] not in section_contents[sec]:
                         section_contents[sec].append( thistop[index] )
-            
+
     #Now we've handled all the generic sections. Next handle all the per-molecule sections, tracking which topology they came from
     molecule_sections = [ 'moleculetype', 'atoms', 'bonds', 'pairs', 'angles', 'dihedrals' ]
     sections_processed += molecule_sections
@@ -322,30 +328,43 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
 
         #Otherwise we do nothing - we're just using existing section
 
+    #Check that names in molecules are unique
+    used_names = []
+    for line in section_contents['molecules'][1:]:
+        name = line.split()[0]
+        if name in used_names:
+            raise ValueError("Duplicate name in final molecules section, which will result in an incorrect topology file. Duplicate is %s. Halting." % name )
+        used_names.append( name )
+
     #Now build final topology file
     topology_lines = []
     #First handle stuff which occurs only once at the top of the topology file
     for sec in [ 'defaults', 'atomtypes']:
+        topology_lines.append( '[ %s ]\n' % sec )
         for line in section_contents[sec]:
             topology_lines.append( line ) 
+        topology_lines.append('\n')
 
     #Now handle stuff for the individual molecules present
     for topnr in range(N_tops):
         for secname in molecule_sections:
+            topology_lines.append( '[ %s ]\n' % secname )
             topology_lines += topology_sections[ secname ] [ topnr ]          
 
 
     #Now add system name and molecules sections
     topology_lines.append( '[ system ]\n')
     topology_lines.append( '%s\n' % system_name )
+    topology_lines.append('\n') 
     topology_lines.append( '[ molecules ]\n' )
     for line in section_contents['molecules']:
-        topology_lines.append( line ) 
+        topology_lines.append( line )
+    topology_lines.append('\n') 
 
     #Write final topology file
     file = open( output_topology, 'w')
     file.writelines( topology_lines )
     file.close()
     
-
+    return True
     
