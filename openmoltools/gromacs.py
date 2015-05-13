@@ -170,22 +170,27 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
             status, indices = extract_section( thistop, sec )
             for index in indices:
                 line, comments = stripcomments( thistop[index] )
-                #If there is stuff here, store it if not already present
                 if len(line) > 0:
-                    if thistop[index] not in section_contents[sec]:
-                        section_contents[sec].append( thistop[index] )
                     #If it's the [ molecules ] section, append even if duplicate since we'll change the names later
-                    elif sec=='molecules':
+                    if sec=='molecules':
                         section_contents[sec].append( thistop[index] )
                     #But if it's defaults and it's already there, check if it's OK
                     elif sec=='defaults':
                         tmp = line.split()
+                        identical = None
                         for entry in section_contents[sec]:
                             line2, comments2 = stripcomments( entry )
                             if len(line2) > 2:
                                 tmp2 = line2.split()
-                                if tmp2 <> tmp:
-                                    raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
+                                for idx in range(len(tmp)):
+                                    if tmp[idx] <> tmp2[idx]:
+                                        identical = False
+                                        raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
+                                    else:
+                                        identical = True
+                        if not identical:
+                            section_contents[sec].append( thistop[index] )
+                        
                     #If it's moleculetype and it's already there, check that the exclusions are OK
                     elif sec=='moleculetype':
                         tmp = line.split()
@@ -194,6 +199,9 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                             if len(line2) > 1:
                                 if tmp[1] <> line2.split()[1]:
                                     raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
+                    #For everything else, if there is stuff here, store it if not already present
+                    elif thistop[index] not in section_contents[sec]:
+                        section_contents[sec].append( thistop[index] )
                 #If it's just comments, store it if it's not already there
                 elif len(comments) > 0:
                     if thistop[index] not in section_contents[sec]:
