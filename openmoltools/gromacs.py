@@ -264,8 +264,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                 topnr = 0
                 if len(entry) > 1:
                     new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
+                    topnr +=1
             section_contents['molecules'] = new_contents
-            topnr +=1
 
         #Otherwise we do nothing - we're just using existing section
 
