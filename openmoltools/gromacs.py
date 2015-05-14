@@ -328,4 +328,86 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     file.close()
     
     return True
+   
+
+ 
+def change_molecules_section( input_topology, output_topology, molecule_names, molecule_numbers):
+    """Create a GROMACS topology file where the  molecule numbers are replaced by new molecule numbers in the gromacs [ molecules ] section.
+        
+    Parameters
+    ----------
+    input_topology : str
+        The input gromacs topology file name
+    output_topology : str
+        Output topology file names to be written/created
+    molecule_names : list (str)
+        Molecule names to be searched in the gromacs [ molecules ] section
+    molecule_numbers : list (int)
+        The new molecule numbers to be used in [ molecules ] section
+        
+    Returns
+    -------
+    nothing is returned
+        
+    Notes
+    -----
+    This function reads in a gromacs topology file and changes the number of atoms related to the passed molecule name list. 
+    If in the topology file one molecule name is not present in the passed molecule name list an exception is raised.
     
+    """
+    
+    #The molecule name list and the molecule number list must have the same size otherwise an exception is raised
+    if (len(molecule_names) != len(molecule_numbers)):
+        raise ValueError("The molecule name list and the molecule name number must have the same size")
+    
+    #Read in the topology file
+    try:
+        file = open(input_topology, 'r')
+    except IOError:
+        raise NameError(input_topology)
+
+    text = file.readlines()
+    file.close()
+
+    #Extract the [ molecules ] section from the gromacs topolgy file
+    check , indices = extract_section(text, "molecules")
+
+    if(check == False):
+        raise ValueError("In the selected gromacs topology file is missing the [ molecules ] section")
+
+    counter = 0
+
+    for idx in range(indices[0],indices[-1]):
+
+        #Read in the molecule name and the molecule number present in the topology file
+        line = text[idx]
+        line = line.split()
+        
+        #Skip comments
+        if line[0] == ';':
+            continue
+        #The current name of the molecule in the topology file
+        mol_name = line[0]
+
+        #Check if the molecule name in the gromacs topology is present in the passed molecule name list otherwise an exception is raised
+        try:
+            index_name = molecule_names.index(mol_name)
+        except ValueError:
+            msg = "In the selected gromacs topology file the molecule name '%s' does not match any molecule names in the passed molecule name list: %s" % (mol_name , molecule_names)
+            raise ValueError(msg)
+        #Create a valid string to re-write back in the output topology file
+        line[1] = str(molecule_numbers[index_name])
+        strg = ' '.join(line)+'\n'
+        text[idx] = strg
+        counter=counter+1
+
+    if (counter != len(molecule_names)):
+        raise ValueError("The passed molecule list contains more molecule names than the gromacs topology file")
+    
+    try:
+        file = open( output_topology, 'w')
+        file.writelines( text )
+        file.close()
+    except IOError:
+        msg = "It was not possible to write the output topology file: %s" % output_topology
+        raise NameError(msg)
