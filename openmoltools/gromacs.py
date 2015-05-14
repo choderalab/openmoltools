@@ -123,9 +123,9 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     N_tops = len( input_topologies ) 
 
     #Check for obvious input problems - do we have the right number of everything, do all the input files exist
-    if molecule_names <> None:
+    if molecule_names != None:
         assert len( molecule_names ) == N_tops, "Must provide same number of molecule names as topology files." 
-    if molecule_numbers <> None:
+    if molecule_numbers != None:
         assert len( molecule_numbers ) == N_tops, "Must provide same number of molecule numbers as topology files."
     for filenm in input_topologies:
         assert( os.path.isfile( filenm )), "Error: Can't find input file %s provided to merge_topologies." % filenm
@@ -185,7 +185,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                                 if len(line2) > 2:
                                     tmp2 = line2.split()
                                     for idx in range(len(tmp)):
-                                        if tmp[idx] <> tmp2[idx]:
+                                        if tmp[idx] != tmp2[idx]:
                                             identical = False
                                             raise ValueError('Non-equivalent defaults entries in topology files; unsure how to proceed. Offending entries are %s and %s.' % (line, line2) )
                                         else:
@@ -201,7 +201,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                                 line2, comments2 = stripcomments( entry )
                                 if len(line2) > 1:
                                     tmp2 = line2.split()
-                                    if tmp[1] <> tmp2[1]:
+                                    if tmp[1] != tmp2[1]:
                                         identical = False
                                         raise ValueError('Non-equivalent number of exclusions in molecule definitions; unsure how to proceed. Offending entries are %s and %s." % (line, line2) )')
                                     else:
@@ -231,7 +231,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
                 for idx in indices[1:]:
                     line, comments = stripcomments( thistop[idx] )
                     #If this is a non-commented line in a moleculetype section and we were provided with names, we need to change the name
-                    if sec=='moleculetype' and molecule_names <> None and len( line ) >1:
+                    if sec=='moleculetype' and molecule_names != None and len( line ) >1:
                         newline = '%s         %s\n' % ( molecule_names[topnr], line.split()[1] )
                         topology_sections[sec][topnr].append( newline ) 
                     else:
@@ -255,8 +255,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
      
     #Construct final molecules section
     #If names are provided, construct section at least partially from scratch
-    if molecule_names <> None:
-        if molecule_numbers <> None: 
+    if molecule_names != None:
+        if molecule_numbers != None: 
             #If molecule numbers are also provided, build fully from scratch
             section_contents['molecules'] = []
             for topnr in range(N_tops):
@@ -274,7 +274,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
 
     #If names are not provided, use what we already have
     else:
-        if molecule_numbers <> None:
+        if molecule_numbers != None:
             #If molecule numbers are provided, build with existing names and new numbers
             new_contents = []
             for line in section_contents['molecules']:
