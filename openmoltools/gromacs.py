@@ -278,9 +278,9 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         if molecule_numbers != None:
             #If molecule numbers are provided, build with existing names and new numbers
             new_contents = []
+            topnr = 0
             for line in section_contents['molecules']:
                 entry, comments = stripcomments(line)
-                topnr = 0
                 if len(entry) > 1:
                     new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
                     topnr +=1
