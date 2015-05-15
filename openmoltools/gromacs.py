@@ -80,7 +80,8 @@ def extract_section(lines, section):
           if (elements[0]=='['):
              fnd_end = True
              break
-    if not fnd_end: end_index = nlines
+
+    if not fnd_end: end_index += 1
 
     # compute indices of lines in section
     indices = range(start_index, end_index)
