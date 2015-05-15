@@ -606,3 +606,65 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     os.remove( fname )
  
     return descriptors
+
+def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model ):
+
+    """ This function creates water solvated molecule coordinate files and its corresponding topology
+        
+        ARGUMENTS:
+            top_filename: topology filename and path;
+            gro_filename: coordinate filename and path;
+            top_solv_filename: topology filename and path;
+            gro_solv_filename: coordinate filename and path;
+            box_dim: box dimensions (check rebuild_solv.py; I think it applies only for cubic boxes));
+            box_type: box type;
+            water_model: water model to be included in the topology file.
+        LIMITATIONS:
+        Tailored for water solvation. Can probably be generalized for other solvents.
+"""
+
+    #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
+    os.environ['GMX_MAXBACKUP'] = '-1'
+
+
+    #copies topology file to new directory
+    shutil.copyfile(top_filename, top_solv_filename) 
+
+    #string with the Gromacs 5.0.4 box generating commands
+    cmdbox = 'gmx editconf -f %s -o %s -c -d %3.1f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
+    output = getoutput(cmdbox)
+    logger.debug(output)
+
+    #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
+    cmdsolv = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (gro_solv_filename, water_model, gro_solv_filename, top_solv_filename)
+    output = getoutput(cmdsolv)
+    logger.debug(output)
+
+    #Insert Force Field specifications
+    ensure_forcefield( top_solv_filename, top_solv_filename, FF = 'amber99sb', version = 'new')
+
+    #Insert line for water topology portion of the code
+    try:
+        file = open(top_solv_filename,'r')
+        text = file.readlines()
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Insert water model
+    wateritp = os.path.join('amber99sb.ff','tip3p.itp')
+    index = 0
+    while '[ system ]' not in text[index]:
+        index += 1
+    text[index] = '#include "%s"\n\n' % wateritp + text[index]
+
+    #Write the topology file
+    try:
+        file = open(top_solv_filename,'w+')
+        file.writelines( text )
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    return
+
