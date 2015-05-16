@@ -41,7 +41,7 @@ def extract_section(lines, section):
     status : bool
         Whether or not section is found. True if found, False if not. 
     indices :  list (int)
-        Line indices within lines belonging to section
+        Line indices within lines belonging to section excluding the header and counting from zero
 
     """
 
@@ -70,20 +70,25 @@ def extract_section(lines, section):
 
     # Locate end of section.
     fnd_end = False
-    for end_index in range(start_index, nlines):
+    for idx in range(start_index, nlines):
        # get line
-       line,comments = stripcomments(lines[end_index])
+       line , comments = stripcomments(lines[idx])
        # split into elements
        elements = line.split()
        # see if keyword is matched
        if (len(elements) == 3):
           if (elements[0]=='['):
+             end_index = end_index + 1
              fnd_end = True
              break
-    if not fnd_end: end_index = nlines
+       if elements != []:
+           end_index = idx + 1
 
-    # compute indices of lines in section
-    indices = range(start_index, end_index)
+    if not fnd_end:
+        end_index=end_index + 1
+
+    # compute indices of lines in section. The indices are related to the section without the header
+    indices = range(start_index, end_index-1)
 
     # return these indices
     return status, indices
@@ -277,9 +282,9 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         if molecule_numbers != None:
             #If molecule numbers are provided, build with existing names and new numbers
             new_contents = []
+            topnr = 0
             for line in section_contents['molecules']:
                 entry, comments = stripcomments(line)
-                topnr = 0
                 if len(entry) > 1:
                     new_contents.append( '%s    %s\n' % ( entry.split()[0], molecule_numbers[topnr] ) )
                     topnr +=1
@@ -328,9 +333,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     file.close()
     
     return True
-   
 
- 
 def change_molecules_section( input_topology, output_topology, molecule_names, molecule_numbers):
     """Create a GROMACS topology file where the  molecule numbers are replaced by new molecule numbers in the gromacs [ molecules ] section.
         
@@ -360,14 +363,20 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     if (len(molecule_names) != len(molecule_numbers)):
         raise ValueError("The molecule name list and the molecule name number must have the same size")
     
+    #Check for non negative integer number of molecules
+    check_nni = all(item >=0  and isinstance(item, int) for item in molecule_numbers)
+
+    if not check_nni:
+        raise ValueError("The molecule number list contains a non negative integer value")
+
     #Read in the topology file
     try:
         file = open(input_topology, 'r')
+        text = file.readlines()
+        file.close()
     except IOError:
         raise NameError(input_topology)
 
-    text = file.readlines()
-    file.close()
 
     #Extract the [ molecules ] section from the gromacs topolgy file
     check , indices = extract_section(text, "molecules")
@@ -377,15 +386,17 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
 
     counter = 0
 
-    for idx in range(indices[0],indices[-1]):
+
+    for idx in indices:
 
         #Read in the molecule name and the molecule number present in the topology file
-        line = text[idx]
+        line = text[idx]		
         line = line.split()
-        
+   
         #Skip comments
         if line[0] == ';':
             continue
+        
         #The current name of the molecule in the topology file
         mol_name = line[0]
 
@@ -411,3 +422,4 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     except IOError:
         msg = "It was not possible to write the output topology file: %s" % output_topology
         raise NameError(msg)
+
