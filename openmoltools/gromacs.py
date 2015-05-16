@@ -69,7 +69,7 @@ def extract_section(lines, section):
        status = False
 
     # Locate end of section.
-        fnd_end = False
+    fnd_end = False
     for idx in range(start_index, nlines):
        # get line
        line , comments = stripcomments(lines[idx])
@@ -83,7 +83,8 @@ def extract_section(lines, section):
              break
        if elements != []:
            end_index = idx + 1
-        if not fnd_end:
+
+    if not fnd_end:
         end_index=end_index + 1
 
     # compute indices of lines in section. The indices are related to the section without the header
