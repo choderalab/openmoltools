@@ -607,20 +607,89 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
-def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model ):
+def ensure_forcefield( intop, outtop, FF = 'ffamber99sb', version = 'old'):
+    """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
+        
+        ARGUMENTS:
+        - intop: Input topology
+        - outtop: Output topology
+        OPTIONAL:
+        - FF: STring corresponding to desired force field; default ffamber99sb.
+        - version: 'old' for pre-GROMACS 4.6 style force field management, where each force field is included as a single file, i.e. ffamber99sb.itp. 'new' for GROMACS 4.6 style where force fields are directories, such as 'amber99sb-ildn.ff/forcefield.itp". Here the expected string will be 'amber99sb-ildn', for example.
+        
+        Limitations:
+        - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topolgoy file including two forcefields.
+        """
+    
+    file = open(intop, 'r')
+    text= file.readlines()
+    file.close()
+    
+    if version=='old':
+        FFstring = FF+'.itp'
+    else:
+        FFstring = FF+'.ff/forcefield.itp'
+    
+    #Check if force field is included somewhere
+    found = False
+    for line in text:
+        if FFstring in line:
+            found = True
+    #If not, add it after any comments at the top
+    if not found:
+        idx = 0
+        while text[idx].find(';')==0:
+            idx+=1
+        text[idx] = '\n#include "%s"\n\n' % FFstring + text[idx]
+    
+    #Remove any defaults section
+    found = False
+    foundidx = None
+    endidx = None
+    for (idx, line) in enumerate(text):
+        if '[ defaults ]' in line:
+            foundidx = idx
+            found = True
+        #If we've already found the defaults section, find location of start of next section
+        #Assumes next section can be found by looking for a bracket at the start of a line
+        elif found and '[' in line:
+            #Only store if we didn't already store
+            if endidx == None:
+                endidx = idx
+    #Now remove defaults section
+    
+    if found:
+        text = text[0:foundidx] + text[endidx:]
+    
+    
+    #Write results
+    file = open( outtop, 'w')
+    file.writelines(text)
+    file.close()
+
+def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top ):
 
     """ This function creates water solvated molecule coordinate files and its corresponding topology
         
-        ARGUMENTS:
-            top_filename: topology filename and path;
-            gro_filename: coordinate filename and path;
-            top_solv_filename: topology filename and path;
-            gro_solv_filename: coordinate filename and path;
-            box_dim: box dimensions (check rebuild_solv.py; I think it applies only for cubic boxes));
-            box_type: box type;
-            water_model: water model to be included in the topology file.
-        LIMITATIONS:
-        Tailored for water solvation. Can probably be generalized for other solvents.
+        PARAMETERS:
+            top_filename: str
+                          Topology path/filename
+            gro_filename: str
+                          Coordinates path/filename
+            top_solv_filename: str
+                          Topology path/filename (solvated system)
+            gro_solv_filename: str
+                          Coordinates path/filename (solvated system)
+            box_dim: float
+                          cubic box dimension (nm), %3.1f
+            box_type: str
+                          box type;
+            water_model: str
+                          water model to be included in the topology file.
+            water_top: str
+                          user defined water topology
+        NOTES:
+            Tailored for water solvation. Can probably be generalized for other solvents.
 """
 
     #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
@@ -652,7 +721,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
         raise NameError('The file %s is missing' % top_solv_filename)
 
     #Insert water model
-    wateritp = os.path.join('amber99sb.ff','tip3p.itp')
+    wateritp = os.path.join('amber99sb.ff', water_top ) # e.g water_top = 'tip3p.itp'
     index = 0
     while '[ system ]' not in text[index]:
         index += 1
@@ -665,6 +734,10 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
         file.close()
     except:
         raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Check if file exist and is not empty;
+    if os.stat( gro_solv_filename ) == 0 or os.stat( top_solv_filename ).st_size == 0:
+        raise(ValueError("Solvent insertion failed"))
 
     return
 
