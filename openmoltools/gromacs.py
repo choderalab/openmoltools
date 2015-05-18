@@ -316,7 +316,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
         for secname in molecule_sections:
             topology_lines.append( '[ %s ]\n' % secname )
             topology_lines += topology_sections[ secname ] [ topnr ]          
-
+            #Section extraction strips whitespace; rebuild newline at end
+            topology_lines.append('\n')
 
     #Now add system name and molecules sections
     topology_lines.append( '[ system ]\n')
@@ -325,7 +326,6 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     topology_lines.append( '[ molecules ]\n' )
     for line in section_contents['molecules']:
         topology_lines.append( line )
-    topology_lines.append('\n') 
 
     #Write final topology file
     file = open( output_topology, 'w')
