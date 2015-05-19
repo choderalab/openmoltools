@@ -3,6 +3,11 @@ import tempfile
 import logging
 from .utils import getoutput
 
+try:
+    from subprocess import getoutput  # If python 3
+except ImportError:
+    from commands import getoutput  # If python 2
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
