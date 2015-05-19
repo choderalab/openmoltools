@@ -62,3 +62,24 @@ def test_amber_binary_mixture():
 
         tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename)
         print(tleap_cmd)
+
+
+def test_run_antechamber():
+    molecule_name = "sustiva"
+    input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
+    with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
+
+def test_run_tleap():
+    molecule_name = "sustiva"
+    input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
+    with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
+        prmtop, inpcrd = utils.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
+
+def test_run_antechamber_charges():
+    molecule_name = "acetate"
+    input_filename = utils.get_data_filename("chemicals/acetate/acetate.mol2")
+    with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=-1)
+
