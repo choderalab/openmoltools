@@ -2,6 +2,8 @@ import mdtraj as md
 import tempfile
 import logging
 import os
+from distutils.spawn import find_executable
+import utils
 
 try:
     from subprocess import getoutput  # If python 3
@@ -196,7 +198,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         Amber frcmod file produced by prmchk
     """
 
-    ext = parse_ligand_filename(input_filename)[1]
+    ext = utils.parse_ligand_filename(input_filename)[1]
 
     filetype = ext[1:]
     if filetype != "mol2":
