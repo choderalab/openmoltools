@@ -108,7 +108,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     output = getoutput(cmd)
     logger.debug(output)
-    check_for_errors( output, other_errors = ['Improper number of arguments'] )
+    check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
 
     file_handle.close()
 
