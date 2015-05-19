@@ -11,7 +11,6 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
-import openmoltools.amber as amber
 
 try:
     from subprocess import getoutput  # If python 3
@@ -31,10 +30,9 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 def find_gaff_dat():
     print("Warning: find_gaff_dat has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
     
     return amber.find_gaff_dat()
-
-GAFF_DAT_FILENAME = amber.find_gaff_dat()
 
 
 def parse_ligand_filename(filename):
@@ -45,10 +43,12 @@ def parse_ligand_filename(filename):
 
 def run_antechamber(*args, **kwargs):
     print("Warning: run_antechamber has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
     return amber.run_antechamber(*args, **kwargs)
 
 def run_tleap(*args, **kwargs):
     print("Warning: run_tleap has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
     return amber.run_tleap(*args, **kwargs)
 
 def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, debug = False, is_sorted = False ):
@@ -148,6 +148,8 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
     # Generate ffxml file.
     parser = amber_parser.AmberParser(override_mol2_residue_name=override_mol2_residue_name)
 
+    amber = import_("openmoltools.amber") 
+    GAFF_DAT_FILENAME = amber.find_gaff_dat()
     filenames = [GAFF_DAT_FILENAME]
     filenames.extend([filename for filename in gaff_mol2_filenames])
     filenames.extend([filename for filename in frcmod_filenames])
@@ -183,6 +185,8 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """
 
     # Generate ffxml file.
+    amber = import_("openmoltools.amber") 
+    GAFF_DAT_FILENAME = amber.find_gaff_dat()
     parser = amber_parser.AmberParser()
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
 
@@ -262,6 +266,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """
 
     # Generate GAFF parameters.
+    amber = import_("openmoltools.amber") 
     (gaff_mol2_filename, frcmod_filename) = amber.run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
 
     # Create simulations.
@@ -345,6 +350,7 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
         print(mol2_filename)
 
+        amber = import_("openmoltools.amber") 
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mol2_filename)
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)

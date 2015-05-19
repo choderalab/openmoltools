@@ -3,7 +3,7 @@ import tempfile
 import logging
 import os
 from distutils.spawn import find_executable
-import openmoltools.utils as utils
+from mdtraj.utils.delay_import import import_
 
 try:
     from subprocess import getoutput  # If python 3
@@ -210,7 +210,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     frcmod_filename : str
         Amber frcmod file produced by prmchk
     """
-
+    utils = import_("openmoltools.utils")
     ext = utils.parse_ligand_filename(input_filename)[1]
 
     filetype = ext[1:]
