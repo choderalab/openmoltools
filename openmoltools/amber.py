@@ -101,31 +101,38 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     output = getoutput(cmd)
     logger.debug(output)
-    check_for_errors( output )
+    check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
     file_handle.close()
 
     return tleap_commands
 
-def check_for_errors( outputtext ):
-    """Check AMBER package output for the string 'ERROR' (upper or lowercase) and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
+def check_for_errors( outputtext, other_errors = None ):
+    """Check AMBER package output for the string 'ERROR' (upper or lowercase) and (optionally) specified other strings and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
 
     Parameters
     ----------
     outputtext : str
         String listing output text from an (AMBER) command which should be checked for errors.
+    other_errors : list(str), default None
+        If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc. 
 
     Notes
     -----
     If error(s) are found, raise a RuntimeError and attept to print the appropriate errors from the processed text."""
-
     lines = outputtext.split('\n')
     error_lines = []
     for line in lines:
         if 'ERROR' in line.upper():
             error_lines.append( line )
+        if not other_errors == None:
+            for err in other_errors:
+                if err.upper() in line.upper():
+                    error_lines.append( line )
 
     if len(error_lines) > 0:
         print("Unexpected errors encountered running AMBER tool. Offending output:")
         for line in error_lines: print(line)
         raise(RuntimeError("Error encountered running AMBER tool. Exiting."))
+
+    return
