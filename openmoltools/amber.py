@@ -3,7 +3,7 @@ import tempfile
 import logging
 import os
 from distutils.spawn import find_executable
-import utils
+import .utils
 
 try:
     from subprocess import getoutput  # If python 3
