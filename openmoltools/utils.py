@@ -29,27 +29,10 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
 def find_gaff_dat():
-    AMBERHOME = None
+    print("Warning: find_gaff_dat has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
     
-    try:
-        AMBERHOME = os.environ['AMBERHOME']
-    except KeyError:
-        pass
-    
-    if AMBERHOME is None:
-        full_path = find_executable("parmchk2")
-        try:
-            AMBERHOME = os.path.split(full_path)[0]
-            AMBERHOME = os.path.join(AMBERHOME, "../")
-        except:
-            raise(ValueError("Cannot find AMBER GAFF"))
-
-    if AMBERHOME is None:
-        raise(ValueError("Cannot find AMBER GAFF"))
-
-    return os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
-
-GAFF_DAT_FILENAME = find_gaff_dat()
+    return amber.find_gaff_dat()
 
 
 def parse_ligand_filename(filename):
@@ -58,132 +41,15 @@ def parse_ligand_filename(filename):
     return name, ext
 
 
-def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None):
-    """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
+def run_antechamber(*args, **kwargs):
+    print("Warning: run_antechamber has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
+    return amber.run_antechamber(*args, **kwargs)
 
-    Parameters
-    ----------
-    molecule_name : str
-        Name of the molecule to be parameterized, will be used in output filenames.
-    ligand_filename : str
-        The molecule to be parameterized.  Must be tripos mol2 format.
-    charge_method : str, optional
-        If not None, the charge method string will be passed to Antechamber.
-    net_charge : int, optional
-        If not None, net charge of the molecule to be parameterized.
-        If None, Antechamber sums up partial charges from the input file.
-    gaff_mol2_filename : str, optional, default=None
-        Name of GAFF mol2 filename to output.  If None, uses local directory
-        and molecule_name
-    frcmod_filename : str, optional, default=None
-        Name of GAFF frcmod filename to output.  If None, uses local directory
-        and molecule_name
-
-    Returns
-    -------
-    gaff_mol2_filename : str
-        GAFF format mol2 filename produced by antechamber
-    frcmod_filename : str
-        Amber frcmod file produced by prmchk
-    """
-
-    ext = parse_ligand_filename(input_filename)[1]
-
-    filetype = ext[1:]
-    if filetype != "mol2":
-        raise(ValueError("Must input mol2 filename"))
-
-
-    if gaff_mol2_filename is None:
-        gaff_mol2_filename = molecule_name + '.gaff.mol2'
-    if frcmod_filename is None:
-        frcmod_filename = molecule_name + '.frcmod'
-
-    cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
-    if charge_method is not None:
-        cmd += ' -c %s' % charge_method
-
-    if net_charge is not None:
-        cmd += ' -nc %d' % net_charge
-
-    logger.debug(cmd)
-
-    output = getoutput(cmd)
-    logger.debug(output)
-
-    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
-    logger.debug(cmd)
-
-    output = getoutput(cmd)
-    logger.debug(output)
-
-    return gaff_mol2_filename, frcmod_filename
-
-
-def convert_molecule(in_filename, out_filename):
-    """Use openbabel to convert filenames.  May not work for all file formats!"""
-
-    molecule_name, ext_in = parse_ligand_filename(in_filename)
-    molecule_name, ext_out = parse_ligand_filename(out_filename)
-
-    cmd = "obabel -i %s %s -o %s -O %s" % (ext_in[1:], in_filename, ext_out[1:], out_filename)
-    print(cmd)
-    output = getoutput(cmd)
-    logger.debug(output)
-
-
-def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None):
-    """Run AmberTools tleap to create simulation files for AMBER
-
-    Parameters
-    ----------
-    molecule_name : str
-        The name of the molecule    
-    gaff_mol2_filename : str
-        GAFF format mol2 filename produced by antechamber
-    frcmod_filename : str
-        Amber frcmod file produced by prmchk
-    prmtop_filename : str, optional, default=None
-        Amber prmtop file produced by tleap, defaults to molecule_name
-    inpcrd_filename : str, optional, default=None
-        Amber inpcrd file produced by tleap, defaults to molecule_name  
-
-    Returns
-    -------
-    prmtop_filename : str
-        Amber prmtop file produced by tleap
-    inpcrd_filename : str
-        Amber inpcrd file produced by tleap
-    """
-    if prmtop_filename is None:
-        prmtop_filename = "%s.prmtop" % molecule_name
-    if inpcrd_filename is None:
-        inpcrd_filename = "%s.inpcrd" % molecule_name
-
-    tleap_input = """
-source leaprc.ff99SB
-source leaprc.gaff
-LIG = loadmol2 %s
-check LIG
-loadamberparams %s
-saveamberparm LIG %s %s
-quit
-
-""" % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
-
-    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
-    file_handle.writelines(tleap_input)
-    file_handle.flush()
-
-    cmd = "tleap -f %s " % file_handle.name
-    logger.debug(cmd)
-
-    output = getoutput(cmd)
-    logger.debug(output)
-
-    file_handle.close()
-
-    return prmtop_filename, inpcrd_filename
+def run_tleap(*args, **kwargs):
+    print("Warning: run_tleap has been moved to openmoltools.amber.")
+    amber = import_("openmoltools.amber") 
+    return amber.run_tleap(*args, **kwargs)
 
 def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, debug = False, is_sorted = False ):
     """Use acpype.py (Sousa Da Silva et al., BMC Research Notes 5:367 (2012)) to convert AMBER prmtop and crd files to GROMACS format using amb2gmx mode. Writes to GROMACS 4.5 (and later) format, rather than the format for earlier GROMACS versions.
@@ -282,6 +148,8 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
     # Generate ffxml file.
     parser = amber_parser.AmberParser(override_mol2_residue_name=override_mol2_residue_name)
 
+    amber = import_("openmoltools.amber") 
+    GAFF_DAT_FILENAME = amber.find_gaff_dat()
     filenames = [GAFF_DAT_FILENAME]
     filenames.extend([filename for filename in gaff_mol2_filenames])
     filenames.extend([filename for filename in frcmod_filenames])
@@ -317,6 +185,8 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """
 
     # Generate ffxml file.
+    amber = import_("openmoltools.amber") 
+    GAFF_DAT_FILENAME = amber.find_gaff_dat()
     parser = amber_parser.AmberParser()
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
 
@@ -396,7 +266,8 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """
 
     # Generate GAFF parameters.
-    (gaff_mol2_filename, frcmod_filename) = run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
+    amber = import_("openmoltools.amber") 
+    (gaff_mol2_filename, frcmod_filename) = amber.run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
 
     # Create simulations.
     simulation_ffxml = create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename)
@@ -479,7 +350,8 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
         print(mol2_filename)
 
-        gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
+        amber = import_("openmoltools.amber") 
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mol2_filename)
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)
         print(traj)
