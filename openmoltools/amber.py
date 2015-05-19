@@ -139,7 +139,7 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
                 if err.upper() in line.upper():
                     error_lines.append( line )
 
-    if not ignore_errors == None:
+    if not ignore_errors == None and len(error_lines)>0:
         new_error_lines = []
         for ign in ignore_errors:
             ignore = False
