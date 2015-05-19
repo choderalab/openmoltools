@@ -114,7 +114,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     return tleap_commands
 
-def check_for_errors( outputtext, other_errors = None ):
+def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
     """Check AMBER package output for the string 'ERROR' (upper or lowercase) and (optionally) specified other strings and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
 
     Parameters
@@ -122,7 +122,9 @@ def check_for_errors( outputtext, other_errors = None ):
     outputtext : str
         String listing output text from an (AMBER) command which should be checked for errors.
     other_errors : list(str), default None
-        If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc. 
+        If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc.
+    ignore_errors: list(str), default None
+        If specified, AMBER output lines containing errors but also containing any of the specified strings will be ignored (because, for example, AMBER issues an "ERROR" for non-integer charges in some cases when only a warning is needed). 
 
     Notes
     -----
@@ -136,6 +138,17 @@ def check_for_errors( outputtext, other_errors = None ):
             for err in other_errors:
                 if err.upper() in line.upper():
                     error_lines.append( line )
+
+    if not ignore_errors == None:
+        new_error_lines = []
+        for ign in ignore_errors:
+            ignore = False
+            for err in error_lines:
+                if ign in err:
+                    ignore = True
+            if not ignore:
+                new_error_lines.append( err )
+        error_lines = new_error_lines 
 
     if len(error_lines) > 0:
         print("Unexpected errors encountered running AMBER tool. Offending output:")
