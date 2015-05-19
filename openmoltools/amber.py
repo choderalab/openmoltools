@@ -220,6 +220,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
 
     output = getoutput(cmd)
     logger.debug(output)
+    check_for_errors( output  )
 
     return gaff_mol2_filename, frcmod_filename
 
@@ -251,6 +252,11 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         prmtop_filename = "%s.prmtop" % molecule_name
     if inpcrd_filename is None:
         inpcrd_filename = "%s.inpcrd" % molecule_name
+    
+    assert ' ' not in gaff_mol2_filename, "Error: tleap cannot process mol2 filenames containing spaces."
+    assert ' ' not in frcmod_filename, "Error: tleap cannot process filenames containing spaces."
+    assert ' ' not in prmtop_filename, "Error: tleap cannot process filenames containing spaces."
+    assert ' ' not in inpcrd_filename, "Error: tleap cannot process filenames containing spaces."
 
     tleap_input = """
 source leaprc.ff99SB
@@ -272,6 +278,8 @@ quit
 
     output = getoutput(cmd)
     logger.debug(output)
+
+    check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
     file_handle.close()
 
