@@ -41,7 +41,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     ----------
     mol2_filenames : list(str)
         Filenames of GAFF flavored mol2 files.  Each must contain exactly
-        ONE ligand.
+        ONE ligand. Filenames cannot contain spaces (tleap limitation)
     frcmod_filenames : str
         Filename of input GAFF frcmod filenames.
     box_filename : str
@@ -80,6 +80,10 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     if len(all_names) != len(mol2_filenames):
         raise(ValueError("Must have UNIQUE residue names in each mol2 file."))
     
+    #Check for spaces in filenames; AMBER can't handle these.
+    for name in mol2_filenames:
+        assert ' ' not in name, "Error: tleap cannot process mol2 filenames containing spaces."
+
     all_names = [md.load(filename).top.residue(0).name for filename in mol2_filenames]
     
     mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(mol2_filenames))
@@ -97,7 +101,31 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     output = getoutput(cmd)
     logger.debug(output)
+    check_for_errors( output )
 
     file_handle.close()
 
     return tleap_commands
+
+def check_for_errors( outputtext ):
+    """Check AMBER package output for the string 'ERROR' (upper or lowercase) and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
+
+    Parameters
+    ----------
+    outputtext : str
+        String listing output text from an (AMBER) command which should be checked for errors.
+
+    Notes
+    -----
+    If error(s) are found, raise a RuntimeError and attept to print the appropriate errors from the processed text."""
+
+    lines = outputtext.split('\n')
+    error_lines = []
+    for line in lines:
+        if 'ERROR' in line.upper():
+            error_lines.append( line )
+
+    if len(error_lines) > 0:
+        print("Unexpected errors encountered running AMBER tool. Offending output:")
+        for line in error_lines: print(line)
+        raise(RuntimeError("Error encountered running AMBER tool. Exiting."))
