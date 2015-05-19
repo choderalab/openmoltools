@@ -49,7 +49,7 @@ def run_antechamber(*args, **kwargs):
 
 def run_tleap(*args, **kwargs):
     print("Warning: run_tleap has been moved to openmoltools.amber.")
-    return run_tleap(*args, **kwargs)
+    return amber.run_tleap(*args, **kwargs)
 
 def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, debug = False, is_sorted = False ):
     """Use acpype.py (Sousa Da Silva et al., BMC Research Notes 5:367 (2012)) to convert AMBER prmtop and crd files to GROMACS format using amb2gmx mode. Writes to GROMACS 4.5 (and later) format, rather than the format for earlier GROMACS versions.
