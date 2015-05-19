@@ -262,7 +262,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """
 
     # Generate GAFF parameters.
-    (gaff_mol2_filename, frcmod_filename) = run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
+    (gaff_mol2_filename, frcmod_filename) = amber.run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
 
     # Create simulations.
     simulation_ffxml = create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename)
@@ -345,7 +345,7 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
         print(mol2_filename)
 
-        gaff_mol2_filename, frcmod_filename = run_antechamber(molecule_name, mol2_filename)
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mol2_filename)
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)
         print(traj)
