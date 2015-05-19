@@ -1,7 +1,7 @@
 import mdtraj as md
 import tempfile
 import logging
-from .utils import getoutput
+import os
 
 try:
     from subprocess import getoutput  # If python 3
