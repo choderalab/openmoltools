@@ -136,3 +136,144 @@ def check_for_errors( outputtext, other_errors = None ):
         raise(RuntimeError("Error encountered running AMBER tool. Exiting."))
 
     return
+
+
+def find_gaff_dat():
+    AMBERHOME = None
+    
+    try:
+        AMBERHOME = os.environ['AMBERHOME']
+    except KeyError:
+        pass
+    
+    if AMBERHOME is None:
+        full_path = find_executable("parmchk2")
+        try:
+            AMBERHOME = os.path.split(full_path)[0]
+            AMBERHOME = os.path.join(AMBERHOME, "../")
+        except:
+            raise(ValueError("Cannot find AMBER GAFF"))
+
+    if AMBERHOME is None:
+        raise(ValueError("Cannot find AMBER GAFF"))
+
+    return os.path.join(AMBERHOME, 'dat', 'leap', 'parm', 'gaff.dat')
+
+GAFF_DAT_FILENAME = find_gaff_dat()
+
+
+def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None):
+    """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
+
+    Parameters
+    ----------
+    molecule_name : str
+        Name of the molecule to be parameterized, will be used in output filenames.
+    ligand_filename : str
+        The molecule to be parameterized.  Must be tripos mol2 format.
+    charge_method : str, optional
+        If not None, the charge method string will be passed to Antechamber.
+    net_charge : int, optional
+        If not None, net charge of the molecule to be parameterized.
+        If None, Antechamber sums up partial charges from the input file.
+    gaff_mol2_filename : str, optional, default=None
+        Name of GAFF mol2 filename to output.  If None, uses local directory
+        and molecule_name
+    frcmod_filename : str, optional, default=None
+        Name of GAFF frcmod filename to output.  If None, uses local directory
+        and molecule_name
+
+    Returns
+    -------
+    gaff_mol2_filename : str
+        GAFF format mol2 filename produced by antechamber
+    frcmod_filename : str
+        Amber frcmod file produced by prmchk
+    """
+
+    ext = parse_ligand_filename(input_filename)[1]
+
+    filetype = ext[1:]
+    if filetype != "mol2":
+        raise(ValueError("Must input mol2 filename"))
+
+
+    if gaff_mol2_filename is None:
+        gaff_mol2_filename = molecule_name + '.gaff.mol2'
+    if frcmod_filename is None:
+        frcmod_filename = molecule_name + '.frcmod'
+
+    cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
+    if charge_method is not None:
+        cmd += ' -c %s' % charge_method
+
+    if net_charge is not None:
+        cmd += ' -nc %d' % net_charge
+
+    logger.debug(cmd)
+
+    output = getoutput(cmd)
+    logger.debug(output)
+
+    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
+    logger.debug(cmd)
+
+    output = getoutput(cmd)
+    logger.debug(output)
+
+    return gaff_mol2_filename, frcmod_filename
+
+
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None):
+    """Run AmberTools tleap to create simulation files for AMBER
+
+    Parameters
+    ----------
+    molecule_name : str
+        The name of the molecule    
+    gaff_mol2_filename : str
+        GAFF format mol2 filename produced by antechamber
+    frcmod_filename : str
+        Amber frcmod file produced by prmchk
+    prmtop_filename : str, optional, default=None
+        Amber prmtop file produced by tleap, defaults to molecule_name
+    inpcrd_filename : str, optional, default=None
+        Amber inpcrd file produced by tleap, defaults to molecule_name  
+
+    Returns
+    -------
+    prmtop_filename : str
+        Amber prmtop file produced by tleap
+    inpcrd_filename : str
+        Amber inpcrd file produced by tleap
+    """
+    if prmtop_filename is None:
+        prmtop_filename = "%s.prmtop" % molecule_name
+    if inpcrd_filename is None:
+        inpcrd_filename = "%s.inpcrd" % molecule_name
+
+    tleap_input = """
+source leaprc.ff99SB
+source leaprc.gaff
+LIG = loadmol2 %s
+check LIG
+loadamberparams %s
+saveamberparm LIG %s %s
+quit
+
+""" % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
+
+    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+    file_handle.writelines(tleap_input)
+    file_handle.flush()
+
+    cmd = "tleap -f %s " % file_handle.name
+    logger.debug(cmd)
+
+    output = getoutput(cmd)
+    logger.debug(output)
+
+    file_handle.close()
+
+    return prmtop_filename, inpcrd_filename
+
