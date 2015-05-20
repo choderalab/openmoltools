@@ -423,3 +423,82 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
         msg = "It was not possible to write the output topology file: %s" % output_topology
         raise NameError(msg)
 
+
+def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top, FF = 'amber99sb-ildn.ff' ):
+
+    """ This function creates water solvated molecule coordinate files and its corresponding topology
+        
+        PARAMETERS:
+            top_filename: str
+                          Topology path/filename
+            gro_filename: str
+                          Coordinates path/filename
+            top_solv_filename: str
+                          Topology path/filename (solvated system)
+            gro_solv_filename: str
+                          Coordinates path/filename (solvated system)
+            box_dim: float
+                          cubic box dimension (nm); will be passed to GROMACS with one digit of precision (%3.1f)
+            box_type: str
+                          box type (string passed to gmx solvate)
+            water_model: str
+                          Water model string to tell gmx solvate to use when solvating, i.e. "spc216"
+            water_top: str
+                          Water include file to ensure is present in topology file, i.e. "tip3p.itp"
+            FF : str, optional, default = 'amber99sb-ildn.ff'
+                          String specifying base force field directory for include files (i.e. 'amber99sb-ildn.ff').  
+
+        NOTES:
+        -----
+        Primarily tested on 3 point water models. May need adjustment for other models.
+"""
+
+    #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
+    os.environ['GMX_MAXBACKUP'] = '-1'
+
+
+    #copies topology file to new directory
+    shutil.copyfile(top_filename, top_solv_filename) 
+
+    #string with the Gromacs 5.0.4 box generating commands
+    cmdbox = 'gmx editconf -f %s -o %s -c -d %3.1f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
+    output = getoutput(cmdbox)
+    logger.debug(output)
+
+    #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
+    cmdsolv = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (gro_solv_filename, water_model, gro_solv_filename, top_solv_filename)
+    output = getoutput(cmdsolv)
+    logger.debug(output)
+
+    #Insert Force Field specifications
+    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF)
+
+    #Insert line for water topology portion of the code
+    try:
+        file = open(top_solv_filename,'r')
+        text = file.readlines()
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Insert water model
+    wateritp = os.path.join(FF, water_top ) # e.g water_top = 'tip3p.itp'
+    index = 0
+    while '[ system ]' not in text[index]:
+        index += 1
+    text[index] = '#include "%s"\n\n' % wateritp + text[index]
+
+    #Write the topology file
+    try:
+        file = open(top_solv_filename,'w+')
+        file.writelines( text )
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Check if file exist and is not empty;
+    if os.stat( gro_solv_filename ) == 0 or os.stat( top_solv_filename ).st_size == 0:
+        raise(ValueError("Solvent insertion failed"))
+
+    return
+
