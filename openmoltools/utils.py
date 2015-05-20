@@ -582,7 +582,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
     logger.debug(output)
 
     #Insert Force Field specifications
-    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF, version = 'new')
+    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF)
 
     #Insert line for water topology portion of the code
     try:
