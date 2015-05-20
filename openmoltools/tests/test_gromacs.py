@@ -36,7 +36,7 @@ def test_gromacs_merge():
         #Test editing of molecule numbers in topology file
         gromacs.change_molecules_section( './combined.top', './edited.top', ['etoh', 'benzene'], [10, 20] )
 
-
+@skipIf(gromacs.GROMACS_PATH is None, "Skipping testing of GROMACS solvation because GROMACS not found.")
 def test_gromacs_solvate():
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh.mol2")
     with utils.enter_temp_directory(): #Prevents creating lots of tleap/antechamber files everywhere

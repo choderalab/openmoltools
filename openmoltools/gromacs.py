@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+from distutils.spawn import find_executable
 try:
     from subprocess import getoutput  # If python 3
 except ImportError:
@@ -8,6 +9,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
+GROMACS_PATH = find_executable('gmx')
 
 
 def stripcomments(line):
