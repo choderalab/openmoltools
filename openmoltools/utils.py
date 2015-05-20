@@ -479,28 +479,24 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
-def ensure_forcefield( intop, outtop, FF = 'ffamber99sb', version = 'old'):
+def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
     """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
         
         ARGUMENTS:
         - intop: Input topology
         - outtop: Output topology
         OPTIONAL:
-        - FF: STring corresponding to desired force field; default ffamber99sb.
-        - version: 'old' for pre-GROMACS 4.6 style force field management, where each force field is included as a single file, i.e. ffamber99sb.itp. 'new' for GROMACS 4.6 style where force fields are directories, such as 'amber99sb-ildn.ff/forcefield.itp". Here the expected string will be 'amber99sb-ildn', for example.
+        - FF: String corresponding to desired force field; default ffamber99sb.-ildn.ff
         
         Limitations:
-        - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topolgoy file including two forcefields.
+        - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
         """
     
     file = open(intop, 'r')
     text= file.readlines()
     file.close()
     
-    if version=='old':
-        FFstring = FF+'.itp'
-    else:
-        FFstring = FF+'.ff/forcefield.itp'
+    FFstring = FF+'/forcefield.itp'
     
     #Check if force field is included somewhere
     found = False
@@ -539,7 +535,7 @@ def ensure_forcefield( intop, outtop, FF = 'ffamber99sb', version = 'old'):
     file.writelines(text)
     file.close()
 
-def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top ):
+def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top, FF = 'amber99sb-ildn.ff' ):
 
     """ This function creates water solvated molecule coordinate files and its corresponding topology
         
@@ -553,15 +549,19 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
             gro_solv_filename: str
                           Coordinates path/filename (solvated system)
             box_dim: float
-                          cubic box dimension (nm), %3.1f
+                          cubic box dimension (nm); will be passed to GROMACS with one digit of precision (%3.1f)
             box_type: str
-                          box type;
+                          box type (string passed to gmx solvate)
             water_model: str
-                          water model to be included in the topology file.
+                          Water model string to tell gmx solvate to use when solvating
             water_top: str
-                          user defined water topology
+                          Water include file to ensure is present in topology file, i.e. "tip3p.itp"
+            FF : str, optional, default = 'amber99sb-ildn.ff'
+                          String specifying base force field directory for include files (i.e. 'amber99sb-ildn.ff').  
+
         NOTES:
-            Tailored for water solvation. Can probably be generalized for other solvents.
+        -----
+        Primarily tested on 3 point water models. May need adjustment for other models.
 """
 
     #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
@@ -582,7 +582,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
     logger.debug(output)
 
     #Insert Force Field specifications
-    ensure_forcefield( top_solv_filename, top_solv_filename, FF = 'amber99sb', version = 'new')
+    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF, version = 'new')
 
     #Insert line for water topology portion of the code
     try:
@@ -593,7 +593,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
         raise NameError('The file %s is missing' % top_solv_filename)
 
     #Insert water model
-    wateritp = os.path.join('amber99sb.ff', water_top ) # e.g water_top = 'tip3p.itp'
+    wateritp = os.path.join(FF, water_top ) # e.g water_top = 'tip3p.itp'
     index = 0
     while '[ system ]' not in text[index]:
         index += 1
