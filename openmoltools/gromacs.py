@@ -474,11 +474,13 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
     cmdbox = 'gmx editconf -f %s -o %s -c -d %.2f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
     output = getoutput(cmdbox)
     logger.debug(output)
+    check_for_errors(output)
 
     #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
     cmdsolv = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (gro_solv_filename, water_model, gro_solv_filename, top_solv_filename)
     output = getoutput(cmdsolv)
     logger.debug(output)
+    check_for_errors(output)
 
     #Insert Force Field specifications
     ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF)
@@ -567,4 +569,50 @@ def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
     file = open( outtop, 'w')
     file.writelines(text)
     file.close()
->>>>>>> 3f08400b19b5f203db4d331e2b32562965648cdd
+
+
+    
+def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
+    """Check GROMACS package output for the string 'ERROR' (upper or lowercase) and (optionally) specified other strings and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
+
+    Parameters
+    ----------
+    outputtext : str
+        String listing output text from an (GROMACS) command which should be checked for errors.
+    other_errors : list(str), default None
+        If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc.
+    ignore_errors: list(str), default None
+        If specified, GROMACS output lines containing errors but also containing any of the specified strings will be ignored
+
+    Notes
+    -----
+    If error(s) are found, raise a RuntimeError and attept to print the appropriate errors from the processed text. This only currently prints useful output if the word ERROR occurs on the same line as the cause of the error."""
+    lines = outputtext.split('\n')
+    error_lines = []
+    for line in lines:
+        if 'ERROR' in line.upper():
+            error_lines.append( line )
+        if not other_errors == None:
+            for err in other_errors:
+                if err.upper() in line.upper():
+                    error_lines.append( line )
+
+    if not ignore_errors == None and len(error_lines)>0:
+        new_error_lines = []
+        for ign in ignore_errors:
+            ignore = False
+            for err in error_lines:
+                if ign in err:
+                    ignore = True
+            if not ignore:
+                new_error_lines.append( err )
+        error_lines = new_error_lines 
+
+    if len(error_lines) > 0:
+        print("Unexpected errors encountered running GROMACS tool. Offending output:")
+        for line in error_lines: print(line)
+        raise(RuntimeError("Error encountered running GROMACS tool. Exiting."))
+
+    return
+
+
