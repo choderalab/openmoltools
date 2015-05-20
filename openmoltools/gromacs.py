@@ -1,4 +1,14 @@
 import os
+import shutil
+import logging
+try:
+    from subprocess import getoutput  # If python 3
+except ImportError:
+    from commands import getoutput  # If python 2
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
 
 def stripcomments(line):
     """From a GROMACS topology formatted line, return (line, comments) with whitespace and comments stripped. Comments are given with ;.

@@ -44,9 +44,9 @@ def test_gromacs_solvate():
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber( "etoh", etoh_filename, charge_method = None)
 
         #Amber setup
-        openmoltools.amber.run_tleap( 'etoh', gaff_mol2_filename, frcmod_filename, 'etoh.prmtop', 'etoh.crd' )
+        amber.run_tleap( 'etoh', gaff_mol2_filename, frcmod_filename, 'etoh.prmtop', 'etoh.crd' )
         #GROMACS conversion
-        openmoltools.utils.convert_via_acpype( 'etoh', 'etoh.prmtop', 'etoh.crd', 'etoh.top', 'etoh.gro' )
+        utils.convert_via_acpype( 'etoh', 'etoh.prmtop', 'etoh.crd', 'etoh.top', 'etoh.gro' )
         #Solvate
-        openmoltools.gromacs.do_solvate( 'etoh.top', 'etoh.gro', 'etoh_solvated.top', 'etoh_solvated.gro', 1.2, 'dodecahedron', 'spc216', 'tip3p.itp' )
+        gromacs.do_solvate( 'etoh.top', 'etoh.gro', 'etoh_solvated.top', 'etoh_solvated.gro', 1.2, 'dodecahedron', 'spc216', 'tip3p.itp' )
  
