@@ -448,7 +448,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
             gro_solv_filename: str
                           Coordinates path/filename (solvated system)
             box_dim: float
-                          cubic box dimension (nm); will be passed to GROMACS with one digit of precision (%3.1f)
+                          cubic box dimension (nm); will be passed to GROMACS wiin .2f format
             box_type: str
                           box type (string passed to gmx solvate)
             water_model: str
@@ -471,7 +471,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
     shutil.copyfile(top_filename, top_solv_filename) 
 
     #string with the Gromacs 5.0.4 box generating commands
-    cmdbox = 'gmx editconf -f %s -o %s -c -d %3.1f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
+    cmdbox = 'gmx editconf -f %s -o %s -c -d %.2f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
     output = getoutput(cmdbox)
     logger.debug(output)
 
@@ -512,3 +512,59 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
 
     return
 
+def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
+    """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
+        
+        ARGUMENTS:
+        - intop: Input topology
+        - outtop: Output topology
+        OPTIONAL:
+        - FF: String corresponding to desired force field; default ffamber99sb.-ildn.ff
+        
+        Limitations:
+        - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
+        """
+    
+    file = open(intop, 'r')
+    text= file.readlines()
+    file.close()
+    
+    FFstring = FF+'/forcefield.itp'
+    
+    #Check if force field is included somewhere
+    found = False
+    for line in text:
+        if FFstring in line:
+            found = True
+    #If not, add it after any comments at the top
+    if not found:
+        idx = 0
+        while text[idx].find(';')==0:
+            idx+=1
+        text[idx] = '\n#include "%s"\n\n' % FFstring + text[idx]
+    
+    #Remove any defaults section
+    found = False
+    foundidx = None
+    endidx = None
+    for (idx, line) in enumerate(text):
+        if '[ defaults ]' in line:
+            foundidx = idx
+            found = True
+        #If we've already found the defaults section, find location of start of next section
+        #Assumes next section can be found by looking for a bracket at the start of a line
+        elif found and '[' in line:
+            #Only store if we didn't already store
+            if endidx == None:
+                endidx = idx
+    #Now remove defaults section
+    
+    if found:
+        text = text[0:foundidx] + text[endidx:]
+    
+    
+    #Write results
+    file = open( outtop, 'w')
+    file.writelines(text)
+    file.close()
+>>>>>>> 3f08400b19b5f203db4d331e2b32562965648cdd
