@@ -1,4 +1,17 @@
 import os
+import shutil
+import logging
+from distutils.spawn import find_executable
+try:
+    from subprocess import getoutput  # If python 3
+except ImportError:
+    from commands import getoutput  # If python 2
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
+GROMACS_PATH = find_executable('gmx')
+
 
 def stripcomments(line):
     """From a GROMACS topology formatted line, return (line, comments) with whitespace and comments stripped. Comments are given with ;.
@@ -422,4 +435,187 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     except IOError:
         msg = "It was not possible to write the output topology file: %s" % output_topology
         raise NameError(msg)
+
+
+def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top, FF = 'amber99sb-ildn.ff' ):
+
+    """ This function creates water solvated molecule coordinate files and its corresponding topology
+        
+        PARAMETERS:
+            top_filename: str
+                          Topology path/filename
+            gro_filename: str
+                          Coordinates path/filename
+            top_solv_filename: str
+                          Topology path/filename (solvated system)
+            gro_solv_filename: str
+                          Coordinates path/filename (solvated system)
+            box_dim: float
+                          cubic box dimension (nm); will be passed to GROMACS wiin .2f format
+            box_type: str
+                          box type (string passed to gmx solvate)
+            water_model: str
+                          Water model string to tell gmx solvate to use when solvating, i.e. "spc216"
+            water_top: str
+                          Water include file to ensure is present in topology file, i.e. "tip3p.itp"
+            FF : str, optional, default = 'amber99sb-ildn.ff'
+                          String specifying base force field directory for include files (i.e. 'amber99sb-ildn.ff').  
+
+        NOTES:
+        -----
+        Primarily tested on 3 point water models. May need adjustment for other models.
+"""
+
+    #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
+    os.environ['GMX_MAXBACKUP'] = '-1'
+
+
+    #copies topology file to new directory
+    shutil.copyfile(top_filename, top_solv_filename) 
+
+    #string with the Gromacs 5.0.4 box generating commands
+    cmdbox = 'gmx editconf -f %s -o %s -c -d %.2f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
+    output = getoutput(cmdbox)
+    logger.debug(output)
+    check_for_errors(output)
+
+    #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
+    cmdsolv = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (gro_solv_filename, water_model, gro_solv_filename, top_solv_filename)
+    output = getoutput(cmdsolv)
+    logger.debug(output)
+    check_for_errors(output)
+
+    #Insert Force Field specifications
+    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF)
+
+    #Insert line for water topology portion of the code
+    try:
+        file = open(top_solv_filename,'r')
+        text = file.readlines()
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Insert water model
+    wateritp = os.path.join(FF, water_top ) # e.g water_top = 'tip3p.itp'
+    index = 0
+    while '[ system ]' not in text[index]:
+        index += 1
+    text[index] = '#include "%s"\n\n' % wateritp + text[index]
+
+    #Write the topology file
+    try:
+        file = open(top_solv_filename,'w+')
+        file.writelines( text )
+        file.close()
+    except:
+        raise NameError('The file %s is missing' % top_solv_filename)
+
+    #Check if file exist and is not empty;
+    if os.stat( gro_solv_filename ) == 0 or os.stat( top_solv_filename ).st_size == 0:
+        raise(ValueError("Solvent insertion failed"))
+
+    return
+
+def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
+    """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
+        
+        ARGUMENTS:
+        - intop: Input topology
+        - outtop: Output topology
+        OPTIONAL:
+        - FF: String corresponding to desired force field; default ffamber99sb.-ildn.ff
+        
+        Limitations:
+        - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
+        """
+    
+    file = open(intop, 'r')
+    text= file.readlines()
+    file.close()
+    
+    FFstring = FF+'/forcefield.itp'
+    
+    #Check if force field is included somewhere
+    found = False
+    for line in text:
+        if FFstring in line:
+            found = True
+    #If not, add it after any comments at the top
+    if not found:
+        idx = 0
+        while text[idx].find(';')==0:
+            idx+=1
+        text[idx] = '\n#include "%s"\n\n' % FFstring + text[idx]
+    
+    #Remove any defaults section
+    found = False
+    foundidx = None
+    endidx = None
+    for (idx, line) in enumerate(text):
+        if '[ defaults ]' in line:
+            foundidx = idx
+            found = True
+        #If we've already found the defaults section, find location of start of next section
+        #Assumes next section can be found by looking for a bracket at the start of a line
+        elif found and '[' in line:
+            #Only store if we didn't already store
+            if endidx == None:
+                endidx = idx
+    #Now remove defaults section
+    
+    if found:
+        text = text[0:foundidx] + text[endidx:]
+    
+    
+    #Write results
+    file = open( outtop, 'w')
+    file.writelines(text)
+    file.close()
+
+
+    
+def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
+    """Check GROMACS package output for the string 'ERROR' (upper or lowercase) and (optionally) specified other strings and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
+
+    Parameters
+    ----------
+    outputtext : str
+        String listing output text from an (GROMACS) command which should be checked for errors.
+    other_errors : list(str), default None
+        If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc.
+    ignore_errors: list(str), default None
+        If specified, GROMACS output lines containing errors but also containing any of the specified strings will be ignored
+
+    Notes
+    -----
+    If error(s) are found, raise a RuntimeError and attept to print the appropriate errors from the processed text. This only currently prints useful output if the word ERROR occurs on the same line as the cause of the error."""
+    lines = outputtext.split('\n')
+    error_lines = []
+    for line in lines:
+        if 'ERROR' in line.upper():
+            error_lines.append( line )
+        if not other_errors == None:
+            for err in other_errors:
+                if err.upper() in line.upper():
+                    error_lines.append( line )
+
+    if not ignore_errors == None and len(error_lines)>0:
+        new_error_lines = []
+        for ign in ignore_errors:
+            ignore = False
+            for err in error_lines:
+                if ign in err:
+                    ignore = True
+            if not ignore:
+                new_error_lines.append( err )
+        error_lines = new_error_lines 
+
+    if len(error_lines) > 0:
+        print("Unexpected errors encountered running GROMACS tool. Offending output:")
+        for line in error_lines: print(line)
+        raise(RuntimeError("Error encountered running GROMACS tool. Exiting."))
+
+    return
+
 
