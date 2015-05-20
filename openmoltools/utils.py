@@ -478,3 +478,4 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     os.remove( fname )
  
     return descriptors
+
