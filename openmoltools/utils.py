@@ -553,7 +553,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
             box_type: str
                           box type (string passed to gmx solvate)
             water_model: str
-                          Water model string to tell gmx solvate to use when solvating
+                          Water model string to tell gmx solvate to use when solvating, i.e. "spc216"
             water_top: str
                           Water include file to ensure is present in topology file, i.e. "tip3p.itp"
             FF : str, optional, default = 'amber99sb-ildn.ff'
