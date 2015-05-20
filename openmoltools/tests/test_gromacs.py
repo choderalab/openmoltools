@@ -27,8 +27,8 @@ def test_gromacs_merge():
         amber.run_tleap( 'benzene', gaff_mol2_filename2, frcmod_filename2, prmtop_filename2, crd_filename2 )
 
         #Convert to GROMACS
-        amber.convert_via_acpype( "etoh", prmtop_filename1, crd_filename1, out_top = top_filename1, out_gro = gro_filename1 ) 
-        amber.convert_via_acpype( "benzene", prmtop_filename2, crd_filename2, out_top = top_filename2, out_gro = gro_filename2 )
+        utils.convert_via_acpype( "etoh", prmtop_filename1, crd_filename1, out_top = top_filename1, out_gro = gro_filename1 ) 
+        utils.convert_via_acpype( "benzene", prmtop_filename2, crd_filename2, out_top = top_filename2, out_gro = gro_filename2 )
 
         #Merge topologies
         gromacs.merge_topologies( [ top_filename1, top_filename2], './combined.top', 'combined', molecule_numbers = [1, 5] )
