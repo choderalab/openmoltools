@@ -479,3 +479,48 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
+def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None) 
+    """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
+
+    Requires
+    --------
+    Currently requires gromacs_support branch of ParmEd
+
+
+    Parameters
+    ----------
+    in_prmtop : str
+        String specifying path to AMBER-format parameter/topology (parmtop) file
+    in_crd : str
+        String specifying path to AMBER-format coordinate file
+    out_top : str, optional, default = None
+        String specifying path to GROMACS-format topology file which will be written out. If none is provided, created based on molecule_name.
+    out_gro : str, optional, default = None
+        String specifying path to GROMACS-format coordinate (.gro) file which will be written out. If none is provided, created based on molecule_name.
+
+    Returns
+    -------
+    out_top : str
+        GROMACS topology file produced by ParmEd
+    out_gro : str
+        GROMACS coordinate file produced by ParmEd
+    """
+    #Create output file names if needed
+    if out_top is None:
+        out_top = "%s.top" % molecule_name        
+    if out_gro is None:
+        out_gro = "%s.gro" % molecule_name
+
+    #Import ParmEd
+    import chemistry
+
+    #Read AMBER to ParmEd object
+    structure = chemistry.amber.AmberParm( in_prmtop, in_crd )
+    #Make GROMACS topology
+    gromacs_topology = chemistry.gromacs.GromacsTopologyFile.from_structure( structure )
+    #Write
+    chemistry.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
+    chemistry.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
+
+    return out_top, out_gro
+
