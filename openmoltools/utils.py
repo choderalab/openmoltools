@@ -479,7 +479,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
-def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None) 
+def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None): 
     """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
 
     Requires
