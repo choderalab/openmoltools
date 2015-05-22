@@ -479,7 +479,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
-def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None): 
+def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None): 
     """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
 
     Requires
@@ -489,6 +489,8 @@ def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None):
 
     Parameters
     ----------
+    molecule_name : str
+        String specifying name of molecule
     in_prmtop : str
         String specifying path to AMBER-format parameter/topology (parmtop) file
     in_crd : str
@@ -504,6 +506,10 @@ def amber_to_gromacs( in_prmtop, in_crd, out_top = None, out_gro = None):
         GROMACS topology file produced by ParmEd
     out_gro : str
         GROMACS coordinate file produced by ParmEd
+
+    Notes
+    -----
+        molecule_name is not currently used except to generate output file names if gro/top file names are not provided. It is an argument partly for API consistency.
     """
     #Create output file names if needed
     if out_top is None:
