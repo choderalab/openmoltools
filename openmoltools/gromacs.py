@@ -431,11 +431,14 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
 
     #Check that number of provided molecule names is correct and if so, rename molecules
     if molecule_names != None:
-        assert len( molecule_names ) = len( final.residues ), "Must provide a number of molecule names equal to the number of residues in your final topology file, but you have %d and %d, respectively." % (  len(molecule_names), len( final.residues) )
+        assert len( molecule_names ) == len( final.residues ), "Must provide a number of molecule names equal to the number of residues in your final topology file, but you have %d and %d, respectively." % (  len(molecule_names), len( final.residues) )
 
         #Rename
         for nr in range( len( molecule_names) ):
             final.residues[ nr ].name = molecule_names[ nr ] 
+
+    #Set system name
+    final.title = system_name
 
     #Write topology
     chemistry.gromacs.GromacsTopologyFile.write( final, output_topology ) 
