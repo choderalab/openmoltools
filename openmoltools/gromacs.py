@@ -423,19 +423,25 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     #List numbers of each molecule if not provided
     if molecule_numbers == None:
         molecule_numbers = [ 1] * N_tops
+
+    #Check that we've been provided with the correct number of molecule_names if any
+    if molecule_names != None:
+        total_molecules = 0
+        for topnr in range(N_tops): 
+            total_molecules += len( tops[topnr].residues ) 
+        assert total_molecules == len( molecule_names ), "Must provide a number of molecule names equal to your total number of residues, but you have %s and %s, respectively." % ( len( molecule_names), total_molecules )
+
+        #Rename residues
+        ctr = 0
+        for topnr in range(N_tops):
+            for resnr in range(len(tops[topnr].residues)):
+                tops[topnr].residues[resnr].name = molecule_names[ ctr ]
+                ctr += 1
  
     #Construct final topology
     final = tops[0] * molecule_numbers[ 0 ] 
     for topnr in range( 1, N_tops ):
         final += tops[ topnr ] * molecule_numbers[ topnr ] 
-
-    #Check that number of provided molecule names is correct and if so, rename molecules
-    if molecule_names != None:
-        assert len( molecule_names ) == len( final.residues ), "Must provide a number of molecule names equal to the number of residues in your final topology file, but you have %d and %d, respectively." % (  len(molecule_names), len( final.residues) )
-
-        #Rename
-        for nr in range( len( molecule_names) ):
-            final.residues[ nr ].name = molecule_names[ nr ] 
 
     #Set system name
     final.title = system_name
