@@ -378,4 +378,68 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
 
     return
 
+def merge_topologies( input_topologies, output_topology, system_name, molecule_names = None, molecule_numbers = None ):
+    """Merge GROMACS topology files specified in a list of input topologies and write the result into a final topology file specified. Optionally specify a list of molecule names to be used in the [ moleculetype ] and [ molecules ] sections, overriding what is already present. If molecule_names and/or molecule_numbers are specified, the input topologies are expected to be single-molecule, single-residue topology files.
 
+    Parameters
+    ----------
+    input_topologies : list (str)
+        A list of input topology files to be merged
+    output_topology : str
+        Output topology file to be written/created
+    system_name : str
+        Name to be used in final [ system ] section
+    molecule_names : list (str), optional
+        Molecule names to use in [ moleculetype ] and [ system ] sections in resulting topology file
+    molecule_numbers : list (int), optional
+        Molecule numbers to use in [ system ] section, overriding what is present in the existing [ system ] sections.
+
+    Returns
+    -------
+    status : bool
+        True if successful
+
+    Notes
+    -----
+    This simply takes the contents of provided topology files and consolidates them to make a single resulting topology file. Existing [ moleculetype ] definitions are preserved and molecules are kept separate.
+    Merging should work fine on general topology files. However, if molecule_names and/or molecule_numbers are provided the input topologies must contain single-molecule, single-residue topologies. Molecule_numbers are used to replicate the input topologies via ParmEd, and molecule_names are used to change the residue names from the input topologies.
+    """
+
+    #PRELIMINARIES
+    N_tops = len( input_topologies )
+
+    #Check for obvious input problems - do we have the right number of everything, do all the input files exist
+    if molecule_numbers != None:
+        assert len( molecule_numbers ) == N_tops, "Must provide same number of molecule numbers as topology files."
+    for filenm in input_topologies:
+        assert( os.path.isfile( filenm )), "Error: Can't find input file %s provided to merge_topologies." % filenm
+
+    #WORK ON TOPOLOGIES
+    tops = []
+    for filenm in input_topologies:
+        top = chemistry.gromacs.GromacsTopologyFile( filenm )
+        tops.append( top )
+
+    #List numbers of each molecule if not provided
+    if molecule_numbers == None:
+        molecule_numbers = [ 1] * N_tops
+ 
+    #Construct final topology
+    final = tops[0] * molecule_numbers[ 0 ] 
+    for topnr in range( 1, N_tops ):
+        final += tops[ topnr ] * molecule_numbers[ topnr ] 
+
+    #Check that number of provided molecule names is correct and if so, rename molecules
+    if molecule_names != None:
+        assert len( molecule_names ) = len( final.residues ), "Must provide a number of molecule names equal to the number of residues in your final topology file, but you have %d and %d, respectively." % (  len(molecule_names), len( final.residues) )
+
+        #Rename
+        for nr in range( len( molecule_names) ):
+            final.residues[ nr ].name = molecule_names[ nr ] 
+
+    #Write topology
+    chemistry.gromacs.GromacsTopologyFile.write( final, output_topology ) 
+
+    return True
+
+ 
