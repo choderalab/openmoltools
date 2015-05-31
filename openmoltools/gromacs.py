@@ -133,8 +133,7 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     """
     
     #The molecule name list and the molecule number list must have the same size otherwise an exception is raised
-    if (len(molecule_names) != len(molecule_numbers)):
-        raise ValueError("The molecule name list and the molecule name number must have the same size")
+    assert(len(molecule_names) == len(molecule_numbers)), "The molecule name list and the molecule name number must have the same size"
     
     #Check for non negative integer number of molecules
     check_nni = all(item >=0  and isinstance(item, int) for item in molecule_numbers)
