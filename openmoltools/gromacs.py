@@ -139,7 +139,7 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     check_nni = all(item >=0  and isinstance(item, int) for item in molecule_numbers)
 
     if not check_nni:
-        raise ValueError("The molecule number list contains a non negative integer value")
+        raise ValueError("The molecule number list must contain only non-negative integer value")
 
     #Read in the topology file
     try:
