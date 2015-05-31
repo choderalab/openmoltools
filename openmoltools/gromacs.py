@@ -129,11 +129,11 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     -----
     This function reads in a gromacs topology file and changes the number of atoms related to the passed molecule name list. 
     If in the topology file one molecule name is not present in the passed molecule name list an exception is raised.
-    
+    Currently assumes the components are single-residue, single-molecule (i.e. the molecule names and residue names are equivalent).
     """
     
     #The molecule name list and the molecule number list must have the same size otherwise an exception is raised
-    assert(len(molecule_names) == len(molecule_numbers)), "The molecule name list and the molecule name number must have the same size"
+    assert len(molecule_names) == len(molecule_numbers), "The molecule name list and the molecule name number must have the same size"
     
     #Check for non negative integer number of molecules
     check_nni = all(item >=0  and isinstance(item, int) for item in molecule_numbers)
@@ -141,59 +141,38 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     if not check_nni:
         raise ValueError("The molecule number list must contain only non-negative integer value")
 
-    #Read in the topology file
-    try:
-        file = open(input_topology, 'r')
-        text = file.readlines()
-        file.close()
-    except IOError:
-        raise NameError(input_topology)
+    #Read in the topology file as ParmEd object
+    top = chemistry.load_file( input_topology )
 
+    #Split the topology file to its component molecules
+    components = top.split()
 
-    #Extract the [ molecules ] section from the gromacs topolgy file
-    check , indices = extract_section(text, "molecules")
-
-    if(check == False):
-        raise ValueError("In the selected gromacs topology file is missing the [ molecules ] section")
-
-    counter = 0
-
-
-    for idx in indices:
-
-        #Read in the molecule name and the molecule number present in the topology file
-        line = text[idx]		
-        line = line.split()
-   
-        #Skip comments
-        if line[0] == ';':
-            continue
-        
-        #The current name of the molecule in the topology file
-        mol_name = line[0]
-
-        #Check if the molecule name in the gromacs topology is present in the passed molecule name list otherwise an exception is raised
-        try:
-            index_name = molecule_names.index(mol_name)
-        except ValueError:
-            msg = "In the selected gromacs topology file the molecule name '%s' does not match any molecule names in the passed molecule name list: %s" % (mol_name , molecule_names)
-            raise ValueError(msg)
-        #Create a valid string to re-write back in the output topology file
-        line[1] = str(molecule_numbers[index_name])
-        strg = ' '.join(line)+'\n'
-        text[idx] = strg
-        counter=counter+1
-
-    if (counter != len(molecule_names)):
-        raise ValueError("The passed molecule list contains more molecule names than the gromacs topology file")
+    #Get objects and quantities
+    molecules = []
+    numbers = []
+    current_names = []
+    for c in components:
+        molecules.append( c[0] )
+        numbers.append( c[1] )    
+        current_names.append( c[0].residues[0].name )
     
-    try:
-        file = open( output_topology, 'w')
-        file.writelines( text )
-        file.close()
-    except IOError:
-        msg = "It was not possible to write the output topology file: %s" % output_topology
-        raise NameError(msg)
+    #Check length
+    assert len(molecules) == len(molecule_numbers), "The number of molecules in the topology file is not equal to the number of molecule numbers/molecules provided."
+
+
+    #Cross-check current molecule names with expected molecule names
+    for idx in range( len(molecule_names) ):
+        if not molecule_names[idx] == current_names[idx]:
+            raise ValueError("Molecule name provided (%s) does not match molecule/residue name in topology file (%s)." % (molecule_names[idx], current_names[idx] ) )
+
+    #Re-compose topology file
+    newtop = molecules[0] * molecule_numbers[0]
+    for idx in range( 1, len(molecule_names) ):
+        newtop += molecules[idx] * molecule_numbers[idx]
+    
+
+    #Write topology file
+    newtop.write( output_topology ) 
 
 
 def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top, FF = 'amber99sb-ildn.ff' ):
