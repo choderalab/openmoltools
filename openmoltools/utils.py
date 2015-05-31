@@ -78,7 +78,13 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
         GROMACS topology file produced by acpype 
     out_gro : str
         GROMACS coordinate file produced by acpype
+
+    Notes
+    -----
+    Deprecated. Please use ParmEd (especially amber_to_gromacs) instead.
     """
+
+    print("WARNING: Use of acpype for conversion is deprecated. ParmEd is preferred; please use amber_to_gromacs instead.") 
 
     #Create output file names if needed
     if out_top is None:
