@@ -466,9 +466,9 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
         Primarily tested on 3 point water models. May need adjustment for other models.
 """
 
-    #Setting up proper environment variable (avoid unnecessary GROMCAS backup files)
-    os.environ['GMX_MAXBACKUP'] = '-1'
-
+    #Setting up proper environment variables
+    os.environ['GMX_MAXBACKUP'] = '-1' # Avoids unnecessary GROMACS backup files
+    os.environ['GMX_NO_QUOTES'] = '1' # Supresses end-of-file quotes (gcq)
 
     #copies topology file to new directory
     shutil.copyfile(top_filename, top_solv_filename) 
