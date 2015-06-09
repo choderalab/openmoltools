@@ -490,7 +490,7 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
 
     Requires
     --------
-    Currently requires gromacs_support branch of ParmEd
+    Currently requires ParmEd v2.0 beta after update #173 (https://github.com/ParmEd/ParmEd/pull/173) or later.
 
 
     Parameters
