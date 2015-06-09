@@ -412,13 +412,13 @@ def randomize_mol2_residue_names(mol2_filenames):
     """Find unique residue names for a list of MOL2 files.  Then
     re-write the MOL2 files using ParmEd with the unique identifiers.
     """
-    import chemistry    
+    import parmed   
     names = get_unique_names(len(mol2_filenames))
 
     for k, filename in enumerate(mol2_filenames):
-        struct = chemistry.load_file(filename)
+        struct = parmed.load_file(filename)
         struct.name = names[k]
-        mol2file = chemistry.formats.Mol2File
+        mol2file = parmed.formats.Mol2File
         mol2file.write(struct, filename)
 
 def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
@@ -524,15 +524,15 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
         out_gro = "%s.gro" % molecule_name
 
     #Import ParmEd
-    import chemistry
+    import parmed
 
     #Read AMBER to ParmEd object
-    structure = chemistry.amber.AmberParm( in_prmtop, in_crd )
+    structure = parmed.amber.AmberParm( in_prmtop, in_crd )
     #Make GROMACS topology
-    gromacs_topology = chemistry.gromacs.GromacsTopologyFile.from_structure( structure )
+    gromacs_topology = parmed.gromacs.GromacsTopologyFile.from_structure( structure )
     #Write
-    chemistry.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
-    chemistry.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
+    parmed.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
+    parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
 
     return out_top, out_gro
 

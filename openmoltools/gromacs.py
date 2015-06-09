@@ -6,7 +6,7 @@ try:
     from subprocess import getoutput  # If python 3
 except ImportError:
     from commands import getoutput  # If python 2
-import chemistry
+import parmed
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
@@ -142,7 +142,7 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
         raise ValueError("The molecule number list must contain only non-negative integer value")
 
     #Read in the topology file as ParmEd object
-    top = chemistry.load_file( input_topology )
+    top = parmed.load_file( input_topology )
 
     #Split the topology file to its component molecules
     components = top.split()
@@ -395,7 +395,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     #WORK ON TOPOLOGIES
     tops = []
     for filenm in input_topologies:
-        top = chemistry.gromacs.GromacsTopologyFile( filenm )
+        top = parmed.gromacs.GromacsTopologyFile( filenm )
         tops.append( top )
 
     #List numbers of each molecule if not provided
@@ -425,7 +425,7 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     final.title = system_name
 
     #Write topology
-    chemistry.gromacs.GromacsTopologyFile.write( final, output_topology ) 
+    parmed.gromacs.GromacsTopologyFile.write( final, output_topology ) 
 
     return True
 
