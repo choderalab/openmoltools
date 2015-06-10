@@ -7,6 +7,7 @@ from openmoltools import utils
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
+import simtk.openmm.openmm as mmmm
 from distutils.spawn import find_executable
 import parmed
 
@@ -65,7 +66,7 @@ def test_parmed_conversion():
         #Set up amber system
         a = parmed.amber.AmberParm( prmtop, inpcrd )
         ambersys = a.createSystem()
-        ambercon = Context( ambersys, VerletIntegrator(0.001))
+        ambercon = mmmm.Context( ambersys, mm.VerletIntegrator(0.001))
         ambercon.setPositions( a.positions )
         #Set up GROMACS system
         g = parmed.load_file( out_top )
@@ -73,7 +74,7 @@ def test_parmed_conversion():
         g.box = gro.box
         g.positions = gro.positions
         gromacssys = g.createSystem()
-        gromacscon = Context( gromacssys, VerletIntegrator(0.001))
+        gromacscon = mmmm.Context( gromacssys, mm.VerletIntegrator(0.001))
         gromacscon.setPositions( g.positions ) 
 
         #Check energies
