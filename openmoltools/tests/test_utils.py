@@ -7,7 +7,10 @@ from openmoltools import utils
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
+import simtk.openmm.openmm as mmmm
 from distutils.spawn import find_executable
+import parmed
+
 
 HAVE_RDKIT = True
 try:
@@ -54,9 +57,40 @@ def test_parmed_conversion():
     molecule_name = 'sustiva'
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
     with utils.enter_temp_directory(): # Prevents creating tons of GAFF files everywhere.
+        #Make sure conversion runs
         gaff_mol2_filename, frcmod_filename = utils.run_antechamber(molecule_name, input_filename, charge_method=None)
         prmtop, inpcrd = utils.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
-        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd ) 
+        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd, precision = 8 ) 
+
+        #Test energies before and after conversion
+        #Set up amber system
+        a = parmed.amber.AmberParm( prmtop, inpcrd )
+        ambersys = a.createSystem()
+        ambercon = mmmm.Context( ambersys, mm.VerletIntegrator(0.001))
+        ambercon.setPositions( a.positions )
+        #Set up GROMACS system
+        g = parmed.load_file( out_top )
+        gro = parmed.gromacs.GromacsGroFile.parse( out_gro ) 
+        g.box = gro.box
+        g.positions = gro.positions
+        gromacssys = g.createSystem()
+        gromacscon = mmmm.Context( gromacssys, mm.VerletIntegrator(0.001))
+        gromacscon.setPositions( g.positions ) 
+
+        #Check energies
+        a_energies = parmed.openmm.utils.energy_decomposition( a, ambercon )    
+        g_energies = parmed.openmm.utils.energy_decomposition( g, gromacscon )
+        #Check components
+        tolerance = 1e-5
+        ok = True
+        for key in a_energies.keys():
+            diff = np.abs(a_energies[key] - g_energies[key] )
+            if diff/np.abs(a_energies[key]) > tolerance:
+                ok = False
+                print("In testing AMBER to GROMACS conversion, %s energy differs by %.5g, which is more than a fraction %.2g of the total, so conversion appears not to be working properly." % ( key, diff, tolerance) )
+        if not ok:
+            raise(ValueError("AMBER to GROMACS conversion yields energies which are too different.")) 
+    
 
 @skipIf(SKIP_CHECKMOL, "Skipping testing of checkmol descriptors since checkmol is not found (under that name)." )
 def test_checkmol_descriptors():

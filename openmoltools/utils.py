@@ -485,7 +485,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
  
     return descriptors
 
-def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None): 
+def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, precision = None): 
     """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
 
     Requires
@@ -505,6 +505,8 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
         String specifying path to GROMACS-format topology file which will be written out. If none is provided, created based on molecule_name.
     out_gro : str, optional, default = None
         String specifying path to GROMACS-format coordinate (.gro) file which will be written out. If none is provided, created based on molecule_name.
+    precision : int, optional, default = None
+        If not none, set the precision of the coordinates in the written .gro file to the specified number of decimal places.
 
     Returns
     -------
@@ -523,6 +525,11 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
     if out_gro is None:
         out_gro = "%s.gro" % molecule_name
 
+    #Check precision
+    if precision is not None:
+        from types import *
+        assert type(precision) is IntType, "Precision %s is not an integer." % precision
+
     #Import ParmEd
     import parmed
 
@@ -532,7 +539,10 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
     gromacs_topology = parmed.gromacs.GromacsTopologyFile.from_structure( structure )
     #Write
     parmed.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
-    parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
+    if precision == None:    
+        parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
+    else:
+        parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro, precision = precision )
 
     return out_top, out_gro
 
