@@ -527,6 +527,7 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
 
     #Check precision
     if precision is not None:
+        from types import *
         assert type(precision) is IntType, "Precision %s is not an integer." % precision
 
     #Import ParmEd
