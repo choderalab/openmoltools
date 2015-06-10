@@ -78,12 +78,22 @@ def test_parmed_conversion():
         g.positions = gro.positions
         gromacssys = g.createSystem()
         gromacscon = Context( gromacssys, VerletIntegrator(0.001))
-        gromacscon.setPositions( gromacssys.positions ) 
+        gromacscon.setPositions( g.positions ) 
 
         #Check energies
-        print(chem.openmm.utils.energy_decomposition( a, ambercon ))    
-        print(chem.openmm.utils.energy_decomposition( g, gromacscon ))    
-        #NEED TO ADD CODE HERE TO CROSS-COMPARE ENERGIES AND RAISE EXCEPTION IF THEY ARE TOO DIFFERENT
+        a_energies = parmed.openmm.utils.energy_decomposition( a, ambercon )    
+        g_energies = parmed.openmm.utils.energy_decomposition( g, gromacscon )
+        #Check components
+        tolerance = 1e-5
+        ok = True
+        for key in a_energies.keys():
+            diff = np.abs(a_energies[key] - g_energies[key] )
+            if diff/np.abs(a_energies[key]) > tolerance:
+                ok = False
+                print("In testing AMBER to GROMACS conversion, %s energy differs by %.5g, which is more than a fraction %.2g of the total, so conversion appears not to be working properly." % ( key, diff, tolerance) )
+        if not ok:
+            raise(ValueError("AMBER to GROMACS conversion yields energies which are too different.")) 
+    
         #PROBABLY ALSO WANT TO DO THIS IN PBC, MAYBE WITH SOLVENT 
 
 
