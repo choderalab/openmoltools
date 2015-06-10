@@ -6,14 +6,10 @@ from mdtraj.testing import eq
 from openmoltools import utils
 import simtk.unit as u
 from simtk.openmm import app
-from simtk.openmm.app import *
 import simtk.openmm as mm
 from distutils.spawn import find_executable
 import parmed
 
-#Extras?
-from simtk.openmm import *; from simtk.openmm.app import *; from simtk.unit import *
-import simtk.unit as u
 
 HAVE_RDKIT = True
 try:
@@ -94,8 +90,6 @@ def test_parmed_conversion():
         if not ok:
             raise(ValueError("AMBER to GROMACS conversion yields energies which are too different.")) 
     
-        #PROBABLY ALSO WANT TO DO THIS IN PBC, MAYBE WITH SOLVENT 
-
 
 @skipIf(SKIP_CHECKMOL, "Skipping testing of checkmol descriptors since checkmol is not found (under that name)." )
 def test_checkmol_descriptors():
