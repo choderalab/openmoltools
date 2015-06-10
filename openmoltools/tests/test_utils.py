@@ -6,8 +6,14 @@ from mdtraj.testing import eq
 from openmoltools import utils
 import simtk.unit as u
 from simtk.openmm import app
+from simtk.openmm.app import *
 import simtk.openmm as mm
 from distutils.spawn import find_executable
+import parmed
+
+#Extras?
+from simtk.openmm import *; from simtk.openmm.app import *; from simtk.unit import *
+import simtk.unit as u
 
 HAVE_RDKIT = True
 try:
@@ -54,9 +60,32 @@ def test_parmed_conversion():
     molecule_name = 'sustiva'
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
     with utils.enter_temp_directory(): # Prevents creating tons of GAFF files everywhere.
+        #Make sure conversion runs
         gaff_mol2_filename, frcmod_filename = utils.run_antechamber(molecule_name, input_filename, charge_method=None)
         prmtop, inpcrd = utils.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
-        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd ) 
+        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd, precision = 8 ) 
+
+        #Test energies before and after conversion
+        #Set up amber system
+        a = parmed.amber.AmberParm( prmtop, inpcrd )
+        ambersys = a.createSystem()
+        ambercon = Context( ambersys, VerletIntegrator(0.001))
+        ambercon.setPositions( a.positions )
+        #Set up GROMACS system
+        g = parmed.load_file( out_top )
+        gro = parmed.gromacs.GromacsGroFile.parse( out_gro ) 
+        g.box = gro.box
+        g.positions = gro.positions
+        gromacssys = g.createSystem()
+        gromacscon = Context( gromacssys, VerletIntegrator(0.001))
+        gromacscon.setPositions( gromacssys.positions ) 
+
+        #Check energies
+        print(chem.openmm.utils.energy_decomposition( a, ambercon ))    
+        print(chem.openmm.utils.energy_decomposition( g, gromacscon ))    
+        #NEED TO ADD CODE HERE TO CROSS-COMPARE ENERGIES AND RAISE EXCEPTION IF THEY ARE TOO DIFFERENT
+        #PROBABLY ALSO WANT TO DO THIS IN PBC, MAYBE WITH SOLVENT 
+
 
 @skipIf(SKIP_CHECKMOL, "Skipping testing of checkmol descriptors since checkmol is not found (under that name)." )
 def test_checkmol_descriptors():
