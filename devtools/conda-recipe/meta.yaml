@@ -21,6 +21,7 @@ requirements:
     - openmm
     - ambermini
     - pytables
+    - parmed
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
@@ -33,6 +34,7 @@ requirements:
     - openmm
     - ambermini
     - pytables
+    - parmed
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
