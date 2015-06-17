@@ -11,7 +11,6 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
-import types
 
 try:
     from subprocess import getoutput  # If python 3
@@ -528,7 +527,7 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
 
     #Check precision
     if precision is not None:
-        assert type(precision) is types.IntType, "Precision %s is not an integer." % precision
+        assert isinstance(precision, int), "Precision %s is not an integer." % precision
 
     #Import ParmEd
     import parmed
