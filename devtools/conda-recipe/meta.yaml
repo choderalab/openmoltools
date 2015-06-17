@@ -18,7 +18,7 @@ requirements:
     - numpy
     - scipy
     - pandas    
-    - openmm
+    - openmm-dev
     - ambermini
     - pytables
     - parmed
@@ -31,7 +31,7 @@ requirements:
     - mdtraj
     - numpydoc
     - scipy
-    - openmm
+    - openmm-dev
     - ambermini
     - pytables
     - parmed
