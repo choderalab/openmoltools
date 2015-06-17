@@ -78,7 +78,13 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
         GROMACS topology file produced by acpype 
     out_gro : str
         GROMACS coordinate file produced by acpype
+
+    Notes
+    -----
+    Deprecated. Please use ParmEd (especially amber_to_gromacs) instead.
     """
+
+    print("WARNING: Use of acpype for conversion is deprecated. ParmEd is preferred; please use amber_to_gromacs instead.") 
 
     #Create output file names if needed
     if out_top is None:
@@ -406,13 +412,13 @@ def randomize_mol2_residue_names(mol2_filenames):
     """Find unique residue names for a list of MOL2 files.  Then
     re-write the MOL2 files using ParmEd with the unique identifiers.
     """
-    import chemistry    
+    import parmed   
     names = get_unique_names(len(mol2_filenames))
 
     for k, filename in enumerate(mol2_filenames):
-        struct = chemistry.load_file(filename)
+        struct = parmed.load_file(filename)
         struct.name = names[k]
-        mol2file = chemistry.formats.Mol2File
+        mol2file = parmed.formats.Mol2File
         mol2file.write(struct, filename)
 
 def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
@@ -478,4 +484,64 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     os.remove( fname )
  
     return descriptors
+
+def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, precision = None): 
+    """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
+
+    Requires
+    --------
+    Currently requires ParmEd v2.0 beta1 or later.
+
+
+    Parameters
+    ----------
+    molecule_name : str
+        String specifying name of molecule
+    in_prmtop : str
+        String specifying path to AMBER-format parameter/topology (parmtop) file
+    in_crd : str
+        String specifying path to AMBER-format coordinate file
+    out_top : str, optional, default = None
+        String specifying path to GROMACS-format topology file which will be written out. If none is provided, created based on molecule_name.
+    out_gro : str, optional, default = None
+        String specifying path to GROMACS-format coordinate (.gro) file which will be written out. If none is provided, created based on molecule_name.
+    precision : int, optional, default = None
+        If not none, set the precision of the coordinates in the written .gro file to the specified number of decimal places.
+
+    Returns
+    -------
+    out_top : str
+        GROMACS topology file produced by ParmEd
+    out_gro : str
+        GROMACS coordinate file produced by ParmEd
+
+    Notes
+    -----
+        molecule_name is not currently used except to generate output file names if gro/top file names are not provided. It is an argument partly for API consistency.
+    """
+    #Create output file names if needed
+    if out_top is None:
+        out_top = "%s.top" % molecule_name        
+    if out_gro is None:
+        out_gro = "%s.gro" % molecule_name
+
+    #Check precision
+    if precision is not None:
+        assert isinstance(precision, int), "Precision %s is not an integer." % precision
+
+    #Import ParmEd
+    import parmed
+
+    #Read AMBER to ParmEd object
+    structure = parmed.amber.AmberParm( in_prmtop, in_crd )
+    #Make GROMACS topology
+    gromacs_topology = parmed.gromacs.GromacsTopologyFile.from_structure( structure )
+    #Write
+    parmed.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
+    if precision == None:    
+        parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
+    else:
+        parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro, precision = precision )
+
+    return out_top, out_gro
 

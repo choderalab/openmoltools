@@ -28,7 +28,7 @@ except:
     HAVE_OE = False
 
 try:
-    import chemistry
+    import parmed 
     HAVE_PARMED = True
 except ImportError:
     HAVE_PARMED = False
