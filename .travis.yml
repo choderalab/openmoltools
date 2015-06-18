@@ -20,7 +20,7 @@ env:
 
   global:
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
-    - secure: "cuLLKOyxf1izHMIlGHRGi7W6soy1VhehQ2xhq2+q1EKLNaUvPLbJgrdut06jS4Tw9/8cwLEeG3WXA5RUrI/3AWmP/dq5gld5ON+7OMTFqO/5nXhE+IOcDJkNSFh04lBeEjaalve+WGX4q/Johy35YJG7jp88FWjXQRrE6P2u4Bw="
+    - secure: "uoeeyhnod4IBape3RdzzD7n1NzAkqNs9ustvp8vxC8ZqSHfm031V+AaXKUuEWWftUgcmKpvkvawYMgTP8byXoesndNc36yqf0S9ZxnVByww9sR87vSCaHxYmtMYIdNvJWEZim0MU+w6wiUL76QfZfZkppasRHvrtcJKYaAUfYzk="
 
 after_success:
   - echo "after_success"
