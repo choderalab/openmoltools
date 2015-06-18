@@ -7,11 +7,11 @@ simulating small molecules using various molecules dynamics techniques.
 It also contains several python tools for working with small molecules,
 packing boxes (python wrappers for packmol), and parameterizing small
 molecules.  It also contains tools for creating OpenMM XML forcefield files
-for small molecules, although we currently focus on the use of AMBER 
+for small molecules, although we currently focus on the use of AMBER
 prmtop and inpcrd files due to their widespread use.
 
-Our goal with this project is to have modular components that are both 
-documented and well-tested.  
+Our goal with this project is to have modular components that are both
+documented and well-tested.
 
 This tool is in BETA testing: use at your own risk!
 
