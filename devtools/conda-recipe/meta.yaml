@@ -1,5 +1,5 @@
 package:
-  name: openmoltools
+  name: openmoltools-dev
   version: !!str dev
 
 #source:
@@ -17,7 +17,7 @@ requirements:
     - mdtraj
     - numpy
     - scipy
-    - pandas    
+    - pandas
     - openmm-dev
     - ambermini
     - pytables
