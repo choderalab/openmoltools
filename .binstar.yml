@@ -18,7 +18,7 @@ user: omnia
 ## platform defaults to linux-64
 platform:
  - linux-64
- - linux-32
+# - linux-32
 ## The engine are the inital conda packages you want to run with
 engine:
  - python=2
@@ -40,7 +40,8 @@ engine:
 ## Put your main computations here!
 script:
   - echo "This is my binstar build!"
-  - conda build devtools/conda-recipe
+  - conda install --yes --quiet conda-build jinja2
+  - conda build --quiet devtools/conda-recipe
 ## This will run after the script regardless of the result of script
 ## BINSTAR_BUILD_RESULT=[succcess|failure]
 # after_script:
