@@ -19,6 +19,7 @@ user: omnia
 platform:
  - linux-64
 # - linux-32
+ - osx-64
 ## The engine are the inital conda packages you want to run with
 engine:
  - python=2
