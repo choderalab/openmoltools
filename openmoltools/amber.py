@@ -252,7 +252,13 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     if frcmod_filename is None:
         frcmod_filename = molecule_name + '.frcmod'
 
-    cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
+    #Use temporary directory to do this to avoid issues with spaces in filenames, etc.
+    tempdir = tempfile.mkdtemp()
+    startdir = os.getcwd()
+    shutil.copy( input_filename, os.path.join( tempfile, 'in.mol2') )
+    os.chdir( tempdir )
+
+    cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
     if charge_method is not None:
         cmd += ' -c %s' % charge_method
 
@@ -264,12 +270,17 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     output = getoutput(cmd)
     logger.debug(output)
 
-    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
+    cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
     logger.debug(cmd)
 
     output = getoutput(cmd)
     logger.debug(output)
     check_for_errors( output  )
+
+    #Copy back and remove temporary directory
+    os.chdir( startdir )
+    shutil.copy( os.path.join( tempdir, 'out.mol2'), gaff_mol2_filename )
+    shutil.copy( os.path.join( tempdir, 'out.frcmod'), frcmod_filename )
 
     return gaff_mol2_filename, frcmod_filename
 
