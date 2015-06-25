@@ -48,7 +48,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     ----------
     mol2_filenames : list(str)
         Filenames of GAFF flavored mol2 files.  Each must contain exactly
-        ONE ligand. Filenames cannot contain spaces (tleap limitation)
+        ONE ligand. 
     frcmod_filenames : str
         Filename of input GAFF frcmod filenames.
     box_filename : str
