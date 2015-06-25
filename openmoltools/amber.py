@@ -63,7 +63,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     tleap_commands : str
         The string of commands piped to tleap for building the prmtop 
         and inpcrd files.  This will *already* have been run, but the
-        output can be useful for debugging or archival purposes.
+        output can be useful for debugging or archival purposes. However,
+        this will reflect temporary file names for both input and output
+        file as these are used to avoid tleap filename restrictions.
         
     Notes
     -----
@@ -86,10 +88,29 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     if len(all_names) != len(mol2_filenames):
         raise(ValueError("Must have UNIQUE residue names in each mol2 file."))
-    
-    #Check for spaces in filenames; AMBER can't handle these.
-    for name in mol2_filenames:
-        assert ' ' not in name, "Error: tleap cannot process mol2 filenames containing spaces."
+    if len(mol2_filenames) != len(frcmod_filenames):
+        raise(ValueError("Must provide an equal number of frcmod and mol2 file names."))    
+
+    #Get number of files
+    nfiles = len(mol2_filenames)
+
+    #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
+    tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
+    tmp_frcmod_filenames = [ 'in%d.frcmod' % n for n in range(nfiles) ]
+
+    #Make temporary, hardcoded filenames for output files to avoid tleap filename restrictions
+    tmp_prmtop_filenames = [ 'out%d.prmtop' % n for n in range(nfiles) ]
+    tmp_inpcrd_filenames = [ 'out%d.inpcrd' % n for n in range(nfiles) ]
+
+    #Create temporary directory for working in/output
+    startdir = os.getcwd()
+    outdir = tempfile.mkdtemp() 
+ 
+    #Copy input files to temporary file names in target directory
+    for (infile, outfile) in ( mol2_filenames+frcmod_filenames, tmp_mol2_filenames+tmp_frcmod_filenames ):
+        targetfile = os.path.join( outdir, outfile )
+        shutil.copy( infile, outfile)
+        logger.debug('Copying input file %s to %s...\n' % (infile, outfile)) 
 
     all_names = [md.load(filename).top.residue(0).name for filename in mol2_filenames]
     
@@ -103,6 +124,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     file_handle.writelines(tleap_commands)
     file_handle.flush()
 
+    logger.debug('Running tleap in temporary director %s...\n' % outdir) 
     cmd = "tleap -f %s " % file_handle.name
     logger.debug(cmd)
 
@@ -111,6 +133,13 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
 
     file_handle.close()
+
+    #Copy stuff back to right filenames and remove temporary directory
+    os.chdir(startdir)
+    for (tempfile, finalfile) in ( tmp_prmtop_filenames + tmp_inpcrd_filenames, prmtop_filenames + inpcrd_filenames ):
+
+        shutil.copy( os.path.join( outdir, tempfile), finalfile) 
+    shutil.rmtree( outdir )
 
     return tleap_commands
 
