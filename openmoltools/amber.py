@@ -2,6 +2,7 @@ import mdtraj as md
 import tempfile
 import logging
 import os
+import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 
@@ -255,7 +256,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     #Use temporary directory to do this to avoid issues with spaces in filenames, etc.
     tempdir = tempfile.mkdtemp()
     startdir = os.getcwd()
-    shutil.copy( input_filename, os.path.join( tempfile, 'in.mol2') )
+    shutil.copy( input_filename, os.path.join( tempdir, 'in.mol2') )
     os.chdir( tempdir )
 
     cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
