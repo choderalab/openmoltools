@@ -329,7 +329,7 @@ source leaprc.gaff
 LIG = loadmol2 file.mol2
 check LIG
 loadamberparams file.frcmod
-saveamberparm LIG out.prmtop out.inpcrd %s
+saveamberparm LIG out.prmtop out.inpcrd 
 quit
 
 """ 
