@@ -302,21 +302,25 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
     if inpcrd_filename is None:
         inpcrd_filename = "%s.inpcrd" % molecule_name
     
-    assert ' ' not in gaff_mol2_filename, "Error: tleap cannot process mol2 filenames containing spaces."
-    assert ' ' not in frcmod_filename, "Error: tleap cannot process filenames containing spaces."
-    assert ' ' not in prmtop_filename, "Error: tleap cannot process filenames containing spaces."
-    assert ' ' not in inpcrd_filename, "Error: tleap cannot process filenames containing spaces."
+    #Work in a temporary directory, on hard coded filenames, to avoid any issues AMBER may have with spaces and other special characters in filenames
+    tempdir = tempfile.mkdtemp()
+    startdir = os.getcwd()
+    tmpmol2 = os.path.join( tempdir, 'file.mol2' )
+    tmpfrcmod = os.path.join( tempdir, 'file.frcmod' )
+    shutil.copy( gaff_mol2_filename, tmpmol2 )
+    shutil.copy( frcmod_filename, tmpfrcmod )
+    os.chdir( tempdir )
 
     tleap_input = """
 source leaprc.ff99SB
 source leaprc.gaff
-LIG = loadmol2 %s
+LIG = loadmol2 file.mol2
 check LIG
-loadamberparams %s
-saveamberparm LIG %s %s
+loadamberparams file.frcmod
+saveamberparm LIG out.prmtop out.inpcrd %s
 quit
 
-""" % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
+""" 
 
     file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
     file_handle.writelines(tleap_input)
@@ -331,6 +335,11 @@ quit
     check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
     file_handle.close()
+
+    #Go back to start directory and copy back target files
+    os.chdir( startdir )
+    shutil.copy( os.path.join( tempdir, 'out.prmtop'), prmtop_filename )
+    shutil.copy( os.path.join( tempdir, 'out.inpcrd'), inpcrd_filename )
 
     return prmtop_filename, inpcrd_filename
 
