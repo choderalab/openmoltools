@@ -19,7 +19,7 @@ def test_amber_box():
         box_trj = packmol.pack_box(trj_list, [50])
         box_trj.save(box_filename)
     
-        gaff_mol2_filename1, frcmod_filename1 = utils.run_antechamber("etoh", etoh_filename, charge_method=None)
+        gaff_mol2_filename1, frcmod_filename1 = amber.run_antechamber("etoh", etoh_filename, charge_method=None)
         
         mol2_filenames = [gaff_mol2_filename1]
         frcmod_filenames =  [frcmod_filename1]
@@ -50,8 +50,8 @@ def test_amber_binary_mixture():
         box_trj = packmol.pack_box(trj_list, [25, 50])
         box_trj.save(box_filename)
         
-        gaff_mol2_filename0, frcmod_filename0 = utils.run_antechamber("sustiva", sustiva_filename, charge_method=None)
-        gaff_mol2_filename1, frcmod_filename1 = utils.run_antechamber("etoh", etoh_filename, charge_method=None)
+        gaff_mol2_filename0, frcmod_filename0 = amber.run_antechamber("sustiva", sustiva_filename, charge_method=None)
+        gaff_mol2_filename1, frcmod_filename1 = amber.run_antechamber("etoh", etoh_filename, charge_method=None)
         
         mol2_filenames = [gaff_mol2_filename0, gaff_mol2_filename1]
         frcmod_filenames = [frcmod_filename0, frcmod_filename1]
