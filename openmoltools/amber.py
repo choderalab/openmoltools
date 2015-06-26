@@ -102,23 +102,26 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     #Make temporary, hardcoded filenames for output files to avoid tleap filename restrictions
     tmp_prmtop_filename = 'out.prmtop'
     tmp_inpcrd_filename = 'out.inpcrd'
+    tmp_box_filename = 'tbox.pdb'
 
     #Create temporary directory for working in/output
     startdir = os.getcwd()
     outdir = tempfile.mkdtemp() 
  
     #Copy input files to temporary file names in target directory
-    for (infile, outfile) in ( mol2_filenames+frcmod_filenames, tmp_mol2_filenames+tmp_frcmod_filenames ):
+    for (infile, outfile) in zip( mol2_filenames+frcmod_filenames+[box_filename], tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
         targetfile = os.path.join( outdir, outfile )
-        shutil.copy( infile, outfile)
-        logger.debug('Copying input file %s to %s...\n' % (infile, outfile)) 
+        shutil.copy( infile, targetfile)
+        logger.debug('Copying input file %s to %s...\n' % (infile, targetfile)) 
+
+    os.chdir( outdir )
 
     all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
     
     mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
     amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
 
-    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=box_filename, prmtop_filename=tmp_prmtop_filename, tmp_inpcrd_filename=inpcrd_filename)
+    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
     print(tleap_commands)
     
     file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
@@ -137,9 +140,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     #Copy stuff back to right filenames and remove temporary directory
     os.chdir(startdir)
-    for (tempfile, finalfile) in ( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
+    for (tfile, finalfile) in ( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
 
-        shutil.copy( os.path.join( outdir, tempfile), finalfile) 
+        shutil.copy( os.path.join( outdir, tfile), finalfile) 
     shutil.rmtree( outdir )
 
     return tleap_commands
