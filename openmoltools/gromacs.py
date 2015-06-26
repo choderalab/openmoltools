@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import mdtraj.utils
 from distutils.spawn import find_executable
 try:
     from subprocess import getoutput  # If python 3
@@ -267,8 +268,8 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
 
     return
 
-    def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
-        """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
+def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
+    """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
             
             ARGUMENTS:
             - intop: Input topology
@@ -278,7 +279,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
         
         Limitations:
         - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
-        """
+    """
     
     file = open(intop, 'r')
     text= file.readlines()
