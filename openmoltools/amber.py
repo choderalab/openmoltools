@@ -5,6 +5,7 @@ import os
 import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
+import mdtraj.utils as utils
 
 try:
     from subprocess import getoutput  # If python 3
@@ -104,46 +105,49 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     tmp_inpcrd_filename = 'out.inpcrd'
     tmp_box_filename = 'tbox.pdb'
 
-    #Create temporary directory for working in/output
-    startdir = os.getcwd()
-    outdir = tempfile.mkdtemp() 
- 
-    #Copy input files to temporary file names in target directory
-    for (infile, outfile) in zip( mol2_filenames+frcmod_filenames+[box_filename], tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
-        targetfile = os.path.join( outdir, outfile )
-        shutil.copy( infile, targetfile)
-        logger.debug('Copying input file %s to %s...\n' % (infile, targetfile)) 
+    #CAN SWITCH TO USING CONTEXT BY BUILDING FULL LIST OF INPUT FILE ABSOLUTE PATHS HERE USING OS.PATH.ABSPATH, THEN USING A WITH STATEMENT AND COPYING...
+    #Build absolute paths of input files so we can use context and temporary directory
+    infiles = mol2_filenames + frcmod_filenames + [box_filename]
+    infiles = [ os.path.abspath(filenm) for filenm in infiles ]
 
-    os.chdir( outdir )
+    #Build absolute paths of output files so we can copy them back
+    prmtop_filename = os.path.abspath( prmtop_filename )
+    inpcrd_filename = os.path.abspath( inpcrd_filename )
 
-    all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
-    
-    mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
-    amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
+    #Use temporary directory and do the setup
+    with utils.enter_temp_directory():  
 
-    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
-    print(tleap_commands)
-    
-    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
-    file_handle.writelines(tleap_commands)
-    file_handle.flush()
+        #Copy input files to temporary file names in target directory
+        for (infile, outfile) in zip( infiles, tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
+            shutil.copy( infile, outfile)
+            logger.debug('Copying input file %s to %s...\n' % (infile, outfile)) 
 
-    logger.debug('Running tleap in temporary directory %s...\n' % outdir) 
-    cmd = "tleap -f %s " % file_handle.name
-    logger.debug(cmd)
 
-    output = getoutput(cmd)
-    logger.debug(output)
-    check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
+        all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
+        
+        mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
+        amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
 
-    file_handle.close()
+        tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
+        print(tleap_commands)
+        
+        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle.writelines(tleap_commands)
+        file_handle.flush()
 
-    #Copy stuff back to right filenames and remove temporary directory
-    os.chdir(startdir)
-    for (tfile, finalfile) in ( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
+        logger.debug('Running tleap in temporary directory.') 
+        cmd = "tleap -f %s " % file_handle.name
+        logger.debug(cmd)
 
-        shutil.copy( os.path.join( outdir, tfile), finalfile) 
-    shutil.rmtree( outdir )
+        output = getoutput(cmd)
+        logger.debug(output)
+        check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
+
+        file_handle.close()
+
+        #Copy stuff back to right filenames 
+        for (tfile, finalfile) in zip( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
+            shutil.copy( tfile, finalfile) 
 
     return tleap_commands
 
