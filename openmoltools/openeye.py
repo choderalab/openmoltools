@@ -150,7 +150,7 @@ def smiles_to_oemol(smiles):
     if not oechem.OEParseSmiles(molecule, smiles):
         raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
 
-    normalize_molecule(molecule)
+    molecule = normalize_molecule(molecule)
 
     return molecule
 
