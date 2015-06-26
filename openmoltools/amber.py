@@ -5,7 +5,7 @@ import os
 import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
-import mdtraj.utils as utils
+import mdtraj.utils
 
 try:
     from subprocess import getoutput  # If python 3
@@ -115,7 +115,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     inpcrd_filename = os.path.abspath( inpcrd_filename )
 
     #Use temporary directory and do the setup
-    with utils.enter_temp_directory():  
+    with mdtraj.utils.enter_temp_directory():  
 
         #Copy input files to temporary file names in target directory
         for (infile, outfile) in zip( infiles, tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
@@ -260,35 +260,37 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     if frcmod_filename is None:
         frcmod_filename = molecule_name + '.frcmod'
 
-    #Use temporary directory to do this to avoid issues with spaces in filenames, etc.
-    tempdir = tempfile.mkdtemp()
-    startdir = os.getcwd()
-    shutil.copy( input_filename, os.path.join( tempdir, 'in.mol2') )
-    os.chdir( tempdir )
+    #Build absolute paths for input and output files
+    gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
+    frcmod_filename = os.path.abspath( frcmod_filename )
+    input_filename = os.path.abspath( input_filename )
 
-    cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
-    if charge_method is not None:
-        cmd += ' -c %s' % charge_method
+    #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
+    with mdtraj.utils.enter_temp_directory(): 
+        shutil.copy( input_filename, 'in.mol2' )
 
-    if net_charge is not None:
-        cmd += ' -nc %d' % net_charge
+        cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
+        if charge_method is not None:
+            cmd += ' -c %s' % charge_method
 
-    logger.debug(cmd)
+        if net_charge is not None:
+            cmd += ' -nc %d' % net_charge
 
-    output = getoutput(cmd)
-    logger.debug(output)
+        logger.debug(cmd)
 
-    cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
-    logger.debug(cmd)
+        output = getoutput(cmd)
+        logger.debug(output)
 
-    output = getoutput(cmd)
-    logger.debug(output)
-    check_for_errors( output  )
+        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        logger.debug(cmd)
 
-    #Copy back and remove temporary directory
-    os.chdir( startdir )
-    shutil.copy( os.path.join( tempdir, 'out.mol2'), gaff_mol2_filename )
-    shutil.copy( os.path.join( tempdir, 'out.frcmod'), frcmod_filename )
+        output = getoutput(cmd)
+        logger.debug(output)
+        check_for_errors( output  )
+
+        #Copy back 
+        shutil.copy( 'out.mol2', gaff_mol2_filename )
+        shutil.copy( 'out.frcmod', frcmod_filename )
 
     return gaff_mol2_filename, frcmod_filename
 
@@ -320,45 +322,46 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         prmtop_filename = "%s.prmtop" % molecule_name
     if inpcrd_filename is None:
         inpcrd_filename = "%s.inpcrd" % molecule_name
-    
+   
+    #Get absolute paths for input/output
+    gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
+    frcmod_filename = os.path.abspath( frcmod_filename )
+    prmtop_filename = os.path.abspath( prmtop_filename )
+    inpcrd_filename = os.path.abspath( inpcrd_filename )
+ 
     #Work in a temporary directory, on hard coded filenames, to avoid any issues AMBER may have with spaces and other special characters in filenames
-    tempdir = tempfile.mkdtemp()
-    startdir = os.getcwd()
-    tmpmol2 = os.path.join( tempdir, 'file.mol2' )
-    tmpfrcmod = os.path.join( tempdir, 'file.frcmod' )
-    shutil.copy( gaff_mol2_filename, tmpmol2 )
-    shutil.copy( frcmod_filename, tmpfrcmod )
-    os.chdir( tempdir )
+    with mdtraj.utils.enter_temp_directory():
+        shutil.copy( gaff_mol2_filename, 'file.mol2' )
+        shutil.copy( frcmod_filename, 'file.frcmod' )
 
-    tleap_input = """
-source leaprc.ff99SB
-source leaprc.gaff
-LIG = loadmol2 file.mol2
-check LIG
-loadamberparams file.frcmod
-saveamberparm LIG out.prmtop out.inpcrd 
-quit
+        tleap_input = """
+    source leaprc.ff99SB
+    source leaprc.gaff
+    LIG = loadmol2 file.mol2
+    check LIG
+    loadamberparams file.frcmod
+    saveamberparm LIG out.prmtop out.inpcrd 
+    quit
 
 """ 
 
-    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
-    file_handle.writelines(tleap_input)
-    file_handle.flush()
+        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle.writelines(tleap_input)
+        file_handle.flush()
 
-    cmd = "tleap -f %s " % file_handle.name
-    logger.debug(cmd)
+        cmd = "tleap -f %s " % file_handle.name
+        logger.debug(cmd)
 
-    output = getoutput(cmd)
-    logger.debug(output)
+        output = getoutput(cmd)
+        logger.debug(output)
 
-    check_for_errors( output, other_errors = ['Improper number of arguments'] )
+        check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
-    file_handle.close()
+        file_handle.close()
 
-    #Go back to start directory and copy back target files
-    os.chdir( startdir )
-    shutil.copy( os.path.join( tempdir, 'out.prmtop'), prmtop_filename )
-    shutil.copy( os.path.join( tempdir, 'out.inpcrd'), inpcrd_filename )
+        #Copy back target files
+        shutil.copy( 'out.prmtop', prmtop_filename )
+        shutil.copy( 'out.inpcrd', inpcrd_filename )
 
     return prmtop_filename, inpcrd_filename
 
