@@ -110,12 +110,12 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         waterPresent = False
         for i in range(nfiles):
             #Create an OpenEye molecule and read in the specified mol2 file
-            mol = OEMol()
+            mol = oec.OEMol()
             istream = oec.oemolistream( mol2_filenames[i] )
-            OEReadMolecule( istream, mol )
+            oec.OEReadMolecule( istream, mol )
             istream.close()
             #Check if it is water by checking SMILES
-            smi = OECreateIsoSmiString(mol)
+            smi = oec.OECreateIsoSmiString(mol)
             if smi=='O' and mol.NumAtoms()==3:
                 solventIsWater.append(True)
                 waterPresent = True
@@ -159,6 +159,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
                     continue
                 else:           
                     raise(ValueError("Cannot identify water frcmod file to be loaded."))
+
+    else:
+        waterPresent = False
  
     #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
     tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
@@ -190,7 +193,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         
         mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
         #If non-GAFF water is present, load desired parameters for that water as well.
-        if water_present:
+        if waterPresent:
             mol2_section += water_string
         amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
 
