@@ -98,7 +98,8 @@ def test_amber_water_mixture():
         prmtop_filename = "./out.prmtop"
         inpcrd_filename = "./out.inpcrd"
 
-        tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename)
+        shutil.copy(box_filename, 'renamed.pdb')
+        tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, 'renamed.pdb', prmtop_filename, inpcrd_filename)
         print(tleap_cmd)
 
         #Also do here for case of GAFF water
@@ -106,7 +107,7 @@ def test_amber_water_mixture():
         print(tleap_cmd)
 
         #Also do here for case of SPC
-        tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename, water_model = 'SPC')
+        tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, 'renamed.pdb', prmtop_filename, inpcrd_filename, water_model = 'SPC')
         print(tleap_cmd)
 
 

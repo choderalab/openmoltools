@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 TLEAP_TEMPLATE = """
 source leaprc.gaff
+source oldff/leaprc.ff99SB
 %(mol2_section)s
 box = loadPdb %(box_filename)s
 %(amberparams_section)s
@@ -150,12 +151,15 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
                 water_string += '%s = %s\n' % (name, water_model )
                 #Also if not TIP3P, update to source correct frcmod file
                 if water_model == 'SPC':
-                    water_string += 'loadamberparms frcmod.spce\n'
+                    water_string += 'loadamberparams frcmod.spce\n'
                 elif water_model =='TP3': 
                     continue
                 else:           
                     raise(ValueError("Cannot identify water frcmod file to be loaded."))
 
+            #Rename water atoms in box file to match what is expected by AMBER
+            packmol = import_("openmoltools.packmol")
+            packmol.rename_water_atoms(box_filename)
     else:
         waterPresent = False
  
