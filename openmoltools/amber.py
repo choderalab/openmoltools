@@ -152,7 +152,14 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
             water_names = [md.load(filename).top.residue(0).name for filename in water_mol2_filenames]
             for name in water_names:
                 water_string += '%s = %s\n' % (name, water_model )
-            
+                #Also if not TIP3P, update to source correct frcmod file
+                if water_model == 'SPC':
+                    water_string += 'loadamberparms frcmod.spce\n'
+                elif water_model =='TP3': 
+                    continue
+                else:           
+                    raise(ValueError("Cannot identify water frcmod file to be loaded."))
+ 
     #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
     tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
     tmp_frcmod_filenames = [ 'in%d.frcmod' % n for n in range(nfiles) ]
