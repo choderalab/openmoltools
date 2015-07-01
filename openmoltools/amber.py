@@ -394,7 +394,7 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         shutil.copy( frcmod_filename, 'file.frcmod' )
 
         tleap_input = """
-    source leaprc.ff99SB
+    source oldff/leaprc.ff99SB
     source leaprc.gaff
     LIG = loadmol2 file.mol2
     check LIG
