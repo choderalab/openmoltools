@@ -105,18 +105,14 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     #If we are requesting a different water model, check if there is water present
     if not water_model==None:
-        oec = import_("openeye.oechem")
+        parmed = import_("parmed")
         solventIsWater = []
         waterPresent = False
         for i in range(nfiles):
-            #Create an OpenEye molecule and read in the specified mol2 file
-            mol = oec.OEMol()
-            istream = oec.oemolistream( mol2_filenames[i] )
-            oec.OEReadMolecule( istream, mol )
-            istream.close()
-            #Check if it is water by checking SMILES
-            smi = oec.OECreateIsoSmiString(mol)
-            if smi=='O' and mol.NumAtoms()==3:
+            mol = parmed.load_file( mol2_filenames[i] )
+            #Check if it is water by checking GAFF atom names
+            types = [ atom.type for atom in mol.atoms ]
+            if 'oh' in types and types.count('ho')==2 and len(types)==3:
                 solventIsWater.append(True)
                 waterPresent = True
             else:
@@ -148,7 +144,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
             
 
             #Compose string for loading specified water molecule
-            water_string = ''
+            water_string = '\n'
             water_names = [md.load(filename).top.residue(0).name for filename in water_mol2_filenames]
             for name in water_names:
                 water_string += '%s = %s\n' % (name, water_model )
