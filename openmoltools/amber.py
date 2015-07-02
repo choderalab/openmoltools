@@ -2,8 +2,10 @@ import mdtraj as md
 import tempfile
 import logging
 import os
+import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
+import mdtraj.utils
 
 try:
     from subprocess import getoutput  # If python 3
@@ -48,7 +50,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     ----------
     mol2_filenames : list(str)
         Filenames of GAFF flavored mol2 files.  Each must contain exactly
-        ONE ligand. Filenames cannot contain spaces (tleap limitation)
+        ONE ligand. 
     frcmod_filenames : str
         Filename of input GAFF frcmod filenames.
     box_filename : str
@@ -63,7 +65,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     tleap_commands : str
         The string of commands piped to tleap for building the prmtop 
         and inpcrd files.  This will *already* have been run, but the
-        output can be useful for debugging or archival purposes.
+        output can be useful for debugging or archival purposes. However,
+        this will reflect temporary file names for both input and output
+        file as these are used to avoid tleap filename restrictions.
         
     Notes
     -----
@@ -86,31 +90,64 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
     if len(all_names) != len(mol2_filenames):
         raise(ValueError("Must have UNIQUE residue names in each mol2 file."))
-    
-    #Check for spaces in filenames; AMBER can't handle these.
-    for name in mol2_filenames:
-        assert ' ' not in name, "Error: tleap cannot process mol2 filenames containing spaces."
+    if len(mol2_filenames) != len(frcmod_filenames):
+        raise(ValueError("Must provide an equal number of frcmod and mol2 file names."))    
 
-    all_names = [md.load(filename).top.residue(0).name for filename in mol2_filenames]
-    
-    mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(mol2_filenames))
-    amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(frcmod_filenames))
+    #Get number of files
+    nfiles = len(mol2_filenames)
 
-    tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=box_filename, prmtop_filename=prmtop_filename, inpcrd_filename=inpcrd_filename)
-    print(tleap_commands)
-    
-    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
-    file_handle.writelines(tleap_commands)
-    file_handle.flush()
+    #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
+    tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
+    tmp_frcmod_filenames = [ 'in%d.frcmod' % n for n in range(nfiles) ]
 
-    cmd = "tleap -f %s " % file_handle.name
-    logger.debug(cmd)
+    #Make temporary, hardcoded filenames for output files to avoid tleap filename restrictions
+    tmp_prmtop_filename = 'out.prmtop'
+    tmp_inpcrd_filename = 'out.inpcrd'
+    tmp_box_filename = 'tbox.pdb'
 
-    output = getoutput(cmd)
-    logger.debug(output)
-    check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
+    #CAN SWITCH TO USING CONTEXT BY BUILDING FULL LIST OF INPUT FILE ABSOLUTE PATHS HERE USING OS.PATH.ABSPATH, THEN USING A WITH STATEMENT AND COPYING...
+    #Build absolute paths of input files so we can use context and temporary directory
+    infiles = mol2_filenames + frcmod_filenames + [box_filename]
+    infiles = [ os.path.abspath(filenm) for filenm in infiles ]
 
-    file_handle.close()
+    #Build absolute paths of output files so we can copy them back
+    prmtop_filename = os.path.abspath( prmtop_filename )
+    inpcrd_filename = os.path.abspath( inpcrd_filename )
+
+    #Use temporary directory and do the setup
+    with mdtraj.utils.enter_temp_directory():  
+
+        #Copy input files to temporary file names in target directory
+        for (infile, outfile) in zip( infiles, tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
+            shutil.copy( infile, outfile)
+            logger.debug('Copying input file %s to %s...\n' % (infile, outfile)) 
+
+
+        all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
+        
+        mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
+        amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
+
+        tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
+        print(tleap_commands)
+        
+        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle.writelines(tleap_commands)
+        file_handle.flush()
+
+        logger.debug('Running tleap in temporary directory.') 
+        cmd = "tleap -f %s " % file_handle.name
+        logger.debug(cmd)
+
+        output = getoutput(cmd)
+        logger.debug(output)
+        check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
+
+        file_handle.close()
+
+        #Copy stuff back to right filenames 
+        for (tfile, finalfile) in zip( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
+            shutil.copy( tfile, finalfile) 
 
     return tleap_commands
 
@@ -223,24 +260,37 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     if frcmod_filename is None:
         frcmod_filename = molecule_name + '.frcmod'
 
-    cmd = "antechamber -i %s -fi mol2 -o %s -fo mol2 -s 2" % (input_filename, gaff_mol2_filename)
-    if charge_method is not None:
-        cmd += ' -c %s' % charge_method
+    #Build absolute paths for input and output files
+    gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
+    frcmod_filename = os.path.abspath( frcmod_filename )
+    input_filename = os.path.abspath( input_filename )
 
-    if net_charge is not None:
-        cmd += ' -nc %d' % net_charge
+    #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
+    with mdtraj.utils.enter_temp_directory(): 
+        shutil.copy( input_filename, 'in.mol2' )
 
-    logger.debug(cmd)
+        cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
+        if charge_method is not None:
+            cmd += ' -c %s' % charge_method
 
-    output = getoutput(cmd)
-    logger.debug(output)
+        if net_charge is not None:
+            cmd += ' -nc %d' % net_charge
 
-    cmd = "parmchk2 -i %s -f mol2 -o %s" % (gaff_mol2_filename, frcmod_filename)
-    logger.debug(cmd)
+        logger.debug(cmd)
 
-    output = getoutput(cmd)
-    logger.debug(output)
-    check_for_errors( output  )
+        output = getoutput(cmd)
+        logger.debug(output)
+
+        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        logger.debug(cmd)
+
+        output = getoutput(cmd)
+        logger.debug(output)
+        check_for_errors( output  )
+
+        #Copy back 
+        shutil.copy( 'out.mol2', gaff_mol2_filename )
+        shutil.copy( 'out.frcmod', frcmod_filename )
 
     return gaff_mol2_filename, frcmod_filename
 
@@ -272,36 +322,46 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         prmtop_filename = "%s.prmtop" % molecule_name
     if inpcrd_filename is None:
         inpcrd_filename = "%s.inpcrd" % molecule_name
-    
-    assert ' ' not in gaff_mol2_filename, "Error: tleap cannot process mol2 filenames containing spaces."
-    assert ' ' not in frcmod_filename, "Error: tleap cannot process filenames containing spaces."
-    assert ' ' not in prmtop_filename, "Error: tleap cannot process filenames containing spaces."
-    assert ' ' not in inpcrd_filename, "Error: tleap cannot process filenames containing spaces."
+   
+    #Get absolute paths for input/output
+    gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
+    frcmod_filename = os.path.abspath( frcmod_filename )
+    prmtop_filename = os.path.abspath( prmtop_filename )
+    inpcrd_filename = os.path.abspath( inpcrd_filename )
+ 
+    #Work in a temporary directory, on hard coded filenames, to avoid any issues AMBER may have with spaces and other special characters in filenames
+    with mdtraj.utils.enter_temp_directory():
+        shutil.copy( gaff_mol2_filename, 'file.mol2' )
+        shutil.copy( frcmod_filename, 'file.frcmod' )
 
-    tleap_input = """
-source leaprc.ff99SB
-source leaprc.gaff
-LIG = loadmol2 %s
-check LIG
-loadamberparams %s
-saveamberparm LIG %s %s
-quit
+        tleap_input = """
+    source leaprc.ff99SB
+    source leaprc.gaff
+    LIG = loadmol2 file.mol2
+    check LIG
+    loadamberparams file.frcmod
+    saveamberparm LIG out.prmtop out.inpcrd 
+    quit
 
-""" % (gaff_mol2_filename, frcmod_filename, prmtop_filename, inpcrd_filename)
+""" 
 
-    file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
-    file_handle.writelines(tleap_input)
-    file_handle.flush()
+        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle.writelines(tleap_input)
+        file_handle.flush()
 
-    cmd = "tleap -f %s " % file_handle.name
-    logger.debug(cmd)
+        cmd = "tleap -f %s " % file_handle.name
+        logger.debug(cmd)
 
-    output = getoutput(cmd)
-    logger.debug(output)
+        output = getoutput(cmd)
+        logger.debug(output)
 
-    check_for_errors( output, other_errors = ['Improper number of arguments'] )
+        check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
-    file_handle.close()
+        file_handle.close()
+
+        #Copy back target files
+        shutil.copy( 'out.prmtop', prmtop_filename )
+        shutil.copy( 'out.inpcrd', inpcrd_filename )
 
     return prmtop_filename, inpcrd_filename
 

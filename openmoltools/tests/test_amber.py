@@ -19,7 +19,7 @@ def test_amber_box():
         box_trj = packmol.pack_box(trj_list, [50])
         box_trj.save(box_filename)
     
-        gaff_mol2_filename1, frcmod_filename1 = utils.run_antechamber("etoh", etoh_filename, charge_method=None)
+        gaff_mol2_filename1, frcmod_filename1 = amber.run_antechamber("etoh", etoh_filename, charge_method=None)
         
         mol2_filenames = [gaff_mol2_filename1]
         frcmod_filenames =  [frcmod_filename1]
@@ -50,8 +50,8 @@ def test_amber_binary_mixture():
         box_trj = packmol.pack_box(trj_list, [25, 50])
         box_trj.save(box_filename)
         
-        gaff_mol2_filename0, frcmod_filename0 = utils.run_antechamber("sustiva", sustiva_filename, charge_method=None)
-        gaff_mol2_filename1, frcmod_filename1 = utils.run_antechamber("etoh", etoh_filename, charge_method=None)
+        gaff_mol2_filename0, frcmod_filename0 = amber.run_antechamber("sustiva", sustiva_filename, charge_method=None)
+        gaff_mol2_filename1, frcmod_filename1 = amber.run_antechamber("etoh", etoh_filename, charge_method=None)
         
         mol2_filenames = [gaff_mol2_filename0, gaff_mol2_filename1]
         frcmod_filenames = [frcmod_filename0, frcmod_filename1]
@@ -75,7 +75,7 @@ def test_run_tleap():
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
-        prmtop, inpcrd = utils.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
+        prmtop, inpcrd = amber.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
 
 def test_run_antechamber_charges():
     molecule_name = "acetate"

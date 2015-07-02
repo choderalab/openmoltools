@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import mdtraj.utils
 from distutils.spawn import find_executable
 try:
     from subprocess import getoutput  # If python 3
@@ -208,65 +209,77 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
     os.environ['GMX_MAXBACKUP'] = '-1' # Avoids unnecessary GROMACS backup files
     os.environ['GMX_NO_QUOTES'] = '1' # Supresses end-of-file quotes (gcq)
 
-    #copies topology file to new directory
-    shutil.copyfile(top_filename, top_solv_filename) 
+    #Get absolute paths for input/output
+    top_filename = os.path.abspath( top_filename )
+    gro_filename = os.path.abspath( gro_filename )
+    top_solv_filename = os.path.abspath( top_solv_filename )
+    gro_solv_filename = os.path.abspath( gro_solv_filename )
 
-    #string with the Gromacs 5.0.4 box generating commands
-    cmdbox = 'gmx editconf -f %s -o %s -c -d %.2f -bt %s' % (gro_filename, gro_solv_filename, box_dim, box_type)
-    output = getoutput(cmdbox)
-    logger.debug(output)
-    check_for_errors(output)
+    with mdtraj.utils.enter_temp_directory(): #Work on hard coded filenames in temporary directory
 
-    #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
-    cmdsolv = 'gmx solvate -cp %s -cs %s -o %s -p %s' % (gro_solv_filename, water_model, gro_solv_filename, top_solv_filename)
-    output = getoutput(cmdsolv)
-    logger.debug(output)
-    check_for_errors(output)
+        shutil.copy( gro_filename, 'in.gro' )
+        shutil.copy( top_filename, 'out.top' )
 
-    #Insert Force Field specifications
-    ensure_forcefield( top_solv_filename, top_solv_filename, FF = FF)
+        #string with the Gromacs 5.0.4 box generating commands
+        cmdbox = 'gmx editconf -f in.gro -o out.gro -c -d %.2f -bt %s' % ( box_dim, box_type)
+        output = getoutput(cmdbox)
+        logger.debug(output)
+        check_for_errors(output)
 
-    #Insert line for water topology portion of the code
-    try:
-        file = open(top_solv_filename,'r')
-        text = file.readlines()
-        file.close()
-    except:
-        raise NameError('The file %s is missing' % top_solv_filename)
+        #string with the Gromacs 5.0.4 solvation tool (it is not genbox anymore)
+        cmdsolv = 'gmx solvate -cp out.gro -cs %s -o out.gro -p out.top' % (water_model)
+        output = getoutput(cmdsolv)
+        logger.debug(output)
+        check_for_errors(output)
 
-    #Insert water model
-    wateritp = os.path.join(FF, water_top ) # e.g water_top = 'tip3p.itp'
-    index = 0
-    while '[ system ]' not in text[index]:
-        index += 1
-    text[index] = '#include "%s"\n\n' % wateritp + text[index]
+        #Insert Force Field specifications
+        ensure_forcefield( 'out.top', 'out.top', FF = FF)
 
-    #Write the topology file
-    try:
-        file = open(top_solv_filename,'w+')
-        file.writelines( text )
-        file.close()
-    except:
-        raise NameError('The file %s is missing' % top_solv_filename)
+        #Insert line for water topology portion of the code
+        try:
+            file = open('out.top','r')
+            text = file.readlines()
+            file.close()
+        except:
+            raise NameError('The file out.top is missing' )
 
-    #Check if file exist and is not empty;
-    if os.stat( gro_solv_filename ) == 0 or os.stat( top_solv_filename ).st_size == 0:
-        raise(ValueError("Solvent insertion failed"))
+        #Insert water model
+        wateritp = os.path.join(FF, water_top ) # e.g water_top = 'tip3p.itp'
+        index = 0
+        while '[ system ]' not in text[index]:
+            index += 1
+        text[index] = '#include "%s"\n\n' % wateritp + text[index]
+
+        #Write the topology file
+        try:
+            file = open('out.top','w+')
+            file.writelines( text )
+            file.close()
+        except:
+            raise NameError('The file %s is missing' % 'out.top')
+
+        #Check if file exist and is not empty;
+        if os.stat( 'out.gro' ) == 0 or os.stat( 'out.top' ).st_size == 0:
+            raise(ValueError("Solvent insertion failed"))
+
+        #Copy back files
+        shutil.copy( 'out.gro', gro_solv_filename )
+        shutil.copy( 'out.top', top_solv_filename )
 
     return
 
 def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
     """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
-        
-        ARGUMENTS:
-        - intop: Input topology
-        - outtop: Output topology
+            
+            ARGUMENTS:
+            - intop: Input topology
+            - outtop: Output topology
         OPTIONAL:
         - FF: String corresponding to desired force field; default ffamber99sb.-ildn.ff
         
         Limitations:
         - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
-        """
+    """
     
     file = open(intop, 'r')
     text= file.readlines()
