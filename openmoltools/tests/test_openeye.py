@@ -5,7 +5,7 @@ import simtk.openmm as mm
 import numpy as np
 from mdtraj.testing import eq
 from unittest import skipIf
-from openmoltools import utils
+from openmoltools import utils, packmol
 import os
 import openmoltools.openeye
 import pandas as pd
@@ -219,6 +219,7 @@ def test_charge_success2():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @skipIf(not HAVE_PARMED, "Cannot test without Parmed Chemistry.")
+@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 @attr("parmed")
 def test_binary_mixture_rename():
     smiles_string0 = "CCCCCC"
@@ -247,7 +248,7 @@ def test_binary_mixture_rename():
         gaff_mol2_filenames = [mol2_filename0, mol2_filename1]
         n_monomers = [10, 20]
 
-        packed_trj = openmoltools.packmol.pack_box([md.load(mol2) for mol2 in gaff_mol2_filenames], n_monomers)
+        packed_trj = packmol.pack_box([md.load(mol2) for mol2 in gaff_mol2_filenames], n_monomers)
         packed_trj.save(box_pdb_filename)
 
         tleap_cmd = openmoltools.amber.build_mixture_prmtop(gaff_mol2_filenames, frcmod_filenames, box_pdb_filename, prmtop_filename, inpcrd_filename)
