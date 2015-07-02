@@ -19,7 +19,7 @@ script:
   # this builds the binary, unpacks it, and runs limited tests that don't have access to external dependencies
   - conda build devtools/conda-recipe
   # Now install the package and test it
-  - conda install openmoltools-dev
+  - conda install --yes --quiet openmoltools-dev
   - nosetests openmoltools -v -a '!slow'
 
 env:
