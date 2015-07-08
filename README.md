@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/choderalab/openmoltools.svg)](https://travis-ci.org/choderalab/openmoltools)
+[![Build Status](https://travis-ci.org/choderalab/openmoltools.svg?branch=master)](https://travis-ci.org/choderalab/openmoltools)
 
 ## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
