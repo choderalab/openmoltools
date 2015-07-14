@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 TLEAP_TEMPLATE = """
 source leaprc.gaff
+source oldff/leaprc.ff99SB
 %(mol2_section)s
 box = loadPdb %(box_filename)s
 %(amberparams_section)s
@@ -41,7 +42,7 @@ quit
 #loadamberparams frcmod.acn
 
 
-def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename):
+def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename, water_model = 'TIP3P'):
     """Create a prmtop and inpcrd from a collection of mol2 and frcmod files
     as well as a single box PDB.  We have used this for setting up
     simulations of neat liquids or binary mixtures.  
@@ -59,6 +60,8 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         output prmtop filename.  Should have suffix .prmtop
     inpcrd_filename : str
         output inpcrd filename.  Should have suffix .inpcrd
+    water_model : str, optional. Default: "TIP3P"
+        String specifying water model to be used IF water is present as a component of the mixture. Valid options are currently "TIP3P", "SPC", or None. If None is specified, flexible GAFF-water will be used as for any other solute (old behavior).
 
     Returns
     -------
@@ -96,6 +99,70 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     #Get number of files
     nfiles = len(mol2_filenames)
 
+    #Check validity of water model options
+    valid_water = ['TIP3P', 'SPC', None]
+    if not water_model in valid_water: 
+        raise(ValueError("Must provide a valid water model."))
+
+    #If we are requesting a different water model, check if there is water present
+    if not water_model==None:
+        parmed = import_("parmed")
+        solventIsWater = []
+        waterPresent = False
+        for i in range(nfiles):
+            mol = parmed.load_file( mol2_filenames[i] )
+            #Check if it is water by checking GAFF atom names
+            types = [ atom.type for atom in mol.atoms ]
+            if 'oh' in types and types.count('ho')==2 and len(types)==3:
+                solventIsWater.append(True)
+                waterPresent = True
+            else:
+                solventIsWater.append(False)
+
+        #In this case, if we have any water, we will now work on fewer .mol2 and .frcmod files and instead use the force field files for those. So, reduce nfiles and remove the files we don't need from the .mol2 and .frcmod filename lists
+        #After doing so, go on to interpret the specified water model and compose the water model string needed for tleap
+        if waterPresent:
+            new_mol2_filenames = []
+            new_frcmod_filenames = []
+            water_mol2_filenames = []
+            for i in range( nfiles ):
+                if not solventIsWater[i]:
+                    new_mol2_filenames.append( mol2_filenames[i] )
+                    new_frcmod_filenames.append( frcmod_filenames[i] )
+                else:
+                    water_mol2_filenames.append( mol2_filenames[i] )
+            nfiles = len(new_mol2_filenames)
+            mol2_filenames = new_mol2_filenames
+            frcmod_filenames = new_frcmod_filenames
+
+            #Now interpret the specified water model and translate into AMBER nomenclature
+            if water_model=='TIP3P':
+                water_model = 'TP3'
+            elif water_model =='SPC':
+                water_model = 'SPC'
+            else:
+                raise(ValueError("Cannot translate specified water model into one of the available models."))
+            
+
+            #Compose string for loading specified water molecule
+            water_string = '\n'
+            water_names = [md.load(filename).top.residue(0).name for filename in water_mol2_filenames]
+            for name in water_names:
+                water_string += '%s = %s\n' % (name, water_model )
+                #Also if not TIP3P, update to source correct frcmod file
+                if water_model == 'SPC':
+                    water_string += 'loadamberparams frcmod.spce\n'
+                elif water_model =='TP3': 
+                    continue
+                else:           
+                    raise(ValueError("Cannot identify water frcmod file to be loaded."))
+
+            #Rename water atoms in box file to match what is expected by AMBER
+            packmol = import_("openmoltools.packmol")
+            packmol.rename_water_atoms(box_filename)
+    else:
+        waterPresent = False
+ 
     #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
     tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
     tmp_frcmod_filenames = [ 'in%d.frcmod' % n for n in range(nfiles) ]
@@ -105,7 +172,6 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     tmp_inpcrd_filename = 'out.inpcrd'
     tmp_box_filename = 'tbox.pdb'
 
-    #CAN SWITCH TO USING CONTEXT BY BUILDING FULL LIST OF INPUT FILE ABSOLUTE PATHS HERE USING OS.PATH.ABSPATH, THEN USING A WITH STATEMENT AND COPYING...
     #Build absolute paths of input files so we can use context and temporary directory
     infiles = mol2_filenames + frcmod_filenames + [box_filename]
     infiles = [ os.path.abspath(filenm) for filenm in infiles ]
@@ -126,6 +192,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
         
         mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
+        #If non-GAFF water is present, load desired parameters for that water as well.
+        if waterPresent:
+            mol2_section += water_string
         amberparams_section = "\n".join("loadamberparams %s" % (filename) for k, filename in enumerate(tmp_frcmod_filenames))
 
         tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
@@ -335,7 +404,7 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         shutil.copy( frcmod_filename, 'file.frcmod' )
 
         tleap_input = """
-    source leaprc.ff99SB
+    source oldff/leaprc.ff99SB
     source leaprc.gaff
     LIG = loadmol2 file.mol2
     check LIG

@@ -208,3 +208,57 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
     box_size = edge*box_scaleup_factor/units.angstroms
 
     return box_size
+
+
+def rename_water_atoms( pdb_filename, O_name = 'O', H1_name = 'H1', H2_name = 'H2' ):
+    """Rename water atoms in a specified PDB file to have target names. Typically used to ensure a packmol-generated box containing water has water atom names corresponding to what tleap expects for standard water models.
+
+    Parameters
+    ----------
+    pdb_filename : str
+        The target PDB filename to edit
+    O_name : str, optional, default 'O'
+        Target name to set water oxygen names to
+    H1_name : str, optional, default 'H1'
+        Target name to set water hydrogen names to, for first hydrogen
+    H2_name : str, optional, default 'H2'
+        Target name to set water hydrogen names to, for second hydrogen
+
+    Returns
+    -------
+    
+    Notes
+    -------
+    Uses ParmEd to makes edits. Identifies waters by reading residues from target PDB file and identifying any residue containing three atoms with names O or O#, H or H#, and H or H# (where # is a digit or sequence of digits) as water molecules.
+    """
+
+    parmed = import_("parmed")
+
+    pdb = parmed.load_file( pdb_filename )
+    
+    #Find waters and rename
+    for residue in pdb.residues:
+        if len(residue)==3:
+            #Build list of atom types (PDB files don't store these) from names after stripping off digits
+            types = []
+            for atom in residue.atoms:
+                name = atom.name
+                while name[-1].isdigit():
+                    name = name[:-1]
+                types.append(name)
+            #See if it's water and, if so, rename
+            if 'O' in types and types.count('H')==2:
+                hct = 0
+                for atom in residue.atoms:
+                    if 'O' in atom.name:
+                        atom.name = O_name
+                    elif 'H' in atom.name:
+                        if hct==0:
+                            atom.name = H1_name
+                        else:
+                            atom.name = H2_name
+                        hct+=1
+            
+    #Write file
+    pdb.write_pdb( pdb_filename )
+
