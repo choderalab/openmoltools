@@ -9,7 +9,7 @@ before_install:
   - source devtools/ci/install.sh
   - export PYTHONUNBUFFERED=true
   # Unpack encrypted OpenEye license file
-  - openssl aes-256-cbc -K $encrypted_dc22cc99e02f_key -iv $encrypted_dc22cc99e02f_iv -in oe_license.txt.enc -out oe_license.txt -d
+  - if [ ! $TRAVIS_PULL_REQUEST ]; then openssl aes-256-cbc -K $encrypted_dc22cc99e02f_key -iv $encrypted_dc22cc99e02f_iv -in oe_license.txt.enc -out oe_license.txt -d; fi
 
 install:
 
