@@ -200,9 +200,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
         print(tleap_commands)
         
-        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle = open('tleap_commands', 'w')
         file_handle.writelines(tleap_commands)
-        file_handle.flush()
+        file_handle.close()
 
         logger.debug('Running tleap in temporary directory.') 
         cmd = "tleap -f %s " % file_handle.name
@@ -211,8 +211,6 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         output = getoutput(cmd)
         logger.debug(output)
         check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
-
-        file_handle.close()
 
         #Copy stuff back to right filenames 
         for (tfile, finalfile) in zip( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
@@ -414,9 +412,9 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
 
 """ 
 
-        file_handle = tempfile.NamedTemporaryFile('w')  # FYI Py3K defaults to 'wb' mode, which won't work here.
+        file_handle = open('tleap_commands', 'w')
         file_handle.writelines(tleap_input)
-        file_handle.flush()
+        file_handle.close()
 
         cmd = "tleap -f %s " % file_handle.name
         logger.debug(cmd)
@@ -425,8 +423,6 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         logger.debug(output)
 
         check_for_errors( output, other_errors = ['Improper number of arguments'] )
-
-        file_handle.close()
 
         #Copy back target files
         shutil.copy( 'out.prmtop', prmtop_filename )
