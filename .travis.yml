@@ -35,6 +35,7 @@ script:
   - conda install --yes --quiet nose
   - conda install --yes --quiet packmol
   # Install OpenEye toolkit
+  - conda install --yes --quiet pip
   - pip install $OPENEYE_CHANNEL openeye-toolkits
   # Install the package and test it
   - conda install --yes --quiet openmoltools-dev
