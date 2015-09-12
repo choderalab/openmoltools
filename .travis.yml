@@ -32,13 +32,13 @@ script:
   - conda build devtools/conda-recipe
   # Install package prerequisites
   - conda config --add channels https://conda.anaconda.org/rdkit
-  - conda install --yes --quiet nose
   - conda install --yes --quiet packmol
   # Install OpenEye toolkit
   - conda install --yes --quiet pip
   - pip install $OPENEYE_CHANNEL openeye-toolkits
   # Install the package and test it
   - conda install --yes --quiet openmoltools-dev
+  - conda install --yes --quiet nose
   - nosetests openmoltools -v -a '!slow'
 
 env:

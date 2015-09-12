@@ -10,6 +10,6 @@ PIP_ARGS="-U"
 
 export PATH=$HOME/miniconda/bin:$PATH
 
-#conda update --yes conda
-#source activate $python
+conda update --yes conda
+source activate $python
 conda install --yes conda-build jinja2 anaconda-client pip
