@@ -1,4 +1,16 @@
 language: c
+sudo: false
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+      - g++
+      - gfortran
+      - valgrind
+      - csh
+      - g++-multilib
+      - gcc-multilib
 
 branches:
   only:
@@ -47,4 +59,4 @@ env:
 
 after_success:
   - echo "after_success"
-  - source devtools/ci/after_sucess.sh
+  - source devtools/ci/after_success.sh
