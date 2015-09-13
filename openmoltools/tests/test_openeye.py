@@ -20,20 +20,21 @@ try:
     oequacpac = utils.import_("openeye.oequacpac")
     if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
     oeiupac = utils.import_("openeye.oeiupac")
-    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))        
+    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     oeomega = utils.import_("openeye.oeomega")
-    if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))    
+    if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     HAVE_OE = True
-except:
+except Exception as e:
     HAVE_OE = False
+    openeye_exception_message = str(e)
 
 try:
-    import parmed 
+    import parmed
     HAVE_PARMED = True
 except ImportError:
     HAVE_PARMED = False
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_butanol_keepconfs():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m1 = openmoltools.openeye.get_charges(m0, keep_confs=1)

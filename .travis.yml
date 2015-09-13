@@ -1,4 +1,16 @@
 language: c
+sudo: false
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+      - g++
+      - gfortran
+      - valgrind
+      - csh
+      - g++-multilib
+      - gcc-multilib
 
 branches:
   only:
@@ -6,32 +18,40 @@ branches:
 
 before_install:
   # Configure environment.
-  - source devtools/ci/install.sh
+  - source devtools/travis-ci/install.sh
   - export PYTHONUNBUFFERED=true
   # Unpack encrypted OpenEye license file
-  - if [ ! $TRAVIS_PULL_REQUEST ]; then openssl aes-256-cbc -K $encrypted_dc22cc99e02f_key -iv $encrypted_dc22cc99e02f_iv -in oe_license.txt.enc -out oe_license.txt -d; fi
+  - if [ ! $TRAVIS_PULL_REQUEST ]; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out oe_license.txt -d; fi
+  - if [ $TRAVIS_PULL_REQUEST ]; then echo "OpenEye license will not be installed in pull request."; fi
 
 install:
 
 script:
   # Add omnia channel
-  - conda config --add channels http://conda.binstar.org/omnia
+  - conda config --add channels http://conda.anaconda.org/omnia
   # this builds the binary, unpacks it, and runs limited tests that don't have access to external dependencies
   - conda build devtools/conda-recipe
-  # Install pacakge prerequisites
-  - conda config --add channels https://conda.binstar.org/rdkit
-  - conda install --yes --quiet nose
+  # Install package prerequisites
+  - conda config --add channels https://conda.anaconda.org/rdkit
   - conda install --yes --quiet packmol
-  - pip install --pre -i https://pypi.binstar.org/openeye/simple openeye-toolkits
-  # Now install the package and test it
+  # Install OpenEye toolkit
+  - conda install --yes --quiet pip
+  - pip install $OPENEYE_CHANNEL openeye-toolkits
+  # Install the package and test it
   - conda install --yes --quiet openmoltools-dev
+  - conda install --yes --quiet nose
   - nosetests openmoltools -v -a '!slow'
 
 env:
   matrix:
-    - python=2.7  CONDA_PY=27
-    - python=3.3  CONDA_PY=33
-    - python=3.4  CONDA_PY=34
+    # OpenEye production
+    - python=2.7  CONDA_PY=27  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - python=3.3  CONDA_PY=33  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - python=3.4  CONDA_PY=34  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    # OpenEye beta
+    - python=2.7  CONDA_PY=27  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - python=3.3  CONDA_PY=33  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - python=3.4  CONDA_PY=34  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
 
   global:
     # Location of decrypted OpenEye license file
@@ -41,4 +61,4 @@ env:
 
 after_success:
   - echo "after_success"
-  - source devtools/ci/after_sucess.sh
+  - source devtools/travis-ci/after_success.sh
