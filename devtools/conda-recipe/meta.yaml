@@ -13,11 +13,13 @@ requirements:
   build:
     - python
     - setuptools
+    - pandas
+    - six
     - mdtraj
     - numpy
+    - numpydoc
     - scipy
-    - pandas
-    - openmm-dev
+    - openmm
     - ambermini
     - pytables
     - parmed
@@ -28,9 +30,10 @@ requirements:
     - pandas
     - six
     - mdtraj
+    - numpy
     - numpydoc
     - scipy
-    - openmm-dev
+    - openmm
     - ambermini
     - pytables
     - parmed
