@@ -24,8 +24,8 @@ except ImportError:
 
 
 ##########################
-VERSION = "0.6.9"
-ISRELEASED = True
+VERSION = "0.7.0.dev0"
+ISRELEASED = False
 __version__ = VERSION
 ##########################
 
