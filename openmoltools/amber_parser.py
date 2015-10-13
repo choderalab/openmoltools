@@ -449,7 +449,7 @@ class AmberParser(object):
                     sigma = (params[0] / params[1]) ** (1.0 / 6.0)
                     epsilon = 4.184 * params[1] * params[1] / (4 * params[0])
             else:
-                sigma = 0
+                sigma = 1.0
                 epsilon = 0
             if q != 0 or epsilon != 0:
                 write_stream("""  <Atom type="%s" charge="%s" sigma="%s" epsilon="%s"/>""" % (self.type_names[index], q, sigma, epsilon))
