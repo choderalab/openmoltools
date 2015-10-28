@@ -24,6 +24,7 @@ try:
     oeomega = utils.import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     HAVE_OE = True
+    openeye_exception_message = str()
 except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
@@ -42,11 +43,20 @@ def test_butanol_keepconfs():
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_butanol_unnormalized():
+    m0 = openmoltools.openeye.iupac_to_oemol("butanol")
+    m0.SetTitle("MyCustomTitle")
+    m1 = openmoltools.openeye.get_charges(m0, normalize=False, keep_confs=1)
+    eq(m0.NumAtoms(), m1.NumAtoms()) 
+    assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
+    assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
+    assert m0.GetTitle() == m1.GetTitle(), "The title of the molecule should not be changed by normalization."
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
-    m1 = openmoltools.openeye.get_charges(m0)
+    m1 = openmoltools.openeye.get_charges(m0, keep_confs=-1)
     eq(m0.NumAtoms(), m1.NumAtoms())
     assert m1.NumConfs() >= 2, "Butanol should have multiple conformers."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
