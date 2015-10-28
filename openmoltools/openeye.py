@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
-def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
+def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep_confs=None):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
