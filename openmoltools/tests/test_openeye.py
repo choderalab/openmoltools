@@ -24,6 +24,7 @@ try:
     oeomega = utils.import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     HAVE_OE = True
+    openeye_exception_message = str()
 except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
