@@ -23,6 +23,9 @@ def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
     strictStereo : bool, optional, default=True
         If False, permits smiles strings with unspecified stereochemistry.
         See https://docs.eyesopen.com/omega/usage.html
+    normalize : bool, optional, default=True
+        If True, normalize the molecule by checking aromaticity, adding
+        explicit hydrogens, and renaming by IUPAC name.
     keep_confs : int, optional, default=None
         If None, apply the charges to the provided conformation and return
         this conformation. Otherwise, return some or all of the generated
@@ -46,7 +49,10 @@ def get_charges(molecule, max_confs=800, strictStereo=True, keep_confs=None):
     oequacpac = import_("openeye.oequacpac")
     if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
     
-    molecule = normalize_molecule(molecule)
+    if normalize:
+        molecule = normalize_molecule(molecule)
+    else: 
+        molecule = oechem.OEMol(molecule)
 
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
     
