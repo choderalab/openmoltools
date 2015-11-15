@@ -20,27 +20,27 @@ before_install:
   # Configure environment.
   - source devtools/travis-ci/install.sh
   - export PYTHONUNBUFFERED=true
+  - echo $TRAVIS_SECURE_ENV_VARS
   # Unpack encrypted OpenEye license file
-  - if [ ! $TRAVIS_PULL_REQUEST ]; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out oe_license.txt -d; fi
-  - if [ $TRAVIS_PULL_REQUEST ]; then echo "OpenEye license will not be installed in pull request."; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
 
 install:
 
 script:
   # Add omnia channel
-  - conda config --add channels http://conda.anaconda.org/omnia
-  # this builds the binary, unpacks it, and runs limited tests that don't have access to external dependencies
+  - conda config --add channels ${ORGNAME}
+  # Build conda dev package
   - conda build devtools/conda-recipe
+  # Activate test environment
+  - source activate _test
   # Install package prerequisites
+  - conda install --yes --quiet pip nose nose-timer
   - conda config --add channels https://conda.anaconda.org/rdkit
   - conda install --yes --quiet packmol
-  # Install OpenEye toolkit
-  - conda install --yes --quiet pip
   - pip install $OPENEYE_CHANNEL openeye-toolkits
-  # Install the package and test it
-  - conda install --yes --quiet openmoltools-dev
-  - conda install --yes --quiet nose
-  - nosetests openmoltools -v -a '!slow'
+  # Test the package
+  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a '!slow' && cd ..
 
 env:
   matrix:
@@ -54,6 +54,8 @@ env:
     - python=3.4  CONDA_PY=34  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
 
   global:
+    - ORGNAME="omnia"
+    - PACKAGENAME="openmoltools"
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
