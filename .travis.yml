@@ -22,8 +22,8 @@ before_install:
   - export PYTHONUNBUFFERED=true
   - echo $TRAVIS_SECURE_ENV_VARS
   # Unpack encrypted OpenEye license file
-  - if [ $TRAVIS_SECURE_ENV_VARS ]; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
-  - if [ ! $TRAVIS_SECURE_ENV_VARS ]; then echo "OpenEye license will not be installed in pull request."; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
 
 install:
 
