@@ -4,6 +4,7 @@ import string
 import os
 import tempfile
 import logging
+import subprocess
 from pkg_resources import resource_filename
 import contextlib
 import shutil
@@ -11,6 +12,16 @@ import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
+
+
+def getoutput_py2(cmd):
+    """Work-around function to substitute deprecated commands.getoutput in Python2.7"""
+    out = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
+                           stdout=subprocess.PIPE).communicate()[0].strip()
+    try:
+        return str(out.decode())
+    except:
+        return str(out)
 
 try:
     from subprocess import getoutput  # If python 3
