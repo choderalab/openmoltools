@@ -2,11 +2,8 @@ import os
 import shutil
 import logging
 import mdtraj.utils
+from utils import getoutput
 from distutils.spawn import find_executable
-try:
-    from subprocess import getoutput  # If python 3
-except ImportError:
-    from commands import getoutput  # If python 2
 import parmed
 
 logger = logging.getLogger(__name__)

@@ -6,11 +6,7 @@ import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 import mdtraj.utils
-
-try:
-    from subprocess import getoutput  # If python 3
-except ImportError:
-    from commands import getoutput  # If python 2
+from utils import getoutput
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
