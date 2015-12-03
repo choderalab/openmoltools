@@ -2,9 +2,10 @@ import os
 import shutil
 import logging
 import mdtraj.utils
-from utils import getoutput
 from distutils.spawn import find_executable
 import parmed
+
+from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")

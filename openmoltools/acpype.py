@@ -14,7 +14,7 @@ import sys
 import subprocess as sub
 import re
 
-from utils import getoutput
+from openmoltools.utils import getoutput
 
 """
     From: https://code.google.com/p/acpype/

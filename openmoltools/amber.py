@@ -6,7 +6,8 @@ import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 import mdtraj.utils
-from utils import getoutput
+
+from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
