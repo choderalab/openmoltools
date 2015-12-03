@@ -13,21 +13,6 @@ from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import openmoltools.acpype as acpype
 
-
-def getoutput_py2(cmd):
-    """Work-around function to substitute deprecated commands.getoutput in Python2.7"""
-    out = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
-                           stdout=subprocess.PIPE).communicate()[0].strip()
-    try:
-        return str(out.decode())
-    except:
-        return str(out)
-
-try:
-    from subprocess import getoutput  # If python 3
-except ImportError:
-    from commands import getoutput  # If python 2
-
 import simtk.openmm
 from simtk.openmm import app
 import simtk.unit as units
@@ -37,6 +22,19 @@ from openmoltools import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
+
+
+def getoutput(cmd):
+    """Compatibility function to substitute deprecated commands.getoutput in Python2.7"""
+    try:
+        out = subprocess.getoutput(cmd)
+    except AttributeError:
+        out = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
+                               stdout=subprocess.PIPE).communicate()[0]
+    try:
+        return str(out.decode())
+    except:
+        return str(out)
 
 
 def find_gaff_dat():
