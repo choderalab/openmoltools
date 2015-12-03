@@ -14,6 +14,8 @@ import sys
 import subprocess as sub
 import re
 
+from openmoltools.utils import getoutput
+
 """
     From: https://code.google.com/p/acpype/
 
@@ -528,16 +530,6 @@ def parmMerge(fdat1, fdat2, frcmod=False):
     return mname
 
 
-def _getoutput(cmd):
-    '''to simulate commands.getoutput in order to work with python 2.6 up to 3.x'''
-    out = sub.Popen(cmd, shell=True, stderr=sub.STDOUT, stdout=sub.PIPE).communicate()[0][:-1]
-    try:
-        o = str(out.decode())
-    except:
-        o = str(out)
-    return o
-
-
 class AbstractTopol(object):
 
     """
@@ -601,7 +593,7 @@ class AbstractTopol(object):
                 cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                       self.baseName)
                 self.printDebug("guessCharge: " + cmd)
-                out = _getoutput(cmd)
+                out = getoutput(cmd)
                 self.printDebug(out)
                 mol2FileForGuessCharge = os.path.abspath(self.baseName + ".mol2")
                 in_mol = 'mol2'
@@ -618,7 +610,7 @@ class AbstractTopol(object):
                 cmd = cmd.replace('-pf y', '-pf n')
                 print(cmd)
 
-            log = _getoutput(cmd).strip()
+            log = getoutput(cmd).strip()
 
             if os.path.exists('tmp'):
                 charge = self.readMol2TotalCharge('tmp')
@@ -668,7 +660,7 @@ class AbstractTopol(object):
             cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
                 (self.acExe, self.inputFile, exten)
             self.printDebug(cmd)
-            out = _getoutput(cmd)
+            out = getoutput(cmd)
             if not out.isspace():
                 self.printDebug(out)
             try:
@@ -816,7 +808,7 @@ class AbstractTopol(object):
 
         self.printDebug(cmd)
 
-        log = _getoutput(cmd)
+        log = getoutput(cmd)
 
         if os.path.exists('tmp.crg'):
             tmpFile = open('tmp.crg', 'r')
@@ -969,7 +961,7 @@ a        """
         dict_pids = {}
         pids = [pid]
         cmd = "ps -A -o uid,pid,ppid|grep %i" % os.getuid()
-        out = _getoutput(cmd).split('\n')  # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
+        out = getoutput(cmd).split('\n')  # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
         for item in out:
             vec = item.split()
             dict_pids[vec[2]] = vec[1]
@@ -1098,7 +1090,7 @@ a        """
                 pass
             self.printMess("Executing Tleap...")
             self.printDebug(cmd)
-            self.tleapLog = _getoutput(cmd)
+            self.tleapLog = getoutput(cmd)
             self.checkLeapLog(self.tleapLog)
 
         if self.checkXyzAndTopFiles():
@@ -1152,7 +1144,7 @@ a        """
 
             cmd += ' -p %s' % parm99gaffff99SBFile  # Ignoring parm10.dat and BSC0
 
-        self.parmchkLog = _getoutput(cmd)
+        self.parmchkLog = getoutput(cmd)
 
         self.printDebug(cmd)
 
@@ -1188,7 +1180,7 @@ a        """
         cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                               self.baseName)
         self.printDebug(cmd)
-        self.babelLog = _getoutput(cmd)
+        self.babelLog = getoutput(cmd)
         self.ext = '.mol2'
         self.inputFile = self.baseName + self.ext
         self.acParDict['ext'] = 'mol2'
@@ -1571,7 +1563,7 @@ a        """
             # print (self.obchiralExe, os.getcwd())
             cmd = '%s %s' % (self.obchiralExe, self.inputFile)
             # print(cmd)
-            out = map(int, re.findall('Atom (\d+) Is', _getoutput(cmd)))
+            out = map(int, re.findall('Atom (\d+) Is', getoutput(cmd)))
             # print("*%s*" % out)
             chiralGroups = []
             for id_ in out:
@@ -1844,7 +1836,7 @@ a        """
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
             self.printDebug(cmd)
-        _log = _getoutput(cmd)
+        _log = getoutput(cmd)
 
     def writePdb(self, file_):
         """
@@ -3121,14 +3113,14 @@ class ACTopol(AbstractTopol):
                     self.acExe = ac_path
                     break
         if not self.acExe:
-            self.acExe = _getoutput('which antechamber') or ''  # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+            self.acExe = getoutput('which antechamber') or ''  # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
-        self.tleapExe = _getoutput('which tleap') or ''
-        self.sleapExe = _getoutput('which sleap') or ''
-        self.parmchkExe = _getoutput('which parmchk') or ''
-        self.babelExe = _getoutput('which babel') or ''
+        self.tleapExe = getoutput('which tleap') or ''
+        self.sleapExe = getoutput('which sleap') or ''
+        self.parmchkExe = getoutput('which parmchk') or ''
+        self.babelExe = getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
             if self.ext != '.mol2' and self.ext != '.mdl':  # and self.ext != '.mol':
                 self.printError("no 'babel' executable; you need it if input is PDB")
@@ -3201,7 +3193,7 @@ class MolTopol(ACTopol):
                  disam=False, direct=False, is_sorted=False, chiral=False):
 
         self.chiral = chiral
-        self.obchiralExe = _getoutput('which obchiral') or ''
+        self.obchiralExe = getoutput('which obchiral') or ''
         self.allhdg = False
         self.debug = debug
         self.gmx45 = gmx45

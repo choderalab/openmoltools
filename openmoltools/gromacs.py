@@ -3,11 +3,9 @@ import shutil
 import logging
 import mdtraj.utils
 from distutils.spawn import find_executable
-try:
-    from subprocess import getoutput  # If python 3
-except ImportError:
-    from commands import getoutput  # If python 2
 import parmed
+
+from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
