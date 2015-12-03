@@ -11,7 +11,6 @@ import shutil
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
-import openmoltools.acpype as acpype
 
 import simtk.openmm
 from simtk.openmm import app
@@ -93,7 +92,8 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
     Deprecated. Please use ParmEd (especially amber_to_gromacs) instead.
     """
 
-    print("WARNING: Use of acpype for conversion is deprecated. ParmEd is preferred; please use amber_to_gromacs instead.") 
+    print("WARNING: Use of acpype for conversion is deprecated. ParmEd is preferred; please use amber_to_gromacs instead.")
+    acpype = import_('openmoltools.acpype')
 
     #Create output file names if needed
     if out_top is None:
