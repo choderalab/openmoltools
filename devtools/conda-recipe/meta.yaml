@@ -19,7 +19,7 @@ requirements:
     - numpy
     - numpydoc
     - scipy
-    - openmm
+    - openmm-dev
     - ambermini
     - pytables
     - parmed
@@ -33,7 +33,7 @@ requirements:
     - numpy
     - numpydoc
     - scipy
-    - openmm
+    - openmm-dev
     - ambermini
     - pytables
     - parmed
