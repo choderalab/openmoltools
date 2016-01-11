@@ -3,6 +3,7 @@ from unittest import skipIf
 import tempfile
 import os
 from openmoltools import utils, forcefield_generators
+from simtk.openmm.app import ForceField, NoCutoff
 
 def test_gaffResidueTemplateGenerator():
     """
