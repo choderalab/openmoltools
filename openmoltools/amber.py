@@ -329,6 +329,12 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     frcmod_filename = os.path.abspath( frcmod_filename )
     input_filename = os.path.abspath( input_filename )
 
+    def read_file_contents(filename):
+        infile = open(filename, 'r')
+        lines = infile.readlines()
+        infile.close()
+        return lines
+
     #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
     with mdtraj.utils.enter_temp_directory():
         shutil.copy( input_filename, 'in.mol2' )
@@ -344,19 +350,31 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
 
         output = getoutput(cmd)
         if not os.path.exists('out.mol2'):
-            msg  = ""
+            msg  = "antechamber failed to produce output mol2 file\n"
+            msg += "command: %s\n" % cmd
+            msg += "output:\n"
+            msg += 8 * "----------\n"
             msg += output
-            msg += "\n"
-            msg += "antechamber failed to produce output mol2 file\n"
+            msg += 8 * "----------\n"
+            msg += "input mol2:\n"
+            msg += 8 * "----------\n"
+            msg += read_file_contents('in.mol2')
+            msg += 8 * "----------\n"
             raise Exception(msg)
         logger.debug(output)
 
         cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
         if not os.path.exists('out.frcmod'):
-            msg  = ""
+            msg  = "parmchk2 failed to produce output frcmod file\n"
+            msg += "command: %s\n" % cmd
+            msg += "output:\n"
+            msg += 8 * "----------\n"
             msg += output
-            msg += "\n"
-            msg += "parmchk2 failed to produce output frcmod file\n"
+            msg += 8 * "----------\n"
+            msg += "input mol2:\n"
+            msg += 8 * "----------\n"
+            msg += read_file_contents('in.mol2')
+            msg += 8 * "----------\n"
             raise Exception(msg)
         logger.debug(cmd)
 
