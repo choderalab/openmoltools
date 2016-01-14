@@ -1,7 +1,7 @@
 import mdtraj as md
 import tempfile
 import logging
-import os
+import os, os.path
 import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
@@ -42,13 +42,13 @@ quit
 def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename, water_model = 'TIP3P'):
     """Create a prmtop and inpcrd from a collection of mol2 and frcmod files
     as well as a single box PDB.  We have used this for setting up
-    simulations of neat liquids or binary mixtures.  
+    simulations of neat liquids or binary mixtures.
 
     Parameters
     ----------
     mol2_filenames : list(str)
         Filenames of GAFF flavored mol2 files.  Each must contain exactly
-        ONE ligand. 
+        ONE ligand.
     frcmod_filenames : str
         Filename of input GAFF frcmod filenames.
     box_filename : str
@@ -63,12 +63,12 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     Returns
     -------
     tleap_commands : str
-        The string of commands piped to tleap for building the prmtop 
+        The string of commands piped to tleap for building the prmtop
         and inpcrd files.  This will *already* have been run, but the
         output can be useful for debugging or archival purposes. However,
         this will reflect temporary file names for both input and output
         file as these are used to avoid tleap filename restrictions.
-        
+
     Notes
     -----
     This can be easily broken if there are missing, duplicated, or
@@ -76,29 +76,29 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     You can use mdtraj to edit the residue names with something like
     this: trj.top.residue(0).name = "L1"
     """
-    
+
     # Check for one residue name per mol2 file and uniqueness between all mol2 files
     all_names = set()
     for filename in mol2_filenames:
         t = md.load(filename)
         names = set([r.name for r in t.top.residues])
-        
+
         if len(names) != 1:
             raise(ValueError("Must have a SINGLE residue name in each mol2 file."))
-        
+
         all_names = all_names.union(list(names))
 
     if len(all_names) != len(mol2_filenames):
         raise(ValueError("Must have UNIQUE residue names in each mol2 file."))
     if len(mol2_filenames) != len(frcmod_filenames):
-        raise(ValueError("Must provide an equal number of frcmod and mol2 file names."))    
+        raise(ValueError("Must provide an equal number of frcmod and mol2 file names."))
 
     #Get number of files
     nfiles = len(mol2_filenames)
 
     #Check validity of water model options
     valid_water = ['TIP3P', 'SPC', None]
-    if not water_model in valid_water: 
+    if not water_model in valid_water:
         raise(ValueError("Must provide a valid water model."))
 
     #If we are requesting a different water model, check if there is water present
@@ -139,7 +139,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
                 water_model = 'SPC'
             else:
                 raise(ValueError("Cannot translate specified water model into one of the available models."))
-            
+
 
             #Compose string for loading specified water molecule
             water_string = '\n'
@@ -149,9 +149,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
                 #Also if not TIP3P, update to source correct frcmod file
                 if water_model == 'SPC':
                     water_string += 'loadamberparams frcmod.spce\n'
-                elif water_model =='TP3': 
+                elif water_model =='TP3':
                     continue
-                else:           
+                else:
                     raise(ValueError("Cannot identify water frcmod file to be loaded."))
 
             #Rename water atoms in box file to match what is expected by AMBER
@@ -159,7 +159,7 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
             packmol.rename_water_atoms(box_filename)
     else:
         waterPresent = False
- 
+
     #Make temporary, hardcoded filenames for mol2 and frcmod input to avoid tleap filename restrictions
     tmp_mol2_filenames = [ 'in%d.mol2' % n for n in range(nfiles) ]
     tmp_frcmod_filenames = [ 'in%d.frcmod' % n for n in range(nfiles) ]
@@ -178,16 +178,16 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
     inpcrd_filename = os.path.abspath( inpcrd_filename )
 
     #Use temporary directory and do the setup
-    with mdtraj.utils.enter_temp_directory():  
+    with mdtraj.utils.enter_temp_directory():
 
         #Copy input files to temporary file names in target directory
         for (infile, outfile) in zip( infiles, tmp_mol2_filenames+tmp_frcmod_filenames+[tmp_box_filename] ):
             shutil.copy( infile, outfile)
-            logger.debug('Copying input file %s to %s...\n' % (infile, outfile)) 
+            logger.debug('Copying input file %s to %s...\n' % (infile, outfile))
 
 
         all_names = [md.load(filename).top.residue(0).name for filename in tmp_mol2_filenames]
-        
+
         mol2_section = "\n".join("%s = loadmol2 %s" % (all_names[k], filename) for k, filename in enumerate(tmp_mol2_filenames))
         #If non-GAFF water is present, load desired parameters for that water as well.
         if waterPresent:
@@ -196,12 +196,12 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
 
         tleap_commands = TLEAP_TEMPLATE % dict(mol2_section=mol2_section, amberparams_section=amberparams_section, box_filename=tmp_box_filename, prmtop_filename=tmp_prmtop_filename, inpcrd_filename=tmp_inpcrd_filename)
         print(tleap_commands)
-        
+
         file_handle = open('tleap_commands', 'w')
         file_handle.writelines(tleap_commands)
         file_handle.close()
 
-        logger.debug('Running tleap in temporary directory.') 
+        logger.debug('Running tleap in temporary directory.')
         cmd = "tleap -f %s " % file_handle.name
         logger.debug(cmd)
 
@@ -209,9 +209,9 @@ def build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_
         logger.debug(output)
         check_for_errors( output, other_errors = ['Improper number of arguments'], ignore_errors = ['unperturbed charge of the unit', 'ignoring the error'] )
 
-        #Copy stuff back to right filenames 
+        #Copy stuff back to right filenames
         for (tfile, finalfile) in zip( [tmp_prmtop_filename, tmp_inpcrd_filename], [prmtop_filename, inpcrd_filename] ):
-            shutil.copy( tfile, finalfile) 
+            shutil.copy( tfile, finalfile)
 
     return tleap_commands
 
@@ -225,7 +225,7 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
     other_errors : list(str), default None
         If specified, provide strings for other errors which will be chcked for, such as "improper number of arguments", etc.
     ignore_errors: list(str), default None
-        If specified, AMBER output lines containing errors but also containing any of the specified strings will be ignored (because, for example, AMBER issues an "ERROR" for non-integer charges in some cases when only a warning is needed). 
+        If specified, AMBER output lines containing errors but also containing any of the specified strings will be ignored (because, for example, AMBER issues an "ERROR" for non-integer charges in some cases when only a warning is needed).
 
     Notes
     -----
@@ -249,7 +249,7 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
                     ignore = True
             if not ignore:
                 new_error_lines.append( err )
-        error_lines = new_error_lines 
+        error_lines = new_error_lines
 
     if len(error_lines) > 0:
         print("Unexpected errors encountered running AMBER tool. Offending output:")
@@ -261,12 +261,12 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
 
 def find_gaff_dat():
     AMBERHOME = None
-    
+
     try:
         AMBERHOME = os.environ['AMBERHOME']
     except KeyError:
         pass
-    
+
     if AMBERHOME is None:
         full_path = find_executable("parmchk2")
         try:
@@ -330,10 +330,10 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     input_filename = os.path.abspath( input_filename )
 
     #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
-    with mdtraj.utils.enter_temp_directory(): 
+    with mdtraj.utils.enter_temp_directory():
         shutil.copy( input_filename, 'in.mol2' )
 
-        cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2" 
+        cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2"
         if charge_method is not None:
             cmd += ' -c %s' % charge_method
 
@@ -343,16 +343,28 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         logger.debug(cmd)
 
         output = getoutput(cmd)
+        if not os.path.exists('out.mol2'):
+            msg  = ""
+            msg += output
+            msg += "\n"
+            msg += "antechamber failed to produce output mol2 file\n"
+            raise Exception(msg)
         logger.debug(output)
 
         cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        if not os.path.exists('out.frcmod'):
+            msg  = ""
+            msg += output
+            msg += "\n"
+            msg += "parmchk2 failed to produce output frcmod file\n"
+            raise Exception(msg)
         logger.debug(cmd)
 
         output = getoutput(cmd)
         logger.debug(output)
         check_for_errors( output  )
 
-        #Copy back 
+        #Copy back
         shutil.copy( 'out.mol2', gaff_mol2_filename )
         shutil.copy( 'out.frcmod', frcmod_filename )
 
@@ -365,7 +377,7 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
     Parameters
     ----------
     molecule_name : str
-        The name of the molecule    
+        The name of the molecule
     gaff_mol2_filename : str
         GAFF format mol2 filename produced by antechamber
     frcmod_filename : str
@@ -373,7 +385,7 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
     prmtop_filename : str, optional, default=None
         Amber prmtop file produced by tleap, defaults to molecule_name
     inpcrd_filename : str, optional, default=None
-        Amber inpcrd file produced by tleap, defaults to molecule_name  
+        Amber inpcrd file produced by tleap, defaults to molecule_name
 
     Returns
     -------
@@ -386,13 +398,13 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         prmtop_filename = "%s.prmtop" % molecule_name
     if inpcrd_filename is None:
         inpcrd_filename = "%s.inpcrd" % molecule_name
-   
+
     #Get absolute paths for input/output
     gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
     frcmod_filename = os.path.abspath( frcmod_filename )
     prmtop_filename = os.path.abspath( prmtop_filename )
     inpcrd_filename = os.path.abspath( inpcrd_filename )
- 
+
     #Work in a temporary directory, on hard coded filenames, to avoid any issues AMBER may have with spaces and other special characters in filenames
     with mdtraj.utils.enter_temp_directory():
         shutil.copy( gaff_mol2_filename, 'file.mol2' )
@@ -404,10 +416,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
     LIG = loadmol2 file.mol2
     check LIG
     loadamberparams file.frcmod
-    saveamberparm LIG out.prmtop out.inpcrd 
+    saveamberparm LIG out.prmtop out.inpcrd
     quit
 
-""" 
+"""
 
         file_handle = open('tleap_commands', 'w')
         file_handle.writelines(tleap_input)
@@ -426,4 +438,3 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         shutil.copy( 'out.inpcrd', inpcrd_filename )
 
     return prmtop_filename, inpcrd_filename
-
