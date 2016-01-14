@@ -112,7 +112,7 @@ def gaffTemplateGenerator(forcefield, residue):
     template = ForceField._TemplateData(template_name)
     for atom in residue.atoms():
         typename = structure_atoms[atom.name].type # assigned GAFF atom type
-        parameters = { 'charge' : charge=structure_atoms[atom.name].charge } # partial atomic charge
+        parameters = { 'charge' : structure_atoms[atom.name].charge } # partial atomic charge
         atom_template = ForceField._TemplateAtomData(atom.name, typename, atom.element, parameters)
         template.atoms.append(atom_template)
     for (atom1,atom2) in residue.internal_bonds():
