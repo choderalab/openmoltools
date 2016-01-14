@@ -331,9 +331,9 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
 
     def read_file_contents(filename):
         infile = open(filename, 'r')
-        lines = infile.readlines()
+        contents = infile.read()
         infile.close()
-        return lines
+        return contents
 
     #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
     with mdtraj.utils.enter_temp_directory():
