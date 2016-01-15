@@ -66,11 +66,14 @@ def gaffTemplateGenerator(forcefield, residue):
     # Use atoms and bond graph to perceive bond orders and aromaticity.
     # TODO: Is this sufficient for determining bond orders and aromaticity correctly?
     # NOTE: No stereochemistry is defined here. This may cause problems with molecules with multiple chiral centers.
-    oechem.OEAssignHybridization(mol)
+    oechem.OEFindRingAtomsAndBonds(mol)
+    oechem.OEPerceiveBondOrders(mol)
+    oechem.OEAssignFormalCharges(mol)
     oechem.OEAssignAromaticFlags(mol)
+    #oechem.OEAssignHybridization(mol)
+    #oechem.OEAssignAromaticFlags(mol)
 
     # Compute net formal charge.
-    oechem.OEAssignFormalCharges(mol)
     net_charge = 0.0
     for oeatom in oeatoms:
         net_charge += oeatom.GetFormalCharge()
@@ -129,5 +132,3 @@ def gaffTemplateGenerator(forcefield, residue):
 
     # Signal that we have successfully parameterized the residue.
     return True
-
-
