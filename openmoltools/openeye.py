@@ -16,7 +16,7 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
     Parameters
     ----------
     molecule : OEMol
-        Molecule for which to generate conformers. 
+        Molecule for which to generate conformers.
         Omega will be used to generate max_confs conformations.
     max_confs : int, optional, default=800
         Max number of conformers to generate
@@ -28,12 +28,13 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         explicit hydrogens, and renaming by IUPAC name.
     keep_confs : int, optional, default=None
         If None, apply the charges to the provided conformation and return
-        this conformation. Otherwise, return some or all of the generated
-        conformations. If -1, all generated conformations are returned. 
+        this conformation, unless no conformation is present.
+        Otherwise, return some or all of the generated
+        conformations. If -1, all generated conformations are returned.
         Otherwise, keep_confs = N will return an OEMol with up to N
         generated conformations.  Multiple conformations are still used to
         *determine* the charges.
-    
+
     Returns
     -------
     charged_copy : OEMol
@@ -41,23 +42,28 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
 
     Notes
     -----
-    Roughly follows 
+    Roughly follows
     http://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
     """
+
+    # If there is no geometry, return at least one conformation.
+    if molecule.GetConfs() == 0:
+        keep_confs = 1
+
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
     oequacpac = import_("openeye.oequacpac")
     if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
-    
+
     if normalize:
         molecule = normalize_molecule(molecule)
-    else: 
+    else:
         molecule = oechem.OEMol(molecule)
 
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
-    
+
     status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)  # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
-    
+
     if not status:
         raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
 
@@ -81,8 +87,8 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         pass
     else:
         #Not a valid option to keep_confs
-        raise(ValueError('Not a valid option to keep_confs in get_charges.')) 
-   
+        raise(ValueError('Not a valid option to keep_confs in get_charges.'))
+
     return charged_copy
 
 
@@ -93,7 +99,7 @@ def normalize_molecule(molecule):
     ----------
     molecule : OEMol
         the molecule to be normalized.
-    
+
     Returns
     -------
     molcopy : OEMol
@@ -101,12 +107,12 @@ def normalize_molecule(molecule):
 
     """
     oechem = import_("openeye.oechem")
-    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))   
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
     oeiupac = import_("openeye.oeiupac")
-    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))    
+    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
 
     molcopy = oechem.OEMol(molecule)
-   
+
     # Assign aromaticity.
     oechem.OEAssignAromaticFlags(molcopy, oechem.OEAroModelOpenEye)
 
@@ -116,17 +122,17 @@ def normalize_molecule(molecule):
     # Set title to IUPAC name.
     name = oeiupac.OECreateIUPACName(molcopy)
     molcopy.SetTitle(name)
-    
+
     # Check for any missing atom names, if found reassign all of them.
     if any([atom.GetName() == '' for atom in molcopy.GetAtoms()]):
         oechem.OETriposAtomNames(molcopy)
-    
+
     return molcopy
 
 
 def iupac_to_oemol(iupac_name):
     """Create a OEMolBuilder from a iupac name.
-    
+
     Parameters
     ----------
     iupac_name : str
@@ -135,7 +141,7 @@ def iupac_to_oemol(iupac_name):
     Returns
     -------
     molecule : OEMol
-        A normalized molecule with desired iupac name
+        A normalized molecule with desired iupac name.
 
     """
     oechem = import_("openeye.oechem")
@@ -156,7 +162,7 @@ def iupac_to_oemol(iupac_name):
 
 def smiles_to_oemol(smiles):
     """Create a OEMolBuilder from a smiles string.
-    
+
     Parameters
     ----------
     smiles : str
@@ -166,11 +172,11 @@ def smiles_to_oemol(smiles):
     -------
     molecule : OEMol
         A normalized molecule with desired smiles string.
-    
-    """        
+
+    """
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
-    
+
     molecule = oechem.OEMol()
     if not oechem.OEParseSmiles(molecule, smiles):
         raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
@@ -191,16 +197,16 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     strictStereo : bool, optional, default=True
         If False, permits smiles strings with unspecified stereochemistry.
     strictTypes : bool, optional, default=True
-        If True, requires that Omega have exact MMFF types for atoms in molecule; otherwise, allows the closest atom type of the same element to be used. 
+        If True, requires that Omega have exact MMFF types for atoms in molecule; otherwise, allows the closest atom type of the same element to be used.
 
     Returns
     -------
     molcopy : OEMol
         A multi-conformer molecule with up to max_confs conformers.
-    
+
     Notes
     -----
-    Roughly follows 
+    Roughly follows
     http://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
 
     """
@@ -208,10 +214,10 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
     oeomega = import_("openeye.oeomega")
     if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
-    
+
     molcopy = oechem.OEMol(molecule)
     omega = oeomega.OEOmega()
-    
+
     # These parameters were chosen to match http://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
     omega.SetMaxConfs(max_confs)
     omega.SetIncludeInput(True)
@@ -220,18 +226,18 @@ def generate_conformers(molecule, max_confs=800, strictStereo=True, ewindow=15.0
     omega.SetSampleHydrogens(True)  # Word to the wise: skipping this step can lead to significantly different charges!
     omega.SetEnergyWindow(ewindow)
     omega.SetRMSThreshold(rms_threshold)  # Word to the wise: skipping this step can lead to significantly different charges!
-    
+
     omega.SetStrictStereo(strictStereo)
     omega.SetStrictAtomTypes(strictTypes)
-    
+
     omega.SetIncludeInput(False)  # don't include input
     if max_confs is not None:
         omega.SetMaxConfs(max_confs)
-    
+
     status = omega(molcopy)  # generate conformation
     if not status:
         raise(RuntimeError("omega returned error code %d" % status))
-        
+
 
     return molcopy
 
@@ -252,7 +258,7 @@ def get_names_to_charges(molecule):
     molrepr : str
         A string representation of data
     """
-    
+
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
     molcopy = oechem.OEMol(molecule)
@@ -274,25 +280,25 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
     molecule : openeye.oechem.OEGraphMol
         The molecule to be converted.
     tripos_mol2_filename : str, optional, default=None
-        Output filename.  If None, will create a filename similar to 
+        Output filename.  If None, will create a filename similar to
         name.tripos.mol2, where name is the name of the OE molecule.
     conformer : int, optional, default=0
         Save this frame
     residue_name : str, optional, default="MOL"
         OpenEye writes mol2 files with <0> as the residue / ligand name.
         This chokes many mol2 parsers, so we replace it with a string of
-        your choosing.  
+        your choosing.
 
     Returns
     -------
     tripos_mol2_filename : str
         Filename of output tripos mol2 file
-    
+
     """
-    
+
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
-    
+
     # Get molecule name.
     molecule_name = molecule.GetTitle()
     logger.debug(molecule_name)
@@ -306,7 +312,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
     for k, mol in enumerate(molecule.GetConfs()):
         if k == conformer:
             oechem.OEWriteMolecule(ofs, mol)
-    
+
     ofs.close()
 
     # Replace <0> substructure names with valid text.
@@ -323,7 +329,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
 
 def oemols_to_ffxml(molecules, base_molecule_name="lig"):
     """Generate an OpenMM ffxml object and MDTraj trajectories from multiple OEMols
-    
+
     Parameters
     ----------
     molecules : list(OEMole)
@@ -331,24 +337,24 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
         WILL GIVE UNDEFINED RESULTS IF NOT CHARGED.
     base_molecule_name : str, optional, default='lig'
         Base name of molecule to use inside parameter files.
-    
+
     Returns
     -------
     trajectories : list(mdtraj.Trajectory)
         List of MDTraj Trajectories for molecule.  May contain multiple frames
     ffxml : StringIO
         StringIO representation of ffxml file.
-    
+
     Notes
     -----
     We allow multiple different molecules at once so that they can all be
     included in a single ffxml file, which is currently the only recommended
     way to simulate multiple GAFF molecules in a single simulation.  For most
-    applications, you will have just a single molecule: 
+    applications, you will have just a single molecule:
     e.g. molecules = [my_oemol]
-    The resulting ffxml StringIO object can be directly input to OpenMM e.g. 
+    The resulting ffxml StringIO object can be directly input to OpenMM e.g.
     `forcefield = app.ForceField(ffxml)`
-    
+
     This will generate a lot of temporary files, so you may want to use
     utils.enter_temp_directory() to avoid clutter.
     """
@@ -371,7 +377,7 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
             if j == 0:  # Only need 1 frame of forcefield files
                 gaff_mol2_filenames.append(gaff_mol2_filename)
                 frcmod_filenames.append(frcmod_filename)
-                    
+
         # Create a trajectory with all frames of the current molecule
         traj = trajectories[0].join(trajectories[1:])
         all_trajectories.append(traj)
@@ -382,10 +388,10 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
 
 
 def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL", strictStereo=False):
-    """Build a molecule from a smiles string and run antechamber, 
+    """Build a molecule from a smiles string and run antechamber,
     generating GAFF mol2 and frcmod files from a smiles string.  Charges
     will be generated using the OpenEye QuacPac AM1-BCC implementation.
-    
+
     Parameters
     ----------
     smiles_string : str
@@ -406,18 +412,18 @@ def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, re
         See https://docs.eyesopen.com/omega/usage.html
     """
     oechem = import_("openeye.oechem")
-    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))    
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
 
     # Get the absolute path so we can find these filenames from inside a temporary directory.
     gaff_mol2_filename = os.path.abspath(gaff_mol2_filename)
     frcmod_filename = os.path.abspath(frcmod_filename)
-    
+
     m = smiles_to_oemol(smiles_string)
     m = get_charges(m, strictStereo=strictStereo, keep_confs=1)
-    
-    with enter_temp_directory():  # Avoid dumping 50 antechamber files in local directory.    
+
+    with enter_temp_directory():  # Avoid dumping 50 antechamber files in local directory.
         _unused = molecule_to_mol2(m, "./tmp.mol2", residue_name=residue_name)
         net_charge = oechem.OENetCharge(m)
-        tmp_gaff_mol2_filename, tmp_frcmod_filename = run_antechamber("tmp", "./tmp.mol2", charge_method=None, net_charge=net_charge)  # USE OE AM1BCC charges!        
+        tmp_gaff_mol2_filename, tmp_frcmod_filename = run_antechamber("tmp", "./tmp.mol2", charge_method=None, net_charge=net_charge)  # USE OE AM1BCC charges!
         shutil.copy(tmp_gaff_mol2_filename, gaff_mol2_filename)
         shutil.copy(tmp_frcmod_filename, frcmod_filename)
