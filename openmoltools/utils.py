@@ -38,8 +38,8 @@ def getoutput(cmd):
 
 def find_gaff_dat():
     print("Warning: find_gaff_dat has been moved to openmoltools.amber.")
-    amber = import_("openmoltools.amber") 
-    
+    amber = import_("openmoltools.amber")
+
     return amber.find_gaff_dat()
 
 
@@ -51,12 +51,12 @@ def parse_ligand_filename(filename):
 
 def run_antechamber(*args, **kwargs):
     print("Warning: run_antechamber has been moved to openmoltools.amber.")
-    amber = import_("openmoltools.amber") 
+    amber = import_("openmoltools.amber")
     return amber.run_antechamber(*args, **kwargs)
 
 def run_tleap(*args, **kwargs):
     print("Warning: run_tleap has been moved to openmoltools.amber.")
-    amber = import_("openmoltools.amber") 
+    amber = import_("openmoltools.amber")
     return amber.run_tleap(*args, **kwargs)
 
 def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, debug = False, is_sorted = False ):
@@ -76,14 +76,14 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
     out_gro : str, optional, default = None
         String specifying path to GROMACS-format coordinate (.gro) file which will be written out. If none is provided, created based on molecule_name.
     debug : bool, optional, default = False
-        Print debug info? If not specified, do not. 
+        Print debug info? If not specified, do not.
     is_sorted : bool, optional, default = False
-        Sort resulting topology file        
+        Sort resulting topology file
 
     Returns
     -------
     out_top : str
-        GROMACS topology file produced by acpype 
+        GROMACS topology file produced by acpype
     out_gro : str
         GROMACS coordinate file produced by acpype
 
@@ -97,25 +97,25 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
 
     #Create output file names if needed
     if out_top is None:
-        out_top = "%s.top" % molecule_name        
+        out_top = "%s.top" % molecule_name
     if out_gro is None:
         out_gro = "%s.gro" % molecule_name
 
     #Create temporary output dir for acpype output
     outdir = tempfile.mkdtemp()
     #Define basename for output
-    basename = os.path.join( outdir, 'output')   
+    basename = os.path.join( outdir, 'output')
 
- 
+
     #Set up acpype
-    system = acpype.MolTopol( acFileXyz = in_crd, acFileTop = in_prmtop, basename = basename, is_sorted = is_sorted, gmx45 = True, disam = True )  
+    system = acpype.MolTopol( acFileXyz = in_crd, acFileTop = in_prmtop, basename = basename, is_sorted = is_sorted, gmx45 = True, disam = True )
 
     #Print debug info if desired
-    if debug: 
+    if debug:
         print(system.printDebug('prmtop and inpcrd files parsed'))
 
     #Write results
-    system.writeGromacsTopolFiles( amb2gmx = True ) 
+    system.writeGromacsTopolFiles( amb2gmx = True )
 
     #Acpype names various things in the topology and coordinate file after the base name of the file used as input. Replace these names with an at-least-legible string while writing to desired output
     top_in = open(basename+"_GMX.top", 'r')
@@ -130,12 +130,12 @@ def convert_via_acpype( molecule_name, in_prmtop, in_crd, out_top = None, out_gr
         gro_out.write( line.replace( basename, molecule_name) )
     gro_in.close()
     gro_out.close()
-    
+
     #Check if files exist and are not empty; return True if so
     if os.stat( out_top).st_size == 0 or os.stat( out_gro ) == 0:
         raise(ValueError("ACPYPE conversion failed."))
 
-    return out_top, out_gro 
+    return out_top, out_gro
 
 
 def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None, override_mol2_residue_name=None):
@@ -148,11 +148,11 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
     frcmod_filenames : str
         The names of the gaff frcmod files
     ffxml_filename : str, optional, default=None
-        Optional name of output ffxml file to generate.  If None, no file 
+        Optional name of output ffxml file to generate.  If None, no file
         will be generated.
     override_mol2_residue_name : str, default=None
-            If given, use this name to override mol2 residue names.        
-    
+            If given, use this name to override mol2 residue names.
+
     Returns
     -------
     ffxml_stringio : str
@@ -163,14 +163,14 @@ def create_ffxml_file(gaff_mol2_filenames, frcmod_filenames, ffxml_filename=None
     # Generate ffxml file.
     parser = amber_parser.AmberParser(override_mol2_residue_name=override_mol2_residue_name)
 
-    amber = import_("openmoltools.amber") 
+    amber = import_("openmoltools.amber")
     GAFF_DAT_FILENAME = amber.find_gaff_dat()
     filenames = [GAFF_DAT_FILENAME]
     filenames.extend([filename for filename in gaff_mol2_filenames])
     filenames.extend([filename for filename in frcmod_filenames])
 
     parser.parse_filenames(filenames)
-    
+
     ffxml_stream = parser.generate_xml()
 
     if ffxml_filename is not None:
@@ -200,7 +200,7 @@ def create_ffxml_simulation(molecule_name, gaff_mol2_filename, frcmod_filename):
     """
 
     # Generate ffxml file.
-    amber = import_("openmoltools.amber") 
+    amber = import_("openmoltools.amber")
     GAFF_DAT_FILENAME = amber.find_gaff_dat()
     parser = amber_parser.AmberParser()
     parser.parse_filenames([GAFF_DAT_FILENAME, gaff_mol2_filename, frcmod_filename])
@@ -281,7 +281,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     """
 
     # Generate GAFF parameters.
-    amber = import_("openmoltools.amber") 
+    amber = import_("openmoltools.amber")
     (gaff_mol2_filename, frcmod_filename) = amber.run_antechamber(molecule_name, tripos_mol2_filename, charge_method=charge_method)
 
     # Create simulations.
@@ -291,7 +291,7 @@ def test_molecule(molecule_name, tripos_mol2_filename, charge_method="bcc"):
     # Compare simulations.
     syscheck = system_checker.SystemChecker(simulation_ffxml, simulation_leap)
     syscheck.check_force_parameters()
-    
+
     groups0, groups1 = syscheck.check_energy_groups()
     energy0, energy1 = syscheck.check_energies()
 
@@ -317,28 +317,26 @@ def get_data_filename(relative_path):
 
     return fn
 
-
-
 def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
     """Generate an MDTraj object from a smiles string.
-    
+
     Parameters
     ----------
     smiles_strings : list(str)
         Smiles strings to create molecules for
     base_molecule_name : str, optional, default='lig'
         Base name of molecule to use inside parameter files.
-    
+
     Returns
     -------
     traj : mdtraj.Trajectory
         MDTraj object for molecule
     ffxml : StringIO
         StringIO representation of ffxml file.
-    
+
     Notes
     -----
-    ffxml can be directly input to OpenMM e.g. 
+    ffxml can be directly input to OpenMM e.g.
     `forcefield = app.ForceField(ffxml)`
     """
     try:
@@ -357,16 +355,10 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         AllChem.EmbedMolecule(m)
         AllChem.UFFOptimizeMolecule(m)
 
-        pdb_filename = tempfile.mktemp(suffix=".pdb")
-        Chem.MolToPDBFile(m, pdb_filename)
-        
-        mol2_filename = tempfile.mktemp(suffix=".mol2")
-        
-        convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
-        print(mol2_filename)
-
-        amber = import_("openmoltools.amber") 
-        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mol2_filename)
+        mdl_filename = tempfile.mktemp(suffix=".mdl")
+        Chem.MolToMolFile(m, mdl_filename)
+        amber = import_("openmoltools.amber")
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mdl_filename, input_format='mdl')
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)
         print(traj)
@@ -391,7 +383,7 @@ def tag_description(lambda_function, description):
 
 def molecule_to_mol2(*args, **kwargs):
     print("Warning: molecule_to_mol2 has been moved to openmoltools.openeye.")
-    import openmoltools.openeye 
+    import openmoltools.openeye
     return openmoltools.openeye.molecule_to_mol2(*args, **kwargs)
 
 def get_unique_names(n_molecules):
@@ -406,7 +398,7 @@ def get_unique_names(n_molecules):
     -----
     Names will start with Z to avoid conflicts with common macromolecule
     residue names.  This may be improved in the future.
-    
+
     THIS FUNCTION will enter an INFINITE LOOP if you request many
     (hundreds) of unique residue names, as it becomes harder or impossible
     to generate many unique names.
@@ -421,7 +413,7 @@ def randomize_mol2_residue_names(mol2_filenames):
     """Find unique residue names for a list of MOL2 files.  Then
     re-write the MOL2 files using ParmEd with the unique identifiers.
     """
-    import parmed   
+    import parmed
     names = get_unique_names(len(mol2_filenames))
 
     for k, filename in enumerate(mol2_filenames):
@@ -432,7 +424,7 @@ def randomize_mol2_residue_names(mol2_filenames):
 
 def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     """For a specified molecule file, return a list of functional groups as assigned by checkmol for the molecule(s) present. The first entry in the list will correspond to the groups in the first molecule, the second gives groups in the second (if present) and so on. Raises an exception if checkmol is not found.
- 
+
     Parameters
     ----------
     molecule_filename : str
@@ -450,8 +442,8 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     This should properly handle single-molecule and multiple-molecule files; however, multiple-conformer files may result in each conformer appearing (rather than each molecule) appearing in the list of descriptors, which may or may not be the expected behavior.
     """
 
-    oechem = import_("openeye.oechem") 
- 
+    oechem = import_("openeye.oechem")
+
     status = find_executable( executable_name )
     if status==None:
         raise(ValueError("Cannot find checkmol; cannot assign checkmol descriptors without it."))
@@ -463,7 +455,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
     mol = oechem.OEGraphMol( )
 
     #Set up temporary file for molecule output
-    fname = tempfile.mktemp( suffix = '.sdf' ) 
+    fname = tempfile.mktemp( suffix = '.sdf' )
 
     #Storage for descriptors
     descriptors = []
@@ -480,7 +472,7 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
         groups = groups.split('\n')
         #Store results
         descriptors.append( groups )
- 
+
     #Raise an exception if the whole list is empty
     fnd = False
     for elem in descriptors:
@@ -491,10 +483,10 @@ def get_checkmol_descriptors( molecule_filename, executable_name = 'checkmol' ):
 
     #Delete temporary file
     os.remove( fname )
- 
+
     return descriptors
 
-def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, precision = None): 
+def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro = None, precision = None):
     """Use ParmEd to convert AMBER prmtop and crd files to GROMACS format.
 
     Requires
@@ -530,7 +522,7 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
     """
     #Create output file names if needed
     if out_top is None:
-        out_top = "%s.top" % molecule_name        
+        out_top = "%s.top" % molecule_name
     if out_gro is None:
         out_gro = "%s.gro" % molecule_name
 
@@ -547,10 +539,9 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
     gromacs_topology = parmed.gromacs.GromacsTopologyFile.from_structure( structure )
     #Write
     parmed.gromacs.GromacsTopologyFile.write( gromacs_topology, out_top )
-    if precision == None:    
+    if precision == None:
         parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro )
     else:
         parmed.gromacs.GromacsGroFile.write( gromacs_topology, out_gro, precision = precision )
 
     return out_top, out_gro
-

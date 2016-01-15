@@ -22,7 +22,7 @@ before_install:
   - export PYTHONUNBUFFERED=true
   - echo $TRAVIS_SECURE_ENV_VARS
   # Unpack encrypted OpenEye license file
-  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_82d3518ff79e_key -iv $encrypted_82d3518ff79e_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_751d8ffa39c6_key -iv $encrypted_751d8ffa39c6_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
   - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
 
 install:
@@ -37,7 +37,7 @@ script:
   # Install package prerequisites
   - conda install --yes --quiet pip nose nose-timer
   - conda config --add channels https://conda.anaconda.org/rdkit
-  - conda install --yes --quiet packmol
+  - conda install --yes --quiet packmol rdkit
   - pip install $OPENEYE_CHANNEL openeye-toolkits
   # Test the package
   - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a '!slow' && cd ..
@@ -46,12 +46,12 @@ env:
   matrix:
     # OpenEye production
     - python=2.7  CONDA_PY=27  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
-    - python=3.3  CONDA_PY=33  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
     - python=3.4  CONDA_PY=34  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - python=3.5  CONDA_PY=35  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
     # OpenEye beta
     - python=2.7  CONDA_PY=27  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
-    - python=3.3  CONDA_PY=33  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
     - python=3.4  CONDA_PY=34  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - python=3.5  CONDA_PY=35  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
 
   global:
     - ORGNAME="omnia"
