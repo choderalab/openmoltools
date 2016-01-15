@@ -339,48 +339,46 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     with mdtraj.utils.enter_temp_directory():
         shutil.copy( input_filename, 'in.mol2' )
 
+        # Run antechamber.
         cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2"
         if charge_method is not None:
             cmd += ' -c %s' % charge_method
-
         if net_charge is not None:
             cmd += ' -nc %d' % net_charge
-
         logger.debug(cmd)
-
-        output = getoutput(cmd)
+        (status, output) = getstatusoutput(cmd)
         if not os.path.exists('out.mol2'):
             msg  = "antechamber failed to produce output mol2 file\n"
             msg += "command: %s\n" % cmd
             msg += "output:\n"
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += output
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += "input mol2:\n"
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += read_file_contents('in.mol2')
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             raise Exception(msg)
         logger.debug(output)
 
+        # Run parmchk.
         cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        logger.debug(cmd)
+        (status, output) = getstatusoutput(cmd)
         if not os.path.exists('out.frcmod'):
             msg  = "parmchk2 failed to produce output frcmod file\n"
             msg += "command: %s\n" % cmd
             msg += "output:\n"
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += output
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += "input mol2:\n"
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             msg += read_file_contents('in.mol2')
-            msg += 8 * "----------\n"
+            msg += 8 * "----------" + '\n'
             raise Exception(msg)
-        logger.debug(cmd)
-
-        output = getoutput(cmd)
         logger.debug(output)
-        check_for_errors( output  )
+        check_for_errors(output)
 
         #Copy back
         shutil.copy( 'out.mol2', gaff_mol2_filename )
