@@ -7,7 +7,7 @@ from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 import mdtraj.utils
 
-from openmoltools.utils import getoutput, getstatusoutput
+from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
@@ -346,7 +346,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         if net_charge is not None:
             cmd += ' -nc %d' % net_charge
         logger.debug(cmd)
-        (status, output) = getstatusoutput(cmd)
+        output = getoutput(cmd)
         if not os.path.exists('out.mol2'):
             msg  = "antechamber failed to produce output mol2 file\n"
             msg += "command: %s\n" % cmd
@@ -364,7 +364,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         # Run parmchk.
         cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
         logger.debug(cmd)
-        (status, output) = getstatusoutput(cmd)
+        output = getoutput(cmd)
         if not os.path.exists('out.frcmod'):
             msg  = "parmchk2 failed to produce output frcmod file\n"
             msg += "command: %s\n" % cmd
