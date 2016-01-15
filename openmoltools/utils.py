@@ -317,8 +317,6 @@ def get_data_filename(relative_path):
 
     return fn
 
-
-
 def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
     """Generate an MDTraj object from a smiles string.
 
@@ -357,16 +355,10 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         AllChem.EmbedMolecule(m)
         AllChem.UFFOptimizeMolecule(m)
 
-        pdb_filename = tempfile.mktemp(suffix=".pdb")
-        Chem.MolToPDBFile(m, pdb_filename)
-
-        mol2_filename = tempfile.mktemp(suffix=".mol2")
-
-        convert_molecule(pdb_filename, mol2_filename)  # This is necessary because PDB double bonds are not handled by antechamber...
-        print(mol2_filename)
-
+        mdl_filename = tempfile.mktemp(suffix=".mdl")
+        Chem.MolToMolFile(m, mdl_filename)
         amber = import_("openmoltools.amber")
-        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mol2_filename)
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, modl_filename, format='mdl')
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)
         print(traj)

@@ -283,7 +283,8 @@ def find_gaff_dat():
 GAFF_DAT_FILENAME = find_gaff_dat()
 
 
-def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None):
+def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None,
+    input_format='mol2'):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -303,6 +304,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     frcmod_filename : str, optional, default=None
         Name of GAFF frcmod filename to output.  If None, uses local directory
         and molecule_name
+    input_format : str, optional, default='mol2'
+        Format specifier for input file to pass to antechamber.
 
     Returns
     -------
@@ -313,11 +316,6 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     """
     utils = import_("openmoltools.utils")
     ext = utils.parse_ligand_filename(input_filename)[1]
-
-    filetype = ext[1:]
-    if filetype != "mol2":
-        raise(ValueError("Must input mol2 filename"))
-
 
     if gaff_mol2_filename is None:
         gaff_mol2_filename = molecule_name + '.gaff.mol2'
@@ -337,10 +335,11 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
 
     #Use temporary directory context to do this to avoid issues with spaces in filenames, etc.
     with mdtraj.utils.enter_temp_directory():
-        shutil.copy( input_filename, 'in.mol2' )
+        local_input_filename = 'in.' + input_format
+        shutil.copy( input_filename, local_input_filename )
 
         # Run antechamber.
-        cmd = "antechamber -i in.mol2 -fi mol2 -o out.mol2 -fo mol2 -s 2"
+        cmd = "antechamber -i %(local_input_filename)s -fi %(input_format)s -o out.mol2 -fo mol2 -s 2" % vars()
         if charge_method is not None:
             cmd += ' -c %s' % charge_method
         if net_charge is not None:
@@ -356,7 +355,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             msg += 8 * "----------" + '\n'
             msg += "input mol2:\n"
             msg += 8 * "----------" + '\n'
-            msg += read_file_contents('in.mol2')
+            msg += read_file_contents(local_input_filename)
             msg += 8 * "----------" + '\n'
             raise Exception(msg)
         logger.debug(output)
@@ -374,7 +373,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             msg += 8 * "----------" + '\n'
             msg += "input mol2:\n"
             msg += 8 * "----------" + '\n'
-            msg += read_file_contents('in.mol2')
+            msg += read_file_contents('out.mol2')
             msg += 8 * "----------" + '\n'
             raise Exception(msg)
         logger.debug(output)
