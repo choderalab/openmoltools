@@ -141,7 +141,7 @@ def iupac_to_oemol(iupac_name):
     Returns
     -------
     molecule : OEMol
-        A normalized molecule with desired iupac name and one conformation generated.
+        A normalized molecule with desired iupac name.
 
     """
     oechem = import_("openeye.oechem")
@@ -158,9 +158,6 @@ def iupac_to_oemol(iupac_name):
 
     molecule = normalize_molecule(molecule)
 
-    # Generate one conformation.
-    molecule = generate_conformers(molecule, max_confs=1)
-
     return molecule
 
 def smiles_to_oemol(smiles):
@@ -174,7 +171,7 @@ def smiles_to_oemol(smiles):
     Returns
     -------
     molecule : OEMol
-        A normalized molecule with desired smiles string and one conformer generated.
+        A normalized molecule with desired smiles string.
 
     """
     oechem = import_("openeye.oechem")
@@ -185,9 +182,6 @@ def smiles_to_oemol(smiles):
         raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
 
     molecule = normalize_molecule(molecule)
-
-    # Generate one conformation.
-    molecule = generate_conformers(molecule, max_confs=1)
 
     return molecule
 

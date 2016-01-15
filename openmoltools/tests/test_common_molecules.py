@@ -35,7 +35,7 @@ def test_common_molecules():
     import openeye.oechem
     for molecule_name in molecules:
         molecule = openmoltools.openeye.iupac_to_oemol(molecule_name)
-        molecule = openmoltools.openeye.get_charges(molecule)
+        molecule = openmoltools.openeye.get_charges(molecule, keep_confs=1)
         with utils.enter_temp_directory():
             tripos_mol2_filename = 'molecule.mol2'
             molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule, tripos_mol2_filename=tripos_mol2_filename)
