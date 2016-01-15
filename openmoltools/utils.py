@@ -358,7 +358,7 @@ def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
         mdl_filename = tempfile.mktemp(suffix=".mdl")
         Chem.MolToMolFile(m, mdl_filename)
         amber = import_("openmoltools.amber")
-        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mdl_filename, format='mdl')
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, mdl_filename, input_format='mdl')
         traj = md.load(gaff_mol2_filename)
         print(gaff_mol2_filename)
         print(traj)
