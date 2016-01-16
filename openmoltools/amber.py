@@ -284,7 +284,7 @@ GAFF_DAT_FILENAME = find_gaff_dat()
 
 
 def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None,
-    input_format='mol2'):
+    input_format='mol2', resname=False):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -306,6 +306,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         and molecule_name
     input_format : str, optional, default='mol2'
         Format specifier for input file to pass to antechamber.
+    resname : bool, optional, default=False
+        Set the residue name used within output files to molecule_name
 
     Returns
     -------
@@ -344,6 +346,9 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             cmd += ' -c %s' % charge_method
         if net_charge is not None:
             cmd += ' -nc %d' % net_charge
+        if resname:
+            cmd += ' -rn %s' % molecule_name
+            
         logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.mol2'):

@@ -117,6 +117,15 @@ def test_run_antechamber():
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
 
+def test_run_antechamber_resname():
+    molecule_name = "sustiva"
+    input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
+    with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
+        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None, resname=True)
+        with open(gaff_mol2_filename, 'r') as fin:
+            fin.readline()
+            assert fin.readline().strip() == molecule_name
+                    
 def test_run_tleap():
     molecule_name = "sustiva"
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
@@ -129,4 +138,3 @@ def test_run_antechamber_charges():
     input_filename = utils.get_data_filename("chemicals/acetate/acetate.mol2")
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=-1)
-
