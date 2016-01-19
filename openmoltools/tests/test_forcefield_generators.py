@@ -5,6 +5,30 @@ import os
 from openmoltools import utils, forcefield_generators
 from simtk.openmm.app import ForceField, NoCutoff
 
+def test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=False):
+    from openeye import oechem, oeiupac
+    iupac_name = 'ibuprofen'
+    mol = oechem.OEGraphMol()
+    oeiupac.OEParseIUPACName(mol, iupac_name)
+    oechem.OEAssignAromaticFlags(mol, oechem.OEAroModelOpenEye)
+    oechem.OEAddExplicitHydrogens(mol)
+    from openmoltools.forcefield_generators import OEPerceiveBondOrdersExplicitHydrogens
+    mols = OEPerceiveBondOrdersExplicitHydrogens(mol)
+
+    if write_pdf:
+        # DEBUG
+        from openeye import oedepict
+        options = oedepict.OEReportOptions()
+        report = oedepict.OEReport(options)
+        for mol in mols:
+            oedepict.OEPrepareDepiction(mol)
+        for mol in mols:
+            cell = report.NewCell()
+            opts = oedepict.OE2DMolDisplayOptions()
+            disp = oedepict.OE2DMolDisplay(mol, opts)
+            oedepict.OERenderMolecule(cell, disp)
+        oedepict.OEWriteReport('output.pdf', report)
+
 def test_gaffResidueTemplateGenerator():
     """
     Test the GAFF residue template generator.
@@ -26,4 +50,5 @@ def test_gaffResidueTemplateGenerator():
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
     # TODO: Test energies are finite?
 
-
+if __name__ == '__main__':
+    test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=True)
