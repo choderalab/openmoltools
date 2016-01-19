@@ -1,15 +1,100 @@
+#!/usr/bin/env python
 """
 OpenMM ForceField residue template generators.
 
 """
 
+from __future__ import absolute_import
+
+import numpy as np
 import os, os.path
 from simtk.openmm.app import ForceField
 from openmoltools.amber import run_antechamber
 import parmed
-import oechem
 
-def gaffTemplateGenerator(forcefield, residue):
+def OEPerceiveBondOrdersExplicitHydrogens(mol):
+    """
+    Perceive bond order from topology and element identities rather than geometry.
+
+    Parameters
+    ----------
+    mol : OEChem.OEMol
+        Molecule whose bonds are to be perceived.
+        All bonds should be single-bonds.
+
+    """
+    from openeye import oechem
+    # Expand a tree of potential bond order assignments
+    from openeye.oechem import OEGetAtomicNum
+    maximum_atomic_valences = {
+        OEGetAtomicNum('H') : 1,
+        OEGetAtomicNum('C') : 4,
+        OEGetAtomicNum('N') : 3,
+        OEGetAtomicNum('O') : 2,
+        OEGetAtomicNum('P') : 5,
+        OEGetAtomicNum('S') : 5,
+        OEGetAtomicNum('F') : 1,
+        OEGetAtomicNum('Cl') : 1,
+        OEGetAtomicNum('Br') : 1,
+    }
+    # Determine number of bonds.
+    nbonds = len(list(mol.GetBonds()))
+    # Compute maximum atomic valences.
+    max_atom_valences = [ maximum_atomic_valences[atom.GetAtomicNum()] for atom in mol.GetAtoms() ]
+    # Determine the number of bonds impinging on each atom.
+    nbonds_per_atom = [ len(list(atom.GetBonds())) for atom in mol.GetAtoms() ]
+    # Compute maximum bond orders based on maximum atomic valence at either end of the bond.
+    max_bond_orders = [ min(
+        max_atom_valences[bond.GetBgnIdx()] - nbonds_per_atom[bond.GetBgnIdx()] + 1,
+        max_atom_valences[bond.GetEndIdx()] - nbonds_per_atom[bond.GetEndIdx()] + 1)
+            for bond in mol.GetBonds() ]
+    # Compute maximum number of possibilities we have to search.
+    max_possibilities = np.prod( np.array(max_bond_orders) )
+    print('There are %d possible bond order assignments to search.' % max_possibilities)
+
+    def select_bond_orders(index, max_bond_orders):
+        bond_orders = np.zeros([nbonds], np.int32)
+        for (bond_index, max_bond_order) in enumerate(max_bond_orders):
+            bond_orders[bond_index] = index % max_bond_order + 1
+            index = int(index/max_bond_order)
+        return bond_orders
+
+    # Create a list of bonds impinging on each atom.
+    bond_lists = [ list() for atom in mol.GetAtoms() ]
+    for (bond_index, bond) in enumerate(mol.GetBonds()):
+        bond_lists[bond.GetBgnIdx()].append(bond_index)
+        bond_lists[bond.GetEndIdx()].append(bond_index)
+
+    # Enumerate possibilities.
+    valid_bond_orders = list()
+    for index in range(max_possibilities):
+        # Set possible bond orders.
+        bond_orders = select_bond_orders(index, max_bond_orders)
+        # Compute atomic valences.
+        atom_valences = [ np.sum(bond_orders[bond_list]) for bond_list in bond_lists ]
+        # Check that maximum valences are satisfied.
+        # TODO: We also need to handle charge state variants, which may not satisfy maximum valences.
+        if np.all(np.array(atom_valences) == np.array(max_atom_valences)):
+            valid_bond_orders.append(bond_orders)
+    print('There are %d valid bond order arrangements' % len(valid_bond_orders))
+    print(valid_bond_orders)
+
+    # Reduce these to molecules.
+    valid_molecules = list()
+    for bond_orders in valid_bond_orders:
+        newmol = oechem.OEGraphMol(mol)
+        for (bond, order) in zip(newmol.GetBonds(), bond_orders):
+            bond.SetOrder(int(order))
+        oechem.OEClearAromaticFlags(newmol);
+        oechem.OEAssignAromaticFlags(newmol)
+        oechem.OEAssignFormalCharges(newmol);
+        valid_molecules.append(newmol)
+
+    # TODO: Filter molecules to return only unique ones.
+
+    return valid_molecules
+
+def gaffTemplateGenerator(forcefield, residue, structure=None):
     """
     OpenMM ForceField residue template generator for GAFF/AM1-BCC.
 
