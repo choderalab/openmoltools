@@ -5,6 +5,22 @@ import os
 from openmoltools import utils, forcefield_generators
 from simtk.openmm.app import ForceField, NoCutoff
 
+try:
+    oechem = utils.import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
+    oequacpac = utils.import_("openeye.oequacpac")
+    if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
+    oeiupac = utils.import_("openeye.oeiupac")
+    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
+    oeomega = utils.import_("openeye.oeomega")
+    if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
+    HAVE_OE = True
+    openeye_exception_message = str()
+except Exception as e:
+    HAVE_OE = False
+    openeye_exception_message = str(e)
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=False):
     from openeye import oechem, oeiupac
     iupac_name = 'ibuprofen'
@@ -28,6 +44,32 @@ def test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=False):
             disp = oedepict.OE2DMolDisplay(mol, opts)
             oedepict.OERenderMolecule(cell, disp)
         oedepict.OEWriteReport('output.pdf', report)
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_generateResidueTemplate():
+    """
+    Test GAFF residue template generation from OEMol molecules.
+    """
+    from openeye import oechem, oeiupac
+    # TODO: Test more molecules.
+    iupac_name = 'ibuprofen'
+    mol = oechem.OEGraphMol()
+    oeiupac.OEParseIUPACName(mol, iupac_name)
+    oechem.OEAssignAromaticFlags(mol, oechem.OEAroModelOpenEye)
+    oechem.OEAddExplicitHydrogens(mol)
+    # Generate an ffxml residue template.
+    from openmoltools.forcefield_generators import generateResidueTemplate
+    [template, ffxml] = generateResidueTemplate(mol)
+    # Create a ForceField object.
+    forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
+    # Add the additional parameters and template to the forcefield.
+    forcefield.registerResidueTemplate(template)
+    forcefield.load_file(StringIO(ffxml))
+    # Create a Topology from the molecule.
+    from openmoltools.forcefield_generators import generateOpenMMTopology
+    topology = generateOpenMMTopology(molecule)
+    # Parameterize system.
+    system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
 
 def test_gaffResidueTemplateGenerator():
     """
