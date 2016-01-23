@@ -14,7 +14,7 @@ from openmoltools.openeye import get_charges
 from simtk.openmm.app.element import Element
 import parmed
 
-def OEPerceiveBondOrdersExplicitHydrogens(mol):
+def PerceiveBondOrdersExplicitHydrogens(mol):
     """
     Perceive bond order from topology and element identities rather than geometry.
 
@@ -95,6 +95,42 @@ def OEPerceiveBondOrdersExplicitHydrogens(mol):
     # TODO: Filter molecules to return only unique ones.
 
     return valid_molecules
+
+def generateTopologyFromOEMol(molecule):
+    """
+    Generate an OpenMM Topology object from an OEMol molecule.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEMol
+        The molecule from which a Topology object is to be generated.
+
+    Returns
+    -------
+    topology : simtk.openmm.app.Topology
+        The Topology object generated from `molecule`.
+
+    """
+    from simtk.openmm.app import Topology
+    topology = Topology()
+    chain = topology.addChain()
+    resname = molecule.GetTitle()
+    residue = topology.addResidue(resname)
+
+    # Create atoms.
+    for atom in molecule.GetAtoms():
+        name = atom.GetName()
+        element = Element.getByAtomicNumber(atom.GetAtomicNum())
+        atom = topology.addAtom(name, element, residue)
+
+    # Index atoms.
+    atoms = { atom : atom.name for atom in topology.atoms() }
+
+    # Create bonds.
+    for bond in molecule.GetBonds():
+        topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()])
+
+    return topology
 
 def generateResidueTemplate(molecule, residue_atoms=None):
     """

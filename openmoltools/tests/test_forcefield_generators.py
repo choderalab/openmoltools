@@ -20,16 +20,19 @@ except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
-def test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=False):
+def createOEMolFromIUPAC(iupac_name='ibuprofen'):
     from openeye import oechem, oeiupac
-    iupac_name = 'ibuprofen'
     mol = oechem.OEGraphMol()
     oeiupac.OEParseIUPACName(mol, iupac_name)
     oechem.OEAssignAromaticFlags(mol, oechem.OEAroModelOpenEye)
     oechem.OEAddExplicitHydrogens(mol)
-    from openmoltools.forcefield_generators import OEPerceiveBondOrdersExplicitHydrogens
-    mols = OEPerceiveBondOrdersExplicitHydrogens(mol)
+    return mol
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_PerceiveBondOrdersExplicitHydrogens(write_pdf=False):
+    molecule = createOEMolFromIUPAC('ibuprofen')
+    from openmoltools.forcefield_generators import PerceiveBondOrdersExplicitHydrogens
+    mols = PerceiveBondOrdersExplicitHydrogens(mol)
 
     if write_pdf:
         # DEBUG
@@ -44,6 +47,19 @@ def test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=False):
             disp = oedepict.OE2DMolDisplay(mol, opts)
             oedepict.OERenderMolecule(cell, disp)
         oedepict.OEWriteReport('output.pdf', report)
+
+import unittest
+class TestForceFieldGenerators(unittest.TestCase):
+    @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+    def test_generateTopologyFromOEMol():
+        from openeye import oechem, oeiupac
+        molecule = createOEMolFromIUPAC('ibuprofen')
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        topology = generateTopologyFromOEMol()
+        assertEqual(len(topology.atoms()), len(molecule.GetAtoms()))
+        assertEqual(topology.residues()[0].name, molecule.GetTitle())
+        for (top_atom, mol_atom) in zip(topology.atoms(), molecule.GetAtoms()):
+            assertEqual(top_atom.name, mol_atom.GetName())
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generateResidueTemplate():
@@ -93,4 +109,4 @@ def test_gaffResidueTemplateGenerator():
     # TODO: Test energies are finite?
 
 if __name__ == '__main__':
-    test_OEPerceiveBondOrdersExplicitHydrogens(write_pdf=True)
+    test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)
