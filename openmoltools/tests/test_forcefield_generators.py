@@ -50,25 +50,24 @@ def createOEMolFromIUPAC(iupac_name='ibuprofen'):
 
     return mol
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
-def disable_PerceiveBondOrdersExplicitHydrogens(write_pdf=False):
-    molecule = createOEMolFromIUPAC('ibuprofen')
-    from openmoltools.forcefield_generators import PerceiveBondOrdersExplicitHydrogens
-    mols = PerceiveBondOrdersExplicitHydrogens(molecule)
+#@unittest.skipIf(os.getenv('AMBERHOME') is None, 'Cannot test w/out Amber')
+def testWriteXMLParametersGAFF():
+    """ Test writing XML parameters loaded from Amber GAFF parameter files """
 
-    if write_pdf:
-        # DEBUG
-        from openeye import oedepict
-        options = oedepict.OEReportOptions()
-        report = oedepict.OEReport(options)
-        for mol in mols:
-            oedepict.OEPrepareDepiction(mol)
-        for mol in mols:
-            cell = report.NewCell()
-            opts = oedepict.OE2DMolDisplayOptions()
-            disp = oedepict.OE2DMolDisplay(mol, opts)
-            oedepict.OERenderMolecule(cell, disp)
-        oedepict.OEWriteReport('output.pdf', report)
+    # Generate ffxml file contents for parmchk-generated frcmod output.
+    leaprc = StringIO("parm = loadamberparams gaff.dat")
+    import parmed
+    params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    citations = """\
+Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and bond type perception in molecular mechanical calculations". Journal of Molecular Graphics and Modelling , 25, 2006, 247260.
+Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development and testing of a general AMBER force field". Journal of Computational Chemistry, 25, 2004, 1157-1174.
+"""
+    ffxml = str()
+    provenance=dict(OriginalFile='gaff.dat', Reference=citations)
+    outfile = open('gaff.xml', 'w')
+    params.write(outfile, provenance=provenance)
+    outfile.close()
 
 class TestForceFieldGenerators(unittest.TestCase):
     @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
@@ -120,14 +119,14 @@ def test_generateResidueTemplate():
     forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
     # Add the additional parameters and template to the forcefield.
     forcefield.registerResidueTemplate(template)
-    forcefield.load_file(StringIO(ffxml))
+    forcefield.loadFile(StringIO(ffxml))
     # Create a Topology from the molecule.
     from openmoltools.forcefield_generators import generateOpenMMTopology
     topology = generateOpenMMTopology(molecule)
     # Parameterize system.
     system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
 
-def disable_gaffResidueTemplateGenerator():
+def test_gaffResidueTemplateGenerator():
     """
     Test the GAFF residue template generator.
     """
@@ -138,7 +137,7 @@ def disable_gaffResidueTemplateGenerator():
 
     # Load the PDB file.
     from simtk.openmm.app import PDBFile
-    pdb_filename = utils.get_data_filename("chemicals/proteins/T4-lysozyme-L99A-p-xylene-implicit.pdb")
+    pdb_filename = utils.get_data_filename("chemicals/imatinib/imatinib.pdb")
     pdb = PDBFile(pdb_filename)
     # Create a ForceField object.
     forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
@@ -149,24 +148,6 @@ def disable_gaffResidueTemplateGenerator():
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
     # TODO: Test energies are finite?
 
-#@unittest.skipIf(os.getenv('AMBERHOME') is None, 'Cannot test w/out Amber')
-def testWriteXMLParametersGAFF():
-    """ Test writing XML parameters loaded from Amber GAFF parameter files """
-
-    # Generate ffxml file contents for parmchk-generated frcmod output.
-    leaprc = StringIO("parm = loadamberparams gaff.dat")
-    import parmed
-    params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
-    citations = """\
-Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and bond type perception in molecular mechanical calculations". Journal of Molecular Graphics and Modelling , 25, 2006, 247260.
-Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development and testing of a general AMBER force field". Journal of Computational Chemistry, 25, 2004, 1157-1174.
-"""
-    ffxml = str()
-    provenance=dict(OriginalFile='gaff.dat', Reference=citations)
-    outfile = open('gaff.xml', 'w')
-    params.write(outfile, provenance=provenance)
-    outfile.close()
 
 if __name__ == '__main__':
     #test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)
