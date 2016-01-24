@@ -7,12 +7,16 @@ OpenMM ForceField residue template generators.
 from __future__ import absolute_import
 
 import numpy as np
-import os, os.path
+import os, os.path, sys
 from simtk.openmm.app import ForceField
 from openmoltools.amber import run_antechamber
 from openmoltools.openeye import get_charges
 from simtk.openmm.app.element import Element
 import parmed
+if sys.version_info >= (3, 0):
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 def PerceiveBondOrdersExplicitHydrogens(mol):
     """
@@ -23,6 +27,13 @@ def PerceiveBondOrdersExplicitHydrogens(mol):
     mol : OEChem.OEMol
         Molecule whose bonds are to be perceived.
         All bonds should be single-bonds.
+
+    Returns
+    -------
+    valid_molecules : list of OEMol
+        List of molecules with valid combinations of bond orders.
+
+    # TODO: This should be replaced by a call out to Antechamber `bondtype`
 
     """
     from openeye import oechem
@@ -79,7 +90,7 @@ def PerceiveBondOrdersExplicitHydrogens(mol):
         if np.all(np.array(atom_valences) == np.array(max_atom_valences)):
             valid_bond_orders.append(bond_orders)
     print('There are %d valid bond order arrangements' % len(valid_bond_orders))
-    print(valid_bond_orders)
+    #print(valid_bond_orders)
 
     # Reduce these to molecules.
     valid_molecules = list()
@@ -111,26 +122,120 @@ def generateTopologyFromOEMol(molecule):
         The Topology object generated from `molecule`.
 
     """
+    # Create a Topology object with one Chain and one Residue.
     from simtk.openmm.app import Topology
     topology = Topology()
     chain = topology.addChain()
     resname = molecule.GetTitle()
-    residue = topology.addResidue(resname)
+    residue = topology.addResidue(resname, chain)
 
-    # Create atoms.
+    # Create atoms in the residue.
     for atom in molecule.GetAtoms():
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
         atom = topology.addAtom(name, element, residue)
 
-    # Index atoms.
-    atoms = { atom : atom.name for atom in topology.atoms() }
-
     # Create bonds.
+    atoms = { atom.name : atom for atom in topology.atoms() }
     for bond in molecule.GetBonds():
         topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()])
 
     return topology
+
+def generateOEMolFromTopologyResidue(residue):
+    """
+    Generate an OpenEye OEMol molecule from an OpenMM Topology Residue.
+
+    Parameters
+    ----------
+    residue : simtk.openmm.app.topology.Residue
+        The topology Residue from which an OEMol is to be created.
+        An Exception will be thrown if this residue has external bonds.
+
+    Returns
+    -------
+    molecule : openeye.oechem.OEMol
+        The OEMol molecule corresponding to the topology.
+        Atom order will be preserved and bond orders assigned.
+
+    The Antechamber `bondtype` program will be used to assign bond orders, and these
+    will be converted back into OEMol bond type assignments.
+
+    """
+    # Raise an Exception if this residue has external bonds.
+    if len(list(residue.external_bonds())) > 0:
+        raise Exception("Cannot generate an OEMol from residue '%s' because it has external bonds." % residue.name)
+
+    from openeye import oechem
+    # Create OEMol where all atoms have bond order 1.
+    molecule = oechem.OEGraphMol()
+    molecule.SetTitle(residue.name) # name molecule after first residue
+    for atom in residue.atoms():
+        oeatom = molecule.NewAtom(atom.element.atomic_number)
+        oeatom.SetName(atom.name)
+    oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
+    for (atom1, atom2) in residue.bonds():
+        order = 1
+        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+
+    # Write out a mol2 file without altering molecule.
+    mol2_input_filename = 'molecule-before-bond-perception.mol2'
+    mol2_output_filename = 'molecule-after-bond-perception.mol2'
+    ofs = oechem.oemolostream(mol2_input_filename)
+    m2h = True
+    substruct = True
+    oechem.OEWriteMol2File(ofs, molecule, m2h, substruct)
+    ofs.close()
+
+    # Run Antechamber bondtype
+    import subprocess
+    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, mol2_output_filename)
+    print(command)
+    status = subprocess.call(command, shell=True)
+
+    # Read mol2 file.
+    molecule2 = oechem.OEGraphMol()
+    ifs = oechem.oemolistream(mol2_output_filename)
+    oechem.OEReadMol2File(ifs, molecule2, m2h)
+    ifs.close()
+
+    # Define mapping from GAFF bond orders to OpenEye bond orders.
+    order_map = { 1 : 1, 2 : 2, 3: 3, 4 : 5, 5: 5, 6 : 5, 7: 5}
+
+    # Copy over bond orders.
+    print""
+    print("Copying bond orders...")
+    #oechem.OEClearAromaticFlags(molecule)
+    print len(list(molecule.GetBonds()))
+    print len(list(molecule2.GetBonds()))
+    for (bond1, bond2) in zip(molecule.GetBonds(), molecule2.GetBonds()):
+        print bond2.GetOrder()
+        bond1.SetOrder(order_map[bond2.GetOrder()])
+    print("Assining aromatic flags...")
+    oechem.OEAssignAromaticFlags(molecule)
+
+    # Assign Tripos atom types.
+    print("Assigning Tripos type names...")
+    oechem.OETriposAtomTypeNames(molecule)
+    print("Assigning Tripos bond type names...")
+    oechem.OETriposBondTypeNames(molecule)
+
+    ofs = oechem.oemolostream('out.mol2')
+    oechem.OEWriteMol2File(ofs, molecule, m2h)
+    ofs.close()
+
+    # Assign geometry
+    print("Assigning geometry...")
+    from openeye import oeomega
+    molecule = oechem.OEMol(molecule)
+    omega = oeomega.OEOmega()
+    omega.SetMaxConfs(1)
+    omega.SetIncludeInput(False)
+    omega.SetStrictStereo(False)
+    omega(molecule)
+    print("Done.")
+
+    return molecule
 
 def generateResidueTemplate(molecule, residue_atoms=None):
     """
@@ -157,10 +262,12 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     """
     # Generate a unique residue template name to avoid namespace collisions.
     # TODO: Can we come up with a more intelligent name?
-    from uuid import uuid4
-    template_name = uuid4()
+    #from uuid import uuid4
+    #template_name = str(uuid4())
+    template_name = molecule.GetTitle()
 
     # Compute net formal charge.
+    from openeye import oechem
     oechem.OEAssignFormalCharges(molecule)
     charges = [ atom.GetFormalCharge() for atom in molecule.GetAtoms() ]
     net_charge = np.array(charges).sum()
@@ -177,7 +284,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     frcmod_filename = os.path.join(tmpdir, template_name + '.frcmod')
 
     # Write Tripos mol2 file as antechamber input.
-    ofs = oemolostream(input_mol2_filename)
+    ofs = oechem.oemolostream(input_mol2_filename)
     oechem.OEWriteMolecule(ofs, molecule)
     ofs.close()
 
@@ -187,9 +294,9 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     # Read the resulting GAFF mol2 file as a ParmEd structure.
     #structure = parmed.load_file(gaff_mol2_filename)
     #structure_atoms = { atom.name : atom for atom in structure.atoms }
-    ifs = oemolistream(gaff_mol2_filename)
-    ifs.SetFlavor(oechem.OEFormat_MOL2H, oechem.OEIFlavor_MOL2)
-    oechem.OEReadMolecule(ifs, molecule)
+    ifs = oechem.oemolistream(gaff_mol2_filename)
+    m2h = True
+    oechem.OEReadMol2File(ifs, molecule, m2h)
     ifs.close()
 
     # If residue_atoms = None, add all atoms to the residues
@@ -199,7 +306,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     # Modify partial charges so that charge on residue atoms is integral.
     residue_charge = 0.0
     for atom in residue_atoms:
-        partial_charge += atom.GetPartialCharge()
+        residue_charge += atom.GetPartialCharge()
     factor = net_charge / residue_charge
     for atom in residue_atoms:
         atom.SetPartialCharge( factor * atom.GetPartialCharge() )
@@ -228,10 +335,25 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     leaprc = StringIO("parm = loadamberparams %s" % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
-    ffxml = ""
+    ffxml = StringIO()
     params.write(ffxml)
 
     return template, ffxml
+
+def createStructureFromResidue(residue):
+    # Create ParmEd structure for residue.
+    structure = parmed.Structure()
+    for a in residue.atoms():
+        if a.element is None:
+            atom = parmed.ExtraPoint(name=a.name)
+        else:
+            atom = parmed.Atom(atomic_number=a.element.atomic_number, name=a.name, mass=a.element.mass)
+        structure.add_atom(atom, residue.name, residue.index, 'A')
+        atommap[a] = atom
+    for a1, a2 in topology.bonds():
+        structure.bonds.append(Bond(atommap[a1], atommap[a2]))
+
+    return structure
 
 def gaffTemplateGenerator(forcefield, residue, structure=None):
     """
@@ -262,20 +384,9 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
 
     # Generate a unique residue template name to avoid namespace collisions.
     # TODO: Can we come up with a more intelligent name?
-    from uuid import uuid4
-    template_name = uuid4()
-
-    # Create ParmEd structure for residue.
-    #structure = parmed.Structure()
-    #for a in residue.atoms():
-    #    if a.element is None:
-    #        atom = parmed.ExtraPoint(name=a.name)
-    #    else:
-    #        atom = parmed.Atom(atomic_number=a.element.atomic_number, name=a.name, mass=a.element.mass)
-    #    struct.add_atom(atom, residue.name, residue.index, 'A')
-    #    atommap[a] = atom
-    #for a1, a2 in topology.bonds():
-    #    struct.bonds.append(Bond(atommap[a1], atommap[a2]))
+    #from uuid import uuid4
+    #template_name = str(uuid4())
+    template_name = residue.name
 
     # Create an OpenEye molecule.
     from openeye import oechem
@@ -299,7 +410,7 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
 
     # Compute net formal charge.
     net_charge = 0.0
-    for oeatom in oeatoms:
+    for oeatom in mol.GetAtoms():
         net_charge += oeatom.GetFormalCharge()
 
     # Parameterize molecule using antechamber.
@@ -324,7 +435,7 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
     mol = get_charges(mol, strictStereo=False, keep_confs=1)
 
     # Write the Tripos mol2 file.
-    ofs = oemolostream(input_mol2_filename)
+    ofs = oechem.oemolostream(input_mol2_filename)
     oechem.OEWriteMolecule(ofs, mol)
     ofs.close()
 
