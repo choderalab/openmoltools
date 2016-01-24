@@ -180,7 +180,7 @@ def generateOEMolFromTopologyResidue(residue):
 
     # Write out a mol2 file without altering molecule.
     mol2_input_filename = 'molecule-before-bond-perception.mol2'
-    mol2_output_filename = 'molecule-after-bond-perception.mol2'
+    ac_output_filename = 'molecule-after-bond-perception.ac'
     ofs = oechem.oemolostream(mol2_input_filename)
     m2h = True
     substruct = True
@@ -189,30 +189,35 @@ def generateOEMolFromTopologyResidue(residue):
 
     # Run Antechamber bondtype
     import subprocess
-    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, mol2_output_filename)
+    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
     print(command)
     status = subprocess.call(command, shell=True)
+    print("")
 
     # Read mol2 file.
-    molecule2 = oechem.OEGraphMol()
-    ifs = oechem.oemolistream(mol2_output_filename)
-    oechem.OEReadMol2File(ifs, molecule2, m2h)
-    ifs.close()
+    #molecule2 = oechem.OEGraphMol()
+    #ifs = oechem.oemolistream(mol2_output_filename)
+    #oechem.OEReadMol2File(ifs, molecule2, m2h)
+    #ifs.close()
 
-    # Define mapping from GAFF bond orders to OpenEye bond orders.
-    order_map = { 1 : 1, 2 : 2, 3: 3, 4 : 5, 5: 5, 6 : 5, 7: 5}
-
-    # Copy over bond orders.
-    print""
     print("Copying bond orders...")
-    #oechem.OEClearAromaticFlags(molecule)
-    print len(list(molecule.GetBonds()))
-    print len(list(molecule2.GetBonds()))
-    for (bond1, bond2) in zip(molecule.GetBonds(), molecule2.GetBonds()):
-        print bond2.GetOrder()
-        bond1.SetOrder(order_map[bond2.GetOrder()])
+    # Define mapping from GAFF bond orders to OpenEye bond orders.
+    order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8: 2, 9 : 5, 10 : 5 }
+    # Read bonds.
+    infile = open(ac_output_filename)
+    lines = infile.readlines()
+    infile.close()
+    antechamber_bond_types = list()
+    for line in lines:
+        elements = line.split()
+        if elements[0] == 'BOND':
+            antechamber_bond_types.append(int(elements[4]))
+    for (bond, antechamber_bond_type) in zip(molecule.GetBonds(), antechamber_bond_types):
+        bond.SetOrder(order_map[antechamber_bond_type])
+
     print("Assining aromatic flags...")
-    oechem.OEAssignAromaticFlags(molecule)
+    oechem.OEClearAromaticFlags(molecule)
+    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     # Assign Tripos atom types.
     print("Assigning Tripos type names...")
@@ -220,8 +225,20 @@ def generateOEMolFromTopologyResidue(residue):
     print("Assigning Tripos bond type names...")
     oechem.OETriposBondTypeNames(molecule)
 
+    # Render molecule
+    from openeye import oedepict
+    oedepict.OEPrepareDepiction(molecule)
+    opts = oedepict.OE2DMolDisplayOptions()
+    opts.SetAromaticStyle(oedepict.OEAromaticStyle_Circle)
+    disp = oedepict.OE2DMolDisplay(molecule, opts)
+    pdf_filename = 'out.pdf'
+    ofs = oechem.oeofstream(pdf_filename)
+    oedepict.OERenderMolecule(ofs, 'pdf', disp)
+    ofs.close()
+
     ofs = oechem.oemolostream('out.mol2')
     oechem.OEWriteMol2File(ofs, molecule, m2h)
+    #oechem.OEWriteMolecule(ofs, molecule)
     ofs.close()
 
     # Assign geometry
