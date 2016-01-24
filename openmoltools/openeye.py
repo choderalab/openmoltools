@@ -129,7 +129,6 @@ def normalize_molecule(molecule):
 
     return molcopy
 
-
 def iupac_to_oemol(iupac_name):
     """Create a OEMolBuilder from a iupac name.
 

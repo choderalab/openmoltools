@@ -225,22 +225,6 @@ def generateOEMolFromTopologyResidue(residue):
     print("Assigning Tripos bond type names...")
     oechem.OETriposBondTypeNames(molecule)
 
-    # Render molecule
-    from openeye import oedepict
-    oedepict.OEPrepareDepiction(molecule)
-    opts = oedepict.OE2DMolDisplayOptions()
-    opts.SetAromaticStyle(oedepict.OEAromaticStyle_Circle)
-    disp = oedepict.OE2DMolDisplay(molecule, opts)
-    pdf_filename = 'out.pdf'
-    ofs = oechem.oeofstream(pdf_filename)
-    oedepict.OERenderMolecule(ofs, 'pdf', disp)
-    ofs.close()
-
-    ofs = oechem.oemolostream('out.mol2')
-    oechem.OEWriteMol2File(ofs, molecule, m2h)
-    #oechem.OEWriteMolecule(ofs, molecule)
-    ofs.close()
-
     # Assign geometry
     print("Assigning geometry...")
     from openeye import oeomega
@@ -312,9 +296,12 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     #structure = parmed.load_file(gaff_mol2_filename)
     #structure_atoms = { atom.name : atom for atom in structure.atoms }
     ifs = oechem.oemolistream(gaff_mol2_filename)
+    ifs.SetFlavor(oechem.OEFormat_MOL2, oechem.OEIFlavor_MOL2_DEFAULT | oechem.OEIFlavor_MOL2_M2H | oechem.OEIFlavor_MOL2_Forcefield)
     m2h = True
-    oechem.OEReadMol2File(ifs, molecule, m2h)
+    #oechem.OEReadMol2File(ifs, molecule, m2h)
+    oechem.OEReadMolecule(ifs, molecule)
     ifs.close()
+
 
     # If residue_atoms = None, add all atoms to the residues
     if residue_atoms == None:
