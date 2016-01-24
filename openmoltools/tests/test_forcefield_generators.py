@@ -25,7 +25,7 @@ except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
 
-IUPAC_molecule_names = ['imatinib', 'ibuprofen', 'aspirin', 'imatinib']
+IUPAC_molecule_names = ['ibuprofen', 'aspirin', 'imatinib', 'bosutinib']
 def createOEMolFromIUPAC(iupac_name='ibuprofen'):
     from openeye import oechem, oeiupac, oeomega
 

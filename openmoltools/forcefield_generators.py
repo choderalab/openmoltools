@@ -15,8 +15,10 @@ from simtk.openmm.app.element import Element
 import parmed
 if sys.version_info >= (3, 0):
     from io import StringIO
+    from subprocess import getstatusoutput
 else:
     from cStringIO import StringIO
+    from commands import getstatusoutput
 
 def PerceiveBondOrdersExplicitHydrogens(mol):
     """
@@ -179,8 +181,10 @@ def generateOEMolFromTopologyResidue(residue):
         molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
 
     # Write out a mol2 file without altering molecule.
-    mol2_input_filename = 'molecule-before-bond-perception.mol2'
-    ac_output_filename = 'molecule-after-bond-perception.ac'
+    import tempfile
+    tmpdir = tempfile.mkdtemp()
+    mol2_input_filename = os.path.join(tmpdir,'molecule-before-bond-perception.mol2')
+    ac_output_filename = os.path.join(tmpdir,'molecule-after-bond-perception.ac')
     ofs = oechem.oemolostream(mol2_input_filename)
     m2h = True
     substruct = True
@@ -190,17 +194,8 @@ def generateOEMolFromTopologyResidue(residue):
     # Run Antechamber bondtype
     import subprocess
     command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
-    print(command)
-    status = subprocess.call(command, shell=True)
-    print("")
+    [status, output] = getstatusoutput(command)
 
-    # Read mol2 file.
-    #molecule2 = oechem.OEGraphMol()
-    #ifs = oechem.oemolistream(mol2_output_filename)
-    #oechem.OEReadMol2File(ifs, molecule2, m2h)
-    #ifs.close()
-
-    print("Copying bond orders...")
     # Define mapping from GAFF bond orders to OpenEye bond orders.
     order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8: 2, 9 : 5, 10 : 5 }
     # Read bonds.
@@ -215,18 +210,23 @@ def generateOEMolFromTopologyResidue(residue):
     for (bond, antechamber_bond_type) in zip(molecule.GetBonds(), antechamber_bond_types):
         bond.SetOrder(order_map[antechamber_bond_type])
 
-    print("Assining aromatic flags...")
+    # Clean up.
+    os.unlink(mol2_input_filename)
+    os.unlink(ac_output_filename)
+    os.rmdir(tmpdir)
+
+    # Set aromaticity.
+    # TODO: Is this necessary?
     oechem.OEClearAromaticFlags(molecule)
     oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     # Assign Tripos atom types.
-    print("Assigning Tripos type names...")
+    # TODO: Is this necessary?
     oechem.OETriposAtomTypeNames(molecule)
-    print("Assigning Tripos bond type names...")
     oechem.OETriposBondTypeNames(molecule)
 
     # Assign geometry
-    print("Assigning geometry...")
+    # TODO: Is this necessary?
     from openeye import oeomega
     molecule = oechem.OEMol(molecule)
     omega = oeomega.OEOmega()
@@ -234,7 +234,6 @@ def generateOEMolFromTopologyResidue(residue):
     omega.SetIncludeInput(False)
     omega.SetStrictStereo(False)
     omega(molecule)
-    print("Done.")
 
     return molecule
 
