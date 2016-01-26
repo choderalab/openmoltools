@@ -62,6 +62,6 @@ setup(name='openmoltools',
       zip_safe=False,
       scripts=['scripts/generate_example_data.py', 'scripts/processAmberForceField.py'],
       ext_modules=extensions,
-      package_data={'openmoltools': ['chemicals/*/*']},  # Install all data directories of the form testsystems/data/X/      
+      package_data={'openmoltools': ['chemicals/*/*', 'parameters/*']},  # Install all data directories of the form testsystems/data/X/
       **setup_kwargs
       )

@@ -74,6 +74,9 @@ def generateOEMolFromTopologyResidue(residue):
     The Antechamber `bondtype` program will be used to assign bond orders, and these
     will be converted back into OEMol bond type assignments.
 
+    Note that there is no way to preserve stereochemistry since `Residue` does
+    not note stereochemistry in any way.
+
     """
     # Raise an Exception if this residue has external bonds.
     if len(list(residue.external_bonds())) > 0:
@@ -101,10 +104,10 @@ def generateOEMolFromTopologyResidue(residue):
     substruct = False
     oechem.OEWriteMol2File(ofs, molecule, m2h, substruct)
     ofs.close()
-
     # Run Antechamber bondtype
     import subprocess
-    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
+    #command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
+    command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
     [status, output] = getstatusoutput(command)
 
     # Define mapping from GAFF bond orders to OpenEye bond orders.
@@ -142,7 +145,7 @@ def generateOEMolFromTopologyResidue(residue):
     omega = oeomega.OEOmega()
     omega.SetMaxConfs(1)
     omega.SetIncludeInput(False)
-    omega.SetStrictStereo(True)
+    omega.SetStrictStereo(False)
     omega(molecule)
 
     return molecule

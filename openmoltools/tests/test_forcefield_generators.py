@@ -25,8 +25,8 @@ except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
 
-IUPAC_molecule_names = ['ibuprofen', 'aspirin', 'imatinib', 'bosutinib']
-def createOEMolFromIUPAC(iupac_name='ibuprofen'):
+IUPAC_molecule_names = ['naproxen', 'aspirin', 'imatinib', 'bosutinib']
+def createOEMolFromIUPAC(iupac_name='bosutinib'):
     from openeye import oechem, oeiupac, oeomega
 
     # Create molecule.
@@ -45,7 +45,7 @@ def createOEMolFromIUPAC(iupac_name='ibuprofen'):
     omega = oeomega.OEOmega()
     omega.SetMaxConfs(1)
     omega.SetIncludeInput(False)
-    omega.SetStrictStereo(False)
+    omega.SetStrictStereo(True)
     omega(mol)
 
     return mol
@@ -55,7 +55,8 @@ def testWriteXMLParametersGAFF():
     """ Test writing XML parameters loaded from Amber GAFF parameter files """
 
     # Generate ffxml file contents for parmchk-generated frcmod output.
-    leaprc = StringIO("parm = loadamberparams gaff.dat")
+    gaff_dat_filename = utils.get_data_filename("parameters/gaff.dat")
+    leaprc = StringIO("parm = loadamberparams %s" % gaff_dat_filename)
     import parmed
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
@@ -110,21 +111,39 @@ def test_generateResidueTemplate():
     Test GAFF residue template generation from OEMol molecules.
     """
     from openeye import oechem, oeiupac
-    # TODO: Test more molecules.
-    mol = createOEMolFromIUPAC('ibuprofen')
-    # Generate an ffxml residue template.
-    from openmoltools.forcefield_generators import generateResidueTemplate
-    [template, ffxml] = generateResidueTemplate(mol)
-    # Create a ForceField object.
+
+    # Test independent ForceField instances.
+    for molecule_name in IUPAC_molecule_names:
+        mol = createOEMolFromIUPAC(molecule_name)
+        # Generate an ffxml residue template.
+        from openmoltools.forcefield_generators import generateResidueTemplate
+        [template, ffxml] = generateResidueTemplate(mol)
+        # Create a ForceField object.
+        forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
+        # Add the additional parameters and template to the forcefield.
+        forcefield.registerResidueTemplate(template)
+        forcefield.loadFile(StringIO(ffxml))
+        # Create a Topology from the molecule.
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        topology = generateTopologyFromOEMol(mol)
+        # Parameterize system.
+        system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+
+    # Test adding multiple molecules to a single ForceField instance.
     forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
-    # Add the additional parameters and template to the forcefield.
-    forcefield.registerResidueTemplate(template)
-    forcefield.loadFile(StringIO(ffxml))
-    # Create a Topology from the molecule.
-    from openmoltools.forcefield_generators import generateOpenMMTopology
-    topology = generateOpenMMTopology(molecule)
-    # Parameterize system.
-    system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+    for molecule_name in IUPAC_molecule_names:
+        mol = createOEMolFromIUPAC(molecule_name)
+        # Generate an ffxml residue template.
+        from openmoltools.forcefield_generators import generateResidueTemplate
+        [template, ffxml] = generateResidueTemplate(mol)
+        # Add the additional parameters and template to the forcefield.
+        forcefield.registerResidueTemplate(template)
+        forcefield.loadFile(StringIO(ffxml))
+        # Create a Topology from the molecule.
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        topology = generateTopologyFromOEMol(mol)
+        # Parameterize system.
+        system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
 
 def test_gaffResidueTemplateGenerator():
     """
