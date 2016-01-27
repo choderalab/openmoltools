@@ -22,7 +22,7 @@ requirements:
     - openmm-dev
     - ambermini
     - pytables
-    - parmed
+    - parmed-dev # need ommparams branch
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
@@ -36,7 +36,7 @@ requirements:
     - openmm-dev
     - ambermini
     - pytables
-    - parmed
+    - parmed-dev
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
