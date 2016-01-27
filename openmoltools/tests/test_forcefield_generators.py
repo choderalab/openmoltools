@@ -3,7 +3,9 @@ import unittest
 from unittest import skipIf
 import tempfile
 import os, sys
+import numpy as np
 from openmoltools import utils, forcefield_generators
+from simtk import openmm, unit
 from simtk.openmm.app import ForceField, NoCutoff
 if sys.version_info >= (3, 0):
     from io import StringIO
@@ -50,6 +52,43 @@ def createOEMolFromIUPAC(iupac_name='bosutinib'):
 
     return mol
 
+def extractPositionsFromOEMOL(molecule):
+    positions = unit.Quantity(np.zeros([molecule.NumAtoms(), 3], np.float32), unit.angstroms)
+    coords = molecule.GetCoords()
+    for index in range(molecule.NumAtoms()):
+        positions[index,:] = unit.Quantity(coords[index], unit.angstroms)
+    return positions
+
+def check_potential_is_finite(system, positions):
+    """
+    Check that the potential energy is finite.
+
+    Parameters
+    ----------
+    system : simtk.openmm.Syste
+        System object
+    positions : simtk.unit.Quantity of (natoms,3) with units compatible with angstroms
+        positions
+
+    Returns
+    -------
+    potential : simtk.unit.Quantity
+        The potential energy.
+
+    Raises an Exception if the potential energy is not finite.
+
+    """
+    integrator = openmm.VerletIntegrator(1 * unit.femtoseconds)
+    context = openmm.Context(system, integrator)
+    context.setPositions(positions)
+    potential = context.getState(getEnergy=True).getPotentialEnergy()
+    del context, integrator
+
+    if np.isnan(potential / unit.kilojoules_per_mole):
+        raise Exception("Potential energy is infinite.")
+
+    return potential
+
 #@unittest.skipIf(os.getenv('AMBERHOME') is None, 'Cannot test w/out Amber')
 def testWriteXMLParametersGAFF():
     """ Test writing XML parameters loaded from Amber GAFF parameter files """
@@ -89,7 +128,6 @@ class TestForceFieldGenerators(unittest.TestCase):
             self.assertEqual(residues[0].name, molecule1.GetTitle())
             for (top_atom, mol_atom) in zip(topology.atoms(), molecule1.GetAtoms()):
                 self.assertEqual(top_atom.name, mol_atom.GetName())
-            # TODO: Check bonds.
             for (top_bond, mol_bond) in zip(topology.bonds(), molecule1.GetBonds()):
                 self.assertEqual(top_bond[0].name, mol_bond.GetBgn().GetName())
                 self.assertEqual(top_bond[1].name, mol_bond.GetEnd().GetName())
@@ -119,7 +157,7 @@ def test_generateResidueTemplate():
         from openmoltools.forcefield_generators import generateResidueTemplate
         [template, ffxml] = generateResidueTemplate(mol)
         # Create a ForceField object.
-        forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
+        forcefield = ForceField('gaff.xml')
         # Add the additional parameters and template to the forcefield.
         forcefield.registerResidueTemplate(template)
         forcefield.loadFile(StringIO(ffxml))
@@ -128,9 +166,12 @@ def test_generateResidueTemplate():
         topology = generateTopologyFromOEMol(mol)
         # Parameterize system.
         system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(mol)
+        check_potential_is_finite(system, positions)
 
     # Test adding multiple molecules to a single ForceField instance.
-    forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
+    forcefield = ForceField('gaff.xml')
     for molecule_name in IUPAC_molecule_names:
         mol = createOEMolFromIUPAC(molecule_name)
         # Generate an ffxml residue template.
@@ -144,6 +185,9 @@ def test_generateResidueTemplate():
         topology = generateTopologyFromOEMol(mol)
         # Parameterize system.
         system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(mol)
+        check_potential_is_finite(system, positions)
 
 def test_gaffResidueTemplateGenerator():
     """
@@ -159,14 +203,14 @@ def test_gaffResidueTemplateGenerator():
     pdb_filename = utils.get_data_filename("chemicals/imatinib/imatinib.pdb")
     pdb = PDBFile(pdb_filename)
     # Create a ForceField object.
-    forcefield = ForceField('amber99sb.xml', 'tip3p.xml', 'gaff.xml')
+    forcefield = ForceField('gaff.xml')
     # Add the residue template generator.
     from openmoltools.forcefield_generators import gaffTemplateGenerator
     forcefield.registerTemplateGenerator(gaffTemplateGenerator)
     # Parameterize system.
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
-    # TODO: Test energies are finite?
-
+    # Check potential is finite.
+    check_potential_is_finite(system, pdb.positions)
 
 if __name__ == '__main__':
     #test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)

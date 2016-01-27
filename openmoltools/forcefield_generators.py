@@ -172,6 +172,8 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     additional_parameters_ffxml : str
         Contents of ForceField `ffxml` file defining additional parameters from parmchk(2).
 
+    Note that this method preserves stereochemistry during AM1-BCC charge parameterization.
+
     """
     # Generate a unique residue template name to avoid namespace collisions.
     # TODO: Can we come up with a more intelligent name?
@@ -288,6 +290,9 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
     success : bool
         If the generator is able to successfully parameterize the residue, `True` is returned.
         If the generator cannot parameterize the residue, it should return `False` and not modify `forcefield`.
+
+    Note that there is no way to preserve stereochemistry since `Residue` does not specify stereochemistry in any way.
+    Charge fitting is therefore performed on an indeterminate stereo form.
 
     """
     # Get a list of external bonds.
