@@ -212,6 +212,24 @@ def test_gaffResidueTemplateGenerator():
     # Check potential is finite.
     check_potential_is_finite(system, pdb.positions)
 
+    #
+    # Test where we generate parameters for only a ligand in a protein.
+    #
+
+    # Load the PDB file.
+    from simtk.openmm.app import PDBFile
+    pdb_filename = utils.get_data_filename("chemicals/proteins/T4-lysozyme-L99A-p-xylene-implicit.pdb")
+    pdb = PDBFile(pdb_filename)
+    # Create a ForceField object.
+    forcefield = ForceField('amber99sb.xml', 'gaff.xml')
+    # Add the residue template generator.
+    from openmoltools.forcefield_generators import gaffTemplateGenerator
+    forcefield.registerTemplateGenerator(gaffTemplateGenerator)
+    # Parameterize system.
+    system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
+    # Check potential is finite.
+    check_potential_is_finite(system, pdb.positions)
+
 if __name__ == '__main__':
     #test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)
     unittest.main()
