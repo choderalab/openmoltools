@@ -66,3 +66,6 @@ env:
 after_success:
   - echo "after_success"
   - source devtools/travis-ci/after_success.sh
+
+notifications:
+  email: false

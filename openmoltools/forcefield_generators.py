@@ -206,12 +206,9 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
 
     # Read the resulting GAFF mol2 file as a ParmEd structure.
-    #structure = parmed.load_file(gaff_mol2_filename)
-    #structure_atoms = { atom.name : atom for atom in structure.atoms }
     ifs = oechem.oemolistream(gaff_mol2_filename)
     ifs.SetFlavor(oechem.OEFormat_MOL2, oechem.OEIFlavor_MOL2_DEFAULT | oechem.OEIFlavor_MOL2_M2H | oechem.OEIFlavor_MOL2_Forcefield)
     m2h = True
-    #oechem.OEReadMol2File(ifs, molecule, m2h)
     oechem.OEReadMolecule(ifs, molecule)
     ifs.close()
 
@@ -221,22 +218,26 @@ def generateResidueTemplate(molecule, residue_atoms=None):
 
     # Modify partial charges so that charge on residue atoms is integral.
     residue_charge = 0.0
+    sum_of_absolute_charge = 0.0
     for atom in residue_atoms:
-        residue_charge += atom.GetPartialCharge()
-    factor = net_charge / residue_charge
+        charge = atom.GetPartialCharge()
+        residue_charge += charge
+        sum_of_absolute_charge += abs(charge)
+    excess_charge = residue_charge - net_charge
+    if sum_of_absolute_charge == 0.0:
+        sum_of_absolute_charge = 1.0
     for atom in residue_atoms:
-        atom.SetPartialCharge( factor * atom.GetPartialCharge() )
+        charge = atom.GetPartialCharge()
+        atom.SetPartialCharge( charge + excess_charge * (abs(charge) / sum_of_absolute_charge) )
 
     # Create residue template.
     template = ForceField._TemplateData(template_name)
-    for atom in molecule.GetAtoms():
+    for (index, atom) in enumerate(molecule.GetAtoms()):
         atomname = atom.GetName()
         typename = atom.GetType()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
         charge = atom.GetPartialCharge()
         parameters = { 'charge' : charge }
-        #typename = structure_atoms[atomname].type # assigned GAFF atom type
-        #parameters = { 'charge' : structure_atoms[atomname].charge } # partial atomic charge
         atom_template = ForceField._TemplateAtomData(atomname, typename, element, parameters)
         template.atoms.append(atom_template)
     for bond in molecule.GetBonds():
