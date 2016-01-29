@@ -189,6 +189,7 @@ def test_generateResidueTemplate():
         positions = extractPositionsFromOEMOL(mol)
         check_potential_is_finite(system, positions)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_gaffResidueTemplateGenerator():
     """
     Test the GAFF residue template generator.
