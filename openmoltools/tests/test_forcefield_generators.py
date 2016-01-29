@@ -189,6 +189,29 @@ def test_generateResidueTemplate():
         positions = extractPositionsFromOEMOL(mol)
         check_potential_is_finite(system, positions)
 
+def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX_ALLOWED_DEVIATION=0.6):
+    """
+    """
+    import parmed as pmd
+    structure = pmd.load_file(prmtop, inpcrd)
+    prmtop_components = dict(pmd.openmm.energy_decomposition_system(structure, structure.createSystem(nonbondedMethod=NoCutoff)))
+    system_components = dict(pmd.openmm.energy_decomposition_system(structure, system))
+
+    msg  = "\n"
+    msg += "Energy components:\n"
+    test_pass = True
+    for key in prmtop_components:
+        e1 = prmtop_components[key]
+        e2 = system_components[key]
+        deviation = abs(e1-e2)
+        if (deviation > MAX_ALLOWED_DEVIATION):
+            test_pass = False
+        msg += "%20s %12.6f %12.6f : %12.6f\n" % (key, e1, e2, deviation)
+
+    if not test_pass:
+        msg += "Maximum allowed deviation (%f) exceeded.\n" % MAX_ALLOWED_DEVIATION
+        raise Exception(msg)
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_gaffResidueTemplateGenerator():
     """
@@ -212,6 +235,11 @@ def test_gaffResidueTemplateGenerator():
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
     # Check potential is finite.
     check_potential_is_finite(system, pdb.positions)
+    # Check energy matches prmtop route.
+    check_energy_components_vs_prmtop(
+        prmtop=utils.get_data_filename('chemicals/imatinib/imatinib.prmtop'),
+        inpcrd=utils.get_data_filename('chemicals/imatinib/imatinib.inpcrd'),
+        system=system)
 
     #
     # Test where we generate parameters for only a ligand in a protein.
