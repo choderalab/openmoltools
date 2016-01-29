@@ -189,7 +189,7 @@ def test_generateResidueTemplate():
         positions = extractPositionsFromOEMOL(mol)
         check_potential_is_finite(system, positions)
 
-def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX_ALLOWED_DEVIATION=0.6):
+def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX_ALLOWED_DEVIATION=5.0):
     """
     """
     import parmed as pmd
@@ -200,13 +200,17 @@ def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX
     msg  = "\n"
     msg += "Energy components:\n"
     test_pass = True
+    msg += "%20s %12s %12s : %12s" % ('component', 'prmtop (kcal/mol)', 'system (kcal/mol)', 'deviation')
     for key in prmtop_components:
         e1 = prmtop_components[key]
         e2 = system_components[key]
         deviation = abs(e1-e2)
         if (deviation > MAX_ALLOWED_DEVIATION):
             test_pass = False
-        msg += "%20s %12.6f %12.6f : %12.6f\n" % (key, e1, e2, deviation)
+        msg += "%20s %20.6f %20.6f : %20.6f\n" % (key, e1, e2, deviation)
+
+    # DEBUG
+    print(msg)
 
     if not test_pass:
         msg += "Maximum allowed deviation (%f) exceeded.\n" % MAX_ALLOWED_DEVIATION
