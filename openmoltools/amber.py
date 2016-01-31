@@ -284,7 +284,7 @@ GAFF_DAT_FILENAME = find_gaff_dat()
 
 
 def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None,
-    input_format='mol2', resname=False):
+    input_format='mol2', resname=False, log_debug_output=False):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -308,6 +308,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         Format specifier for input file to pass to antechamber.
     resname : bool, optional, default=False
         Set the residue name used within output files to molecule_name
+    log_debug_output : bool, optional, default=False
+        If true, will send output of tleap to logger.
 
     Returns
     -------
@@ -348,8 +350,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             cmd += ' -nc %d' % net_charge
         if resname:
             cmd += ' -rn %s' % molecule_name
-            
-        logger.debug(cmd)
+
+        if log_debug_output: logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.mol2'):
             msg  = "antechamber failed to produce output mol2 file\n"
@@ -363,11 +365,11 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             msg += read_file_contents(local_input_filename)
             msg += 8 * "----------" + '\n'
             raise Exception(msg)
-        logger.debug(output)
+        if log_debug_output: logger.debug(output)
 
         # Run parmchk.
         cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
-        logger.debug(cmd)
+        if log_debug_output: logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.frcmod'):
             msg  = "parmchk2 failed to produce output frcmod file\n"
@@ -381,7 +383,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
             msg += read_file_contents('out.mol2')
             msg += 8 * "----------" + '\n'
             raise Exception(msg)
-        logger.debug(output)
+        if log_debug_output: logger.debug(output)
         check_for_errors(output)
 
         #Copy back
@@ -391,7 +393,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     return gaff_mol2_filename, frcmod_filename
 
 
-def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None):
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None, log_debug_output=False):
     """Run AmberTools tleap to create simulation files for AMBER
 
     Parameters
@@ -406,6 +408,8 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         Amber prmtop file produced by tleap, defaults to molecule_name
     inpcrd_filename : str, optional, default=None
         Amber inpcrd file produced by tleap, defaults to molecule_name
+    log_debug_output : bool, optional, default=False
+        If true, will send output of tleap to logger.
 
     Returns
     -------
@@ -446,10 +450,10 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         file_handle.close()
 
         cmd = "tleap -f %s " % file_handle.name
-        logger.debug(cmd)
+        if log_debug_output: logger.debug(cmd)
 
         output = getoutput(cmd)
-        logger.debug(output)
+        if log_debug_output: logger.debug(output)
 
         check_for_errors( output, other_errors = ['Improper number of arguments'] )
 
