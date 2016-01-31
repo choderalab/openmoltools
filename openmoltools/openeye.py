@@ -1,7 +1,8 @@
 import shutil
 import os
 import mdtraj as md
-from openmoltools.utils import import_, enter_temp_directory, run_antechamber, create_ffxml_file
+from openmoltools.utils import import_, enter_temp_directory, create_ffxml_file
+from openmoltools.amber import run_antechamber
 import logging
 
 logger = logging.getLogger(__name__)
