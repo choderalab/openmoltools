@@ -109,6 +109,31 @@ Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development 
     params.write(outfile, provenance=provenance)
     outfile.close()
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_generate_ffxml_from_molecules():
+    """
+    Test generation of single ffxml file from a list of molecules
+    """
+    # Create a test set of molecules.
+    molecules = [ createOEMolFromIUPAC(name) for name in IUPAC_molecule_names ]
+    # Create an ffxml file.
+    from openmoltools.forcefield_generators import generateForceFieldFromMolecules
+    ffxml = generateForceFieldFromMolecules(molecules)
+    print(ffxml)
+    # Create a ForceField.
+    forcefield = ForceField('gaff.xml')
+    forcefield.loadFile(StringIO(ffxml))
+    # Parameterize the molecules.
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol
+    for molecule in molecules:
+        # Create topology from molecule.
+        topology = generateTopologyFromOEMol(molecule)
+        # Create system with forcefield.
+        system = forcefield.createSystem(topology)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(mol)
+        check_potential_is_finite(system, positions)
+
 class TestForceFieldGenerators(unittest.TestCase):
     @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
     def test_generate_Topology_and_OEMol(self):
@@ -200,7 +225,7 @@ def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX
     msg  = "\n"
     msg += "Energy components:\n"
     test_pass = True
-    msg += "%20s %12s %12s : %12s" % ('component', 'prmtop (kcal/mol)', 'system (kcal/mol)', 'deviation')
+    msg += "%20s %12s %12s : %12s\n" % ('component', 'prmtop (kcal/mol)', 'system (kcal/mol)', 'deviation')
     for key in prmtop_components:
         e1 = prmtop_components[key]
         e2 = system_components[key]
