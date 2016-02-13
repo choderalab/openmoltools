@@ -27,7 +27,7 @@ except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
 
-IUPAC_molecule_names = ['naproxen', 'aspirin', 'imatinib', 'bosutinib']
+IUPAC_molecule_names = ['naproxen', 'aspirin', 'imatinib', 'bosutinib', 'dibenzyl ketone']
 def createOEMolFromIUPAC(iupac_name='bosutinib'):
     from openeye import oechem, oeiupac, oeomega
 
@@ -119,9 +119,9 @@ def test_generate_ffxml_from_molecules():
     # Create an ffxml file.
     from openmoltools.forcefield_generators import generateForceFieldFromMolecules
     ffxml = generateForceFieldFromMolecules(molecules)
-    print(ffxml)
     # Create a ForceField.
-    forcefield = ForceField('gaff.xml')
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    forcefield = ForceField(gaff_xml_filename)
     forcefield.loadFile(StringIO(ffxml))
     # Parameterize the molecules.
     from openmoltools.forcefield_generators import generateTopologyFromOEMol
@@ -175,6 +175,9 @@ def test_generateResidueTemplate():
     """
     from openeye import oechem, oeiupac
 
+    from pkg_resources import resource_filename
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+
     # Test independent ForceField instances.
     for molecule_name in IUPAC_molecule_names:
         mol = createOEMolFromIUPAC(molecule_name)
@@ -182,7 +185,7 @@ def test_generateResidueTemplate():
         from openmoltools.forcefield_generators import generateResidueTemplate
         [template, ffxml] = generateResidueTemplate(mol)
         # Create a ForceField object.
-        forcefield = ForceField('gaff.xml')
+        forcefield = ForceField(gaff_xml_filename)
         # Add the additional parameters and template to the forcefield.
         forcefield.registerResidueTemplate(template)
         forcefield.loadFile(StringIO(ffxml))
@@ -196,7 +199,7 @@ def test_generateResidueTemplate():
         check_potential_is_finite(system, positions)
 
     # Test adding multiple molecules to a single ForceField instance.
-    forcefield = ForceField('gaff.xml')
+    forcefield = ForceField(gaff_xml_filename)
     for molecule_name in IUPAC_molecule_names:
         mol = createOEMolFromIUPAC(molecule_name)
         # Generate an ffxml residue template.
@@ -256,7 +259,8 @@ def test_gaffResidueTemplateGenerator():
     pdb_filename = utils.get_data_filename("chemicals/imatinib/imatinib.pdb")
     pdb = PDBFile(pdb_filename)
     # Create a ForceField object.
-    forcefield = ForceField('gaff.xml')
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    forcefield = ForceField(gaff_xml_filename)
     # Add the residue template generator.
     from openmoltools.forcefield_generators import gaffTemplateGenerator
     forcefield.registerTemplateGenerator(gaffTemplateGenerator)
@@ -279,7 +283,8 @@ def test_gaffResidueTemplateGenerator():
     pdb_filename = utils.get_data_filename("chemicals/proteins/T4-lysozyme-L99A-p-xylene-implicit.pdb")
     pdb = PDBFile(pdb_filename)
     # Create a ForceField object.
-    forcefield = ForceField('amber99sb.xml', 'gaff.xml')
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    forcefield = ForceField('amber99sb.xml', gaff_xml_filename)
     # Add the residue template generator.
     from openmoltools.forcefield_generators import gaffTemplateGenerator
     forcefield.registerTemplateGenerator(gaffTemplateGenerator)

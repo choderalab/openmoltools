@@ -256,9 +256,10 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     # Create temporary directory for running antechamber.
     import tempfile
     tmpdir = tempfile.mkdtemp()
-    input_mol2_filename = os.path.join(tmpdir, template_name + '.tripos.mol2')
-    gaff_mol2_filename = os.path.join(tmpdir, template_name + '.gaff.mol2')
-    frcmod_filename = os.path.join(tmpdir, template_name + '.frcmod')
+    prefix = 'molecule'
+    input_mol2_filename = os.path.join(tmpdir, prefix + '.tripos.mol2')
+    gaff_mol2_filename = os.path.join(tmpdir, prefix + '.gaff.mol2')
+    frcmod_filename = os.path.join(tmpdir, prefix + '.frcmod')
 
     # Write Tripos mol2 file as antechamber input.
     _writeMolecule(molecule, input_mol2_filename)
@@ -311,7 +312,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
             template.addExternalBondByName(bond.GetEnd().GetName())
 
     # Generate ffxml file contents for parmchk-generated frcmod output.
-    leaprc = StringIO("parm = loadamberparams %s" % frcmod_filename)
+    leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
     ffxml = StringIO()
