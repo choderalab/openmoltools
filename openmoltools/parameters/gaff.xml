@@ -1,10 +1,8 @@
 <ForceField>
  <Info>
-  <DateGenerated>2016-01-26</DateGenerated>
-  <Reference>Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and bond type perception in molecular mechanical calculations". Journal of Molecular Graphics and Modelling , 25, 2006, 247260.
-Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development and testing of a general AMBER force field". Journal of Computational Chemistry, 25, 2004, 1157-1174.
-</Reference>
-  <OriginalFile>gaff.dat</OriginalFile>
+  <DateGenerated>2016-02-20</DateGenerated>
+  <Source md5hash="1ec3413c17124b03b76884d9d3322845" sourcePackage="AmberTools" sourcePackageVersion="15">leaprc.gaff</Source>
+  <Reference>Wang, J., Wolf, R.M., Caldwell, J.W., Kollman, P.A., and Case, D.A. (2004). Development and testing of a general amber force field. J. Comput. Chem. 25, 1157-1174.</Reference>
  </Info>
  <AtomTypes>
   <Type name="c" class="c" element="C" mass="12.01"/>
@@ -79,8 +77,6 @@ Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development 
   <Type name="sx" class="sx" element="S" mass="32.06"/>
   <Type name="sy" class="sy" element="S" mass="32.06"/>
  </AtomTypes>
- <Residues>
- </Residues>
  <HarmonicBondForce>
   <Bond type1="ow" type2="hw" length="0.09572" k="462750.4"/>
   <Bond type1="hw" type2="hw" length="0.15136" k="462750.4"/>

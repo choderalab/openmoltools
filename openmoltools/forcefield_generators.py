@@ -55,7 +55,29 @@ def generateTopologyFromOEMol(molecule):
 
     return topology
 
-def generateOEMolFromTopologyResidue(residue):
+def _ensureUniqueAtomNames(molecule):
+    """
+    Ensure all atom names are unique and not blank.
+    If any atom names are degenerate or blank, Tripos atom names are assigned to all atoms.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEMol
+        The molecule to be modified
+
+    """
+    from openeye import oechem
+    atom_names = set()
+    atom_names_are_unique = True
+    for atom in molecule.GetAtoms():
+        atom_name = atom.GetName()
+        if (atom_name in atom_names) or (atom_name == ""):
+            atom_names_are_unique = False
+        atom_names.add(atom_name)
+    if not atom_names_are_unique:
+        oechem.OETriposAtomNames(molecule)
+
+def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=False):
     """
     Generate an OpenEye OEMol molecule from an OpenMM Topology Residue.
 
@@ -64,6 +86,11 @@ def generateOEMolFromTopologyResidue(residue):
     residue : simtk.openmm.app.topology.Residue
         The topology Residue from which an OEMol is to be created.
         An Exception will be thrown if this residue has external bonds.
+    geometry : bool, optional, default=False
+        If True, will generate a single configuration with OEOmega.
+        Note that stereochemistry will be *random*.
+    tripos_atom_names : bool, optional, default=False
+        If True, will generate and assign Tripos atom names.
 
     Returns
     -------
@@ -134,21 +161,61 @@ def generateOEMolFromTopologyResidue(residue):
     oechem.OEClearAromaticFlags(molecule)
     oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
-    # Assign Tripos atom types.
-    # TODO: Is this necessary?
-    oechem.OETriposAtomTypeNames(molecule)
-    oechem.OETriposBondTypeNames(molecule)
+    # Generate Tripos atom names if requested.
+    if tripos_atom_names:
+        oechem.OETriposAtomNames(molecule)
 
     # Assign geometry
-    # TODO: Is this necessary?
-    from openeye import oeomega
-    omega = oeomega.OEOmega()
-    omega.SetMaxConfs(1)
-    omega.SetIncludeInput(False)
-    omega.SetStrictStereo(False)
-    omega(molecule)
+    if geometry:
+        from openeye import oeomega
+        omega = oeomega.OEOmega()
+        omega.SetMaxConfs(1)
+        omega.SetIncludeInput(False)
+        omega.SetStrictStereo(False)
+        omega(molecule)
 
     return molecule
+
+def _computeNetCharge(molecule):
+    """
+    Compute the net formal charge on the molecule.
+    Formal charges are assigned by this function.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEMol
+        The molecule for which a net formal charge is to be computed
+
+    Returns
+    -------
+    net_charge : float
+        The net formal charge on the molecule
+
+    """
+    from openeye import oechem
+    oechem.OEAssignFormalCharges(molecule)
+    charges = [ atom.GetFormalCharge() for atom in molecule.GetAtoms() ]
+    net_charge = np.array(charges).sum()
+    return net_charge
+
+def _writeMolecule(molecule, output_filename):
+    """
+    Write the molecule to a file.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEMol
+        The molecule to write (will be modified by writer).
+    output_filename : str
+        The filename of file to be written; type is autodetected by extension.
+
+    """
+    from openmoltools.openeye import molecule_to_mol2
+    molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle())
+    #from openeye import oechem
+    #ofs = oechem.oemolostream(output_filename)
+    #oechem.OEWriteMolecule(ofs, molecule)
+    #ofs.close()
 
 def generateResidueTemplate(molecule, residue_atoms=None):
     """
@@ -161,7 +228,8 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     molecule : openeye.oechem.OEMol
         The molecule to be parameterized.
         The molecule must have explicit hydrogens.
-        Charge will be inferred from the net formal charge.
+        Net charge will be inferred from the net formal charge on each molecule.
+        Partial charges will be determined automatically using oequacpac and canonical AM1-BCC charging rules.
     residue_atomset : set of OEAtom, optional, default=None
         If not None, only the atoms in this set will be used to construct the residue template
 
@@ -172,20 +240,21 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     additional_parameters_ffxml : str
         Contents of ForceField `ffxml` file defining additional parameters from parmchk(2).
 
-    Note that this method preserves stereochemistry during AM1-BCC charge parameterization.
+    Notes
+    -----
+    The residue template will be named after the molecule title.
+    This method preserves stereochemistry during AM1-BCC charge parameterization.
+    Atom names in molecules will be assigned Tripos atom names if any are blank or not unique.
 
     """
-    # Generate a unique residue template name to avoid namespace collisions.
-    # TODO: Can we come up with a more intelligent name?
-    #from uuid import uuid4
-    #template_name = str(uuid4())
+    # Set the template name based on the molecule title.
     template_name = molecule.GetTitle()
 
+    # If any atom names are not unique, atom names
+    _ensureUniqueAtomNames(molecule)
+
     # Compute net formal charge.
-    from openeye import oechem
-    oechem.OEAssignFormalCharges(molecule)
-    charges = [ atom.GetFormalCharge() for atom in molecule.GetAtoms() ]
-    net_charge = np.array(charges).sum()
+    net_charge = _computeNetCharge(molecule)
 
     # Generate canonical AM1-BCC charges and a reference conformation.
     molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
@@ -193,19 +262,19 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     # Create temporary directory for running antechamber.
     import tempfile
     tmpdir = tempfile.mkdtemp()
-    input_mol2_filename = os.path.join(tmpdir, template_name + '.tripos.mol2')
-    gaff_mol2_filename = os.path.join(tmpdir, template_name + '.gaff.mol2')
-    frcmod_filename = os.path.join(tmpdir, template_name + '.frcmod')
+    prefix = 'molecule'
+    input_mol2_filename = os.path.join(tmpdir, prefix + '.tripos.mol2')
+    gaff_mol2_filename = os.path.join(tmpdir, prefix + '.gaff.mol2')
+    frcmod_filename = os.path.join(tmpdir, prefix + '.frcmod')
 
     # Write Tripos mol2 file as antechamber input.
-    ofs = oechem.oemolostream(input_mol2_filename)
-    oechem.OEWriteMolecule(ofs, molecule)
-    ofs.close()
+    _writeMolecule(molecule, input_mol2_filename)
 
     # Parameterize the molecule with antechamber.
     run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
 
     # Read the resulting GAFF mol2 file as a ParmEd structure.
+    from openeye import oechem
     ifs = oechem.oemolistream(gaff_mol2_filename)
     ifs.SetFlavor(oechem.OEFormat_MOL2, oechem.OEIFlavor_MOL2_DEFAULT | oechem.OEIFlavor_MOL2_M2H | oechem.OEIFlavor_MOL2_Forcefield)
     m2h = True
@@ -249,13 +318,98 @@ def generateResidueTemplate(molecule, residue_atoms=None):
             template.addExternalBondByName(bond.GetEnd().GetName())
 
     # Generate ffxml file contents for parmchk-generated frcmod output.
-    leaprc = StringIO("parm = loadamberparams %s" % frcmod_filename)
+    leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
     ffxml = StringIO()
     params.write(ffxml)
 
     return template, ffxml.getvalue()
+
+def generateForceFieldFromMolecules(molecules):
+    """
+    Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
+
+    This requires the OpenEye toolkit.
+
+    Parameters
+    ----------
+    molecules : list of openeye.oechem.OEMol
+        The molecules to be parameterized.
+        All molecules must have explicit hydrogens.
+        Net charge will be inferred from the net formal charge on each molecule.
+        Partial charges will be determined automatically using oequacpac and canonical AM1-BCC charging rules.
+
+    Returns
+    -------
+    ffxml : str
+        Contents of ForceField `ffxml` file defining additional parameters from parmchk(2) and residue templates.
+
+    Notes
+    -----
+    This method preserves stereochemistry during AM1-BCC charge parameterization.
+    Residue template names will be set from molecule names.
+    Atom names in molecules will be assigned Tripos atom names if any are blank or not unique.
+
+    """
+    # Check template names are unique.
+    template_names = set()
+    for molecule in molecules:
+        template_name = molecule.GetTitle()
+        if template_name == '<0>':
+            raise Exception("Molecule '%s' has invalid name" % template_name)
+        if template_name in template_names:
+            raise Exception("Molecule '%s' has template name collision." % template_name)
+        template_names.add(template_name)
+
+    # Process molecules.
+    import tempfile
+    tmpdir = tempfile.mkdtemp()
+    olddir = os.getcwd()
+    os.chdir(tmpdir)
+    leaprc = ""
+    for (molecule_index, molecule) in enumerate(molecules):
+        # Set the template name based on the molecule title.
+        template_name = molecule.GetTitle()
+
+        # If any atom names are not unique, atom names
+        _ensureUniqueAtomNames(molecule)
+
+        # Compute net formal charge.
+        net_charge = _computeNetCharge(molecule)
+
+        # Generate canonical AM1-BCC charges and a reference conformation.
+        molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+
+        # Create a unique prefix.
+        prefix = 'molecule%010d' % molecule_index
+
+        # Create temporary directory for running antechamber.
+        input_mol2_filename = prefix + '.tripos.mol2'
+        gaff_mol2_filename  = prefix + '.gaff.mol2'
+        frcmod_filename     = prefix + '.frcmod'
+
+        # Write Tripos mol2 file as antechamber input.
+        _writeMolecule(molecule, input_mol2_filename)
+
+        # Parameterize the molecule with antechamber.
+        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
+
+        # Append to leaprc input for parmed.
+        leaprc += '%s = loadmol2 %s\n' % (prefix, gaff_mol2_filename)
+        leaprc += 'loadamberparams %s\n' % frcmod_filename
+
+    # Generate ffxml file contents for parmchk-generated frcmod output.
+    leaprc = StringIO(leaprc)
+    params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    ffxml = StringIO()
+    params.write(ffxml)
+
+    # TODO: Clean up temporary directory.
+    os.chdir(olddir)
+
+    return ffxml.getvalue()
 
 def createStructureFromResidue(residue):
     # Create ParmEd structure for residue.
