@@ -55,7 +55,29 @@ def generateTopologyFromOEMol(molecule):
 
     return topology
 
-def generateOEMolFromTopologyResidue(residue):
+def _ensureUniqueAtomNames(molecule):
+    """
+    Ensure all atom names are unique and not blank.
+    If any atom names are degenerate or blank, Tripos atom names are assigned to all atoms.
+
+    Parameters
+    ----------
+    molecule : openeye.oechem.OEMol
+        The molecule to be modified
+
+    """
+    from openeye import oechem
+    atom_names = set()
+    atom_names_are_unique = True
+    for atom in molecule.GetAtoms():
+        atom_name = atom.GetName()
+        if (atom_name in atom_names) or (atom_name == ""):
+            atom_names_are_unique = False
+        atom_names.add(atom_name)
+    if not atom_names_are_unique:
+        oechem.OETriposAtomNames(molecule)
+
+def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=False):
     """
     Generate an OpenEye OEMol molecule from an OpenMM Topology Residue.
 
@@ -64,6 +86,11 @@ def generateOEMolFromTopologyResidue(residue):
     residue : simtk.openmm.app.topology.Residue
         The topology Residue from which an OEMol is to be created.
         An Exception will be thrown if this residue has external bonds.
+    geometry : bool, optional, default=False
+        If True, will generate a single configuration with OEOmega.
+        Note that stereochemistry will be *random*.
+    tripos_atom_names : bool, optional, default=False
+        If True, will generate and assign Tripos atom names.
 
     Returns
     -------
@@ -134,43 +161,20 @@ def generateOEMolFromTopologyResidue(residue):
     oechem.OEClearAromaticFlags(molecule)
     oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
-    # Assign Tripos atom types.
-    # TODO: Is this necessary?
-    oechem.OETriposAtomTypeNames(molecule)
-    oechem.OETriposBondTypeNames(molecule)
+    # Generate Tripos atom names if requested.
+    if tripos_atom_names:
+        oechem.OETriposAtomNames(molecule)
 
     # Assign geometry
-    # TODO: Is this necessary?
-    from openeye import oeomega
-    omega = oeomega.OEOmega()
-    omega.SetMaxConfs(1)
-    omega.SetIncludeInput(False)
-    omega.SetStrictStereo(False)
-    omega(molecule)
+    if geometry:
+        from openeye import oeomega
+        omega = oeomega.OEOmega()
+        omega.SetMaxConfs(1)
+        omega.SetIncludeInput(False)
+        omega.SetStrictStereo(False)
+        omega(molecule)
 
     return molecule
-
-def _ensureUniqueAtomNames(molecule):
-    """
-    Ensure all atom names are unique and not blank.
-    If any atom names are degenerate or blank, Tripos atom names are assigned to all atoms.
-
-    Parameters
-    ----------
-    molecule : openeye.oechem.OEMol
-        The molecule to be modified
-
-    """
-    from openeye import oechem
-    atom_names = set()
-    atom_names_are_unique = True
-    for atom in molecule.GetAtoms():
-        atom_name = atom.GetName()
-        if (atom_name in atom_names) or (atom_name == ""):
-            atom_names_are_unique = False
-        atom_names.add(atom_name)
-    if not atom_names_are_unique:
-        oechem.OETriposAtomNames(molecule)
 
 def _computeNetCharge(molecule):
     """
@@ -206,10 +210,12 @@ def _writeMolecule(molecule, output_filename):
         The filename of file to be written; type is autodetected by extension.
 
     """
-    from openeye import oechem
-    ofs = oechem.oemolostream(output_filename)
-    oechem.OEWriteMolecule(ofs, molecule)
-    ofs.close()
+    from openmoltools.openeye import molecule_to_mol2
+    molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle())
+    #from openeye import oechem
+    #ofs = oechem.oemolostream(output_filename)
+    #oechem.OEWriteMolecule(ofs, molecule)
+    #ofs.close()
 
 def generateResidueTemplate(molecule, residue_atoms=None):
     """
@@ -350,6 +356,8 @@ def generateForceFieldFromMolecules(molecules):
     template_names = set()
     for molecule in molecules:
         template_name = molecule.GetTitle()
+        if template_name == '<0>':
+            raise Exception("Molecule '%s' has invalid name" % template_name)
         if template_name in template_names:
             raise Exception("Molecule '%s' has template name collision." % template_name)
         template_names.add(template_name)
@@ -374,7 +382,7 @@ def generateForceFieldFromMolecules(molecules):
         molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
 
         # Create a unique prefix.
-        prefix = 'molecule-%010d' % molecule_index
+        prefix = 'molecule%010d' % molecule_index
 
         # Create temporary directory for running antechamber.
         input_mol2_filename = prefix + '.tripos.mol2'
@@ -385,14 +393,13 @@ def generateForceFieldFromMolecules(molecules):
         _writeMolecule(molecule, input_mol2_filename)
 
         # Parameterize the molecule with antechamber.
-        run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
+        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
 
         # Append to leaprc input for parmed.
-        leaprc += '%s = loadmol2 %s\n' % (template_name, gaff_mol2_filename)
+        leaprc += '%s = loadmol2 %s\n' % (prefix, gaff_mol2_filename)
         leaprc += 'loadamberparams %s\n' % frcmod_filename
 
     # Generate ffxml file contents for parmchk-generated frcmod output.
-    print(leaprc) # DEBUG
     leaprc = StringIO(leaprc)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)

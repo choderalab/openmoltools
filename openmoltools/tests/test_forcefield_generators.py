@@ -122,7 +122,15 @@ def test_generate_ffxml_from_molecules():
     # Create a ForceField.
     gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
     forcefield = ForceField(gaff_xml_filename)
-    forcefield.loadFile(StringIO(ffxml))
+    try:
+        forcefield.loadFile(StringIO(ffxml))
+    except Exception as e:
+        msg  = str(e)
+        msg += "ffxml contents:\n"
+        for (index, line) in enumerate(ffxml.split('\n')):
+            msg += 'line %8d : %s\n' % (index, line)
+        raise Exception(msg)
+
     # Parameterize the molecules.
     from openmoltools.forcefield_generators import generateTopologyFromOEMol
     for molecule in molecules:
@@ -131,8 +139,31 @@ def test_generate_ffxml_from_molecules():
         # Create system with forcefield.
         system = forcefield.createSystem(topology)
         # Check potential is finite.
-        positions = extractPositionsFromOEMOL(mol)
+        positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_topology_molecules_round_trip():
+    """
+    Test round-trips between OEMol and Topology
+    """
+    # Create a test set of molecules.
+    molecules = [ createOEMolFromIUPAC(name) for name in IUPAC_molecule_names ]
+    # Test round-trips.
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol, generateOEMolFromTopologyResidue
+    for molecule in molecules:
+        # Create topology from molecule.
+        topology = generateTopologyFromOEMol(molecule)
+        # Create molecule from topology.
+        residues = [residue for residue in topology.residues()]
+        molecule2 = generateOEMolFromTopologyResidue(residues[0])
+        # Create topology form molecule.
+        topology2 = generateTopologyFromOEMol(molecule2)
+        # Create molecule from topology with geometry.
+        residues2 = [residue for residue in topology2.residues()]
+        molecule3 = generateOEMolFromTopologyResidue(residues2[0], geometry=True)
+        # Create molecule from topology with Tripos atom names
+        molecule4 = generateOEMolFromTopologyResidue(residues2[0], tripos_atom_names=True)
 
 class TestForceFieldGenerators(unittest.TestCase):
     @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
