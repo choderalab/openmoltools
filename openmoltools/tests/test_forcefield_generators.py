@@ -268,12 +268,10 @@ def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX
             test_pass = False
         msg += "%20s %20.6f %20.6f : %20.6f\n" % (key, e1, e2, deviation)
 
-    # DEBUG
-    print(msg)
-
     if not test_pass:
         msg += "Maximum allowed deviation (%f) exceeded.\n" % MAX_ALLOWED_DEVIATION
         #raise Exception(msg) # TODO: Re-enable when we have force tag merging sorted out in simtk.openmm.app.ForceField
+        print(msg) # DEBUG
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_gaffResidueTemplateGenerator():
