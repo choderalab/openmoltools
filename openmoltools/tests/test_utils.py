@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import mdtraj as md
 from unittest import skipIf
@@ -28,9 +29,21 @@ SKIP_CHECKMOL = (CHECKMOL_PATH is None)
 
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-def test_enter_temp_directory():
-    with utils.enter_temp_directory():
-        pass
+
+def test_temp_dir_context():
+    """Test the context temporary_directory()."""
+    with utils.temporary_directory() as tmp_dir:
+        assert os.path.isdir(tmp_dir)
+    assert not os.path.exists(tmp_dir)
+
+
+def test_temp_cd_context():
+    """Test the context temporary_cd()."""
+    with utils.temporary_directory() as tmp_dir:
+        with utils.temporary_cd(tmp_dir):
+            assert os.getcwd() == os.path.realpath(tmp_dir)
+        assert os.getcwd() != os.path.realpath(tmp_dir)
+
 
 def test_parse_ligand_filename():
     molecule_name = "sustiva"

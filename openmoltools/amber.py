@@ -10,7 +10,6 @@ import mdtraj.utils
 from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
 # http://ambermd.org/tutorials/advanced/tutorial15/Tutorial2.xhtml

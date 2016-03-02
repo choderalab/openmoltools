@@ -20,7 +20,6 @@ from distutils.spawn import find_executable
 from openmoltools import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
 def getoutput(cmd):
@@ -316,6 +315,28 @@ def get_data_filename(relative_path):
         raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
 
     return fn
+
+
+@contextlib.contextmanager
+def temporary_cd(dir_path):
+    """Context to temporary change the working directory."""
+    prev_dir = os.getcwd()
+    os.chdir(os.path.abspath(dir_path))
+    try:
+        yield
+    finally:
+        os.chdir(prev_dir)
+
+
+@contextlib.contextmanager
+def temporary_directory():
+    """Context for safe creation of temporary directories."""
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        yield tmp_dir
+    finally:
+        shutil.rmtree(tmp_dir)
+
 
 def smiles_to_mdtraj_ffxml(smiles_strings, base_molecule_name="lig"):
     """Generate an MDTraj object from a smiles string.
