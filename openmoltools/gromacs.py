@@ -8,7 +8,6 @@ import parmed
 from openmoltools.utils import getoutput
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 GROMACS_PATH = find_executable('gmx')
 

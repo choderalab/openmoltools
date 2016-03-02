@@ -20,7 +20,6 @@ from distutils.spawn import find_executable
 from openmoltools import amber_parser, system_checker
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
 def getoutput(cmd):

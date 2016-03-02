@@ -6,7 +6,6 @@ from openmoltools.amber import run_antechamber
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
