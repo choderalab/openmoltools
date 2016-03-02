@@ -29,10 +29,6 @@ SKIP_CHECKMOL = (CHECKMOL_PATH is None)
 
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-def test_enter_temp_directory():
-    with utils.enter_temp_directory():
-        pass
-
 
 def test_temp_dir_context():
     """Test the context temporary_directory()."""
