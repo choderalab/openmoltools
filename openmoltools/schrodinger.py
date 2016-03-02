@@ -165,7 +165,6 @@ def run_structconvert(input_file_path, output_file_path):
     run_and_log_error(cmd)
 
 
-@need_schrodinger
 def autoconvert_maestro(func):
     @wraps(func)
     def _autoconvert_maestro(input_file_path, output_file_path, *args, **kwargs):
@@ -227,6 +226,7 @@ def autoconvert_maestro(func):
     return _autoconvert_maestro
 
 
+@need_schrodinger
 @autoconvert_maestro
 def run_maesubset(input_file_path, output_file_path, range):
     """Run Schrodinger's maesubset command line utility to extract a range of
@@ -266,6 +266,7 @@ def run_maesubset(input_file_path, output_file_path, range):
         f.write(output)
 
 
+@need_schrodinger
 @autoconvert_maestro
 def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
              ph_tolerance=None, tautomerize=True, extract_range=None):
