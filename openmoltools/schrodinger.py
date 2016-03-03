@@ -269,7 +269,7 @@ def run_maesubset(input_file_path, output_file_path, range):
 @need_schrodinger
 @autoconvert_maestro
 def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
-             ph_tolerance=None, tautomerize=True, extract_range=None):
+             ph_tolerance=None, min_probability=None, tautomerize=True, extract_range=None):
     """Run Schrodinger's epik command line utility to enumerate protonation and
     tautomeric states.
 
@@ -285,6 +285,8 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
         Target pH for generated states (default is 7.4).
     ph_tolerance : float, optional
         Equivalent of -pht option in Epik command (default is None).
+    min_probability: float, optional
+        Minimum probability for the generated states.
     tautomerize : bool, optional
         Whether or not tautomerize the input structure (default is True).
     extract_range : int or list of ints, optional
@@ -305,6 +307,7 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
     epik_args = dict(ms=max_structures, ph=ph)
     epik_args['pht'] = '-pht {}'.format(ph_tolerance) if ph_tolerance else ''
     epik_args['nt'] = '' if tautomerize else '-nt'
+    epik_args['p'] = '-p {}'.format(min_probability) if min_probability else ''
 
     # Determine if we need to convert input and/or output file
     if extract_range is None:
@@ -314,7 +317,7 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
 
     # Epik command. We need list in case there's a space in the paths
     cmd = [epik_path, '-imae', input_file_path, '-omae', epik_output]
-    cmd += '-ms {ms} -ph {ph} {pht} {nt} -pKa_atom -WAIT -NO_JOBCONTROL'.format(
+    cmd += '-ms {ms} -ph {ph} {pht} {nt} {p} -pKa_atom -WAIT -NO_JOBCONTROL'.format(
             **epik_args).split()
 
     # We run with output_dir as working directory to save there the log file
@@ -325,4 +328,3 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
     if extract_range is not None:
         run_maesubset(epik_output, output_file_path, extract_range)
         os.remove(epik_output)
-
