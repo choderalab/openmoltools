@@ -25,4 +25,4 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-from openmoltools import amber_parser, system_checker, utils, packmol, openeye, amber, cirpy, gromacs
+from openmoltools import amber_parser, system_checker, utils, packmol, openeye, amber, cirpy, gromacs, schrodinger
