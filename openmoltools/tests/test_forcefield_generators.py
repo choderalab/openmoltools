@@ -6,7 +6,7 @@ import os, sys
 import numpy as np
 from openmoltools import utils, forcefield_generators
 from simtk import openmm, unit
-from simtk.openmm.app import ForceField, NoCutoff
+from simtk.openmm.app import ForceField, NoCutoff, CutoffPeriodic, OBC2
 if sys.version_info >= (3, 0):
     from io import StringIO
 else:
@@ -321,6 +321,50 @@ def test_gaffResidueTemplateGenerator():
     system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
     # Check potential is finite.
     check_potential_is_finite(system, pdb.positions)
+
+def check_system_generator(ffxmls, forcefield_kwargs, topology, **kwargs):
+    """
+    Check SystemGenerator on a specific topology.
+    """
+    from openmoltools.forcefield_generators import SystemGenerator
+    system_generator = SystemGenerator(ffxmls, forcefield_kwargs=forcefield_kwargs, **kwargs)
+    system = system_generator.createSystem(topology)
+
+def test_system_generator():
+    """
+    Test SystemGenerator.
+    """
+    import openmmtools
+    from functools import partial
+    # Vacuum tests.
+    ffxmls = ['amber99sbildn.xml']
+    forcefield_kwargs = { 'nonbondedMethod' : NoCutoff, 'implicitSolvent' : None, 'constraints' : None }
+    for testsystem_name in ['AlanineDipeptideVacuum']:
+        constructor = getattr(openmmtools.testsystems, testsystem_name)
+        testsystem = constructor()
+        f = partial(check_system_generator, ffxmls, forcefield_kwargs, testsystem.topology)
+        f.description = 'Testing SystemGenerator on %s' % testsystem_name
+        yield f
+    # Implicit solvent tests.
+    ffxmls = ['amber99sbildn.xml', 'amber99_obc.xml']
+    forcefield_kwargs = { 'nonbondedMethod' : NoCutoff, 'implicitSolvent' : OBC2, 'constraints' : None }
+    for testsystem_name in ['AlanineDipeptideImplicit']:
+        constructor = getattr(openmmtools.testsystems, testsystem_name)
+        testsystem = constructor()
+        f = partial(check_system_generator, ffxmls, forcefield_kwargs, testsystem.topology)
+        f.description = 'Testing SystemGenerator on %s' % testsystem_name
+        yield f
+    # Small molecule tests.
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    ffxmls = [gaff_xml_filename]
+    forcefield_kwargs = { 'nonbondedMethod' : NoCutoff, 'implicitSolvent' : None, 'constraints' : None }
+    for name in IUPAC_molecule_names:
+        molecule = createOEMolFromIUPAC(name)
+        topology = generateTopologyFromOEMol(molecule)
+        f = partial(check_system_generator, ffxmls, forcefield_kwargs, topology, use_gaff=True)
+        f.description = 'Testing SystemGenerator on %s' % name
+        yield f
 
 if __name__ == '__main__':
     #test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)
