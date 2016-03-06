@@ -259,6 +259,9 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     # Generate canonical AM1-BCC charges and a reference conformation.
     molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
 
+    # DEBUG: This may be necessary.
+    molecule.SetTitle('MOL')
+
     # Create temporary directory for running antechamber.
     import tempfile
     tmpdir = tempfile.mkdtemp()
@@ -470,3 +473,69 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
 
     # Signal that we have successfully parameterized the residue.
     return True
+
+class SystemGenerator(object):
+    """
+    Utility factory to generate OpenMM Systems from Topology objects.
+
+    Parameters
+    ----------
+    forcefields_to_use : list of string
+        List of the names of ffxml files that will be used in system creation.
+    forcefield_kwargs : dict of arguments to createSystem, optional
+        Allows specification of various aspects of system creation.
+    use_gaff : bool, optional, default=True
+        If True, will add the GAFF residue template generator.
+
+    Examples
+    --------
+    >>> forcefield_kwargs={ 'nonbondedMethod' : app.NoCutoff, 'implicitSolvent' : None, 'constraints' : None }
+    >>> system_generator = SystemGenerator(['amber99sbildn.xml'], forcefield_kwargs=forcefield_kwargs)
+    >>> from openmmtools.testsystems import AlanineDipeptideVacuum
+    >>> testsystem = AlanineDipeptideVacuum()
+    >>> system_generator.createSystem(testsystem.topology)
+    """
+
+    def __init__(self, forcefields_to_use, forcefield_kwargs=None, use_gaff=True):
+        self._forcefield_xmls = forcefields_to_use
+        self._forcefield_kwargs = forcefield_kwargs if forcefield_kwargs is not None else {}
+        from simtk.openmm.app import ForceField
+        self._forcefield = ForceField(*self._forcefield_xmls)
+        if use_gaff:
+            self._forcefield.registerTemplateGenerator(gaffTemplateGenerator)
+
+    def getForceField(self):
+        """
+        Return the associated ForceField object.
+
+        Returns
+        -------
+        forcefield : simtk.openmm.app.ForceField
+            The current ForceField object.
+        """
+        return self._forcefield
+
+    def createSystem(self, topology):
+        """
+        Build a system from specified topology object.
+
+        Parameters
+        ----------
+        topology : simtk.openmm.app.Topology object
+            The topology of the system to construct.
+
+        Returns
+        -------
+        system : openmm.System
+            A system object generated from the topology
+        """
+        system = self._forcefield.createSystem(topology, **self._forcefield_kwargs)
+        return system
+
+    @property
+    def ffxmls(self):
+        return self._forcefield_xmls
+
+    @property
+    def forcefield(self):
+        return self._forcefield
