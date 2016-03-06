@@ -494,7 +494,7 @@ class SystemGenerator(object):
     >>> system_generator = SystemGenerator(['amber99sbildn.xml'], forcefield_kwargs=forcefield_kwargs)
     >>> from openmmtools.testsystems import AlanineDipeptideVacuum
     >>> testsystem = AlanineDipeptideVacuum()
-    >>> system_generator.createSystem(testsystem.topology)
+    >>> system = system_generator.createSystem(testsystem.topology)
     """
 
     def __init__(self, forcefields_to_use, forcefield_kwargs=None, use_gaff=True):
