@@ -22,7 +22,7 @@ requirements:
     - openmm-dev
     - ambermini
     - pytables
-    - parmed-dev # need ommparams branch
+    - parmed-dev
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
@@ -42,6 +42,7 @@ requirements:
 test:
   requires:
     - nose
+    - openmmtools
   imports:
     - openmoltools
   #commands:
