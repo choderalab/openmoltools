@@ -38,11 +38,11 @@ requirements:
     - pytables
     - parmed-dev
 #    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
-    - openmmtools
 
 test:
   requires:
     - nose
+    - openmmtools
   imports:
     - openmoltools
   #commands:

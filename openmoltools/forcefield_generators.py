@@ -489,6 +489,7 @@ class SystemGenerator(object):
 
     Examples
     --------
+    >>> from simtk.openmm import app
     >>> forcefield_kwargs={ 'nonbondedMethod' : app.NoCutoff, 'implicitSolvent' : None, 'constraints' : None }
     >>> system_generator = SystemGenerator(['amber99sbildn.xml'], forcefield_kwargs=forcefield_kwargs)
     >>> from openmmtools.testsystems import AlanineDipeptideVacuum
