@@ -116,6 +116,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     for atom in residue.atoms():
         oeatom = molecule.NewAtom(atom.element.atomic_number)
         oeatom.SetName(atom.name)
+        oeatom.AddData("topology_index", atom.index)
     oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
     for (atom1, atom2) in residue.bonds():
         order = 1
