@@ -322,6 +322,22 @@ def test_gaffResidueTemplateGenerator():
     # Check potential is finite.
     check_potential_is_finite(system, pdb.positions)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_atom_topology_index():
+    """
+    Make sure that generateOEMolFromTopologyResidue adds the topology_index data
+    """
+    # Create a test set of molecules.
+    molecules = [ createOEMolFromIUPAC(name) for name in IUPAC_molecule_names ]
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol, generateOEMolFromTopologyResidue
+    topologies = [generateTopologyFromOEMol(molecule) for molecule in molecules]
+    for topology in topologies:
+        residue = list(topology.residues())[0] #there is only one residue
+        regenerated_mol = generateOEMolFromTopologyResidue(residue)
+        for i, top_atom in enumerate(topology.atoms()):
+            oeatom = regenerated_mol.GetAtom(oechem.OEHasAtomIdx(top_atom.index))
+            assert oeatom.GetData("topology_index")==top_atom.index
+
 def check_system_generator(ffxmls, forcefield_kwargs, topology, **kwargs):
     """
     Check SystemGenerator on a specific topology.
