@@ -124,7 +124,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
 
     # Write out a mol2 file without altering molecule.
     import tempfile
-
+    tmpdir = tempfile.mkdtemp()
     mol2_input_filename = os.path.join(tmpdir,'molecule-before-bond-perception.mol2')
     ac_output_filename = os.path.join(tmpdir,'molecule-after-bond-perception.ac')
     ofs = oechem.oemolostream(mol2_input_filename)
