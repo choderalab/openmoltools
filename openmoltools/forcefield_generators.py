@@ -139,7 +139,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     [status, output] = getstatusoutput(command)
 
     # Define mapping from GAFF bond orders to OpenEye bond orders.
-    order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8: 2, 9 : 5, 10 : 5 }
+    order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8 : 2, 9 : 5, 10 : 5 }
     # Read bonds.
     infile = open(ac_output_filename)
     lines = infile.readlines()
@@ -149,18 +149,19 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         elements = line.split()
         if elements[0] == 'BOND':
             antechamber_bond_types.append(int(elements[4]))
+    oechem.OEClearAromaticFlags(molecule)
     for (bond, antechamber_bond_type) in zip(molecule.GetBonds(), antechamber_bond_types):
-        bond.SetOrder(order_map[antechamber_bond_type])
+        #bond.SetOrder(order_map[antechamber_bond_type])
+        bond.SetIntType(order_map[antechamber_bond_type])
+    oechem.OEFindRingAtomsAndBonds(molecule)
+    oechem.OEKekulize(molecule)
+    oechem.OEAssignFormalCharges(molecule)
+    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     # Clean up.
     os.unlink(mol2_input_filename)
     os.unlink(ac_output_filename)
     os.rmdir(tmpdir)
-
-    # Set aromaticity.
-    # TODO: Is this necessary?
-    oechem.OEClearAromaticFlags(molecule)
-    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     # Generate Tripos atom names if requested.
     if tripos_atom_names:
