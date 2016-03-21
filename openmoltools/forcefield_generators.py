@@ -331,7 +331,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
 
     return template, ffxml.getvalue()
 
-def generateForceFieldFromMolecules(molecules):
+def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     """
     Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -345,10 +345,17 @@ def generateForceFieldFromMolecules(molecules):
         Net charge will be inferred from the net formal charge on each molecule.
         Partial charges will be determined automatically using oequacpac and canonical AM1-BCC charging rules.
 
+    ignoreFailures: boolean, default False
+        Whether to add a failed molecule to the list of failed molecules (True),
+        or raise an Exception (False).
+
     Returns
     -------
     ffxml : str
         Contents of ForceField `ffxml` file defining additional parameters from parmchk(2) and residue templates.
+    failed_molecule_list : list of openeye.oechem.OEMol
+        List of the oemols that could not be parameterized. Only returned if ignoreFailures=True
+
 
     Notes
     -----
@@ -373,6 +380,7 @@ def generateForceFieldFromMolecules(molecules):
     olddir = os.getcwd()
     os.chdir(tmpdir)
     leaprc = ""
+    failed_molecule_list = []
     for (molecule_index, molecule) in enumerate(molecules):
         # Set the template name based on the molecule title.
         template_name = molecule.GetTitle()
@@ -384,7 +392,13 @@ def generateForceFieldFromMolecules(molecules):
         net_charge = _computeNetCharge(molecule)
 
         # Generate canonical AM1-BCC charges and a reference conformation.
-        molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+        if not ignoreFailures:
+            molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+        else:
+            try:
+                molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+            except:
+                failed_molecule_list.append(molecule)
 
         # Create a unique prefix.
         prefix = 'molecule%010d' % molecule_index
@@ -414,7 +428,10 @@ def generateForceFieldFromMolecules(molecules):
     # TODO: Clean up temporary directory.
     os.chdir(olddir)
 
-    return ffxml.getvalue()
+    if ignoreFailures:
+        return ffxml.getvalue(), failed_molecule_list
+    else:
+        return ffxml.getvalue()
 
 def createStructureFromResidue(residue):
     # Create ParmEd structure for residue.
