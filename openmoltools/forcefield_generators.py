@@ -354,7 +354,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     ffxml : str
         Contents of ForceField `ffxml` file defining additional parameters from parmchk(2) and residue templates.
     failed_molecule_list : list of openeye.oechem.OEMol
-        List of the oemols that could not be parameterized.
+        List of the oemols that could not be parameterized. Only returned if ignoreFailures=True
 
 
     Notes
