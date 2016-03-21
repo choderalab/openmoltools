@@ -428,7 +428,10 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     # TODO: Clean up temporary directory.
     os.chdir(olddir)
 
-    return ffxml.getvalue(), failed_molecule_list
+    if ignoreFailures:
+        return ffxml.getvalue(), failed_molecule_list
+    else:
+        return ffxml.getvalue()
 
 def createStructureFromResidue(residue):
     # Create ParmEd structure for residue.
