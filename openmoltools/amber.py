@@ -486,8 +486,8 @@ def build_peptide_tleap(amino_acids):
     tleapstr = """
     source oldff/leaprc.ff99SBildn
     system = sequence {{ {amino_acid} }}
-    saveamberparm system {amino_acid}.prmtop {amino_acid}.inpcrd
-    """.format(amino_acid=aa_str)
+    saveamberparm system {filename}.prmtop {filename}.inpcrd
+    """.format(amino_acid=aa_str, filename=filename)
     cwd = os.getcwd()
     temp_dir = tempfile.mkdtemp()
     os.chdir(temp_dir)
@@ -500,8 +500,8 @@ def build_peptide_tleap(amino_acids):
     output = getoutput(tleap_cmd_str)
     logging.debug(output)
 
-    prmtop = app.AmberPrmtopFile("{amino_acid}.prmtop".format(amino_acid=filename))
-    inpcrd = app.AmberInpcrdFile("{amino_acid}.inpcrd".format(amino_acid=filename))
+    prmtop = app.AmberPrmtopFile("{filename}.prmtop".format(filename=filename))
+    inpcrd = app.AmberInpcrdFile("{filename}.inpcrd".format(filename=filename))
     topology = prmtop.topology
     positions = inpcrd.positions
 
