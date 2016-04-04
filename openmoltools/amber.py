@@ -485,7 +485,7 @@ def build_peptide_tleap(amino_acids):
     filename = "".join(amino_acids)
     tleapstr = """
     source oldff/leaprc.ff99SBildn
-    system = sequence {{ ACE {amino_acid} NME }}
+    system = sequence {{ {amino_acid} }}
     saveamberparm system {amino_acid}.prmtop {amino_acid}.inpcrd
     """.format(amino_acid=aa_str)
     cwd = os.getcwd()
