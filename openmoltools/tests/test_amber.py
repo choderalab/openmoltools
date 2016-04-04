@@ -149,4 +149,4 @@ def test_generate_amino_acids():
         topology, position = amber.build_peptide_tleap(aa_list)
         residues = list(topology.residues())
         for i, aa in enumerate(aa_list):
-            assert aa == residues[i]
+            assert aa == residues[i].name
