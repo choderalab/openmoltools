@@ -42,7 +42,7 @@ def run_and_log_error(command):
         logger.error(e.output)
         logger.error(str(e))
         raise e
-    return output
+    return output.decode()
 
 
 def is_schrodinger_suite_installed():
@@ -109,7 +109,7 @@ def run_proplister(input_file_path):
     # strings that contain commas (e.g. "2,2-dimethylpropane").
     properties = []
     csv_reader = csv.reader(output.split('\n'))
-    names = csv_reader.next()
+    names = next(csv_reader)
     for values in csv_reader:
         if len(values) == 0:
             continue  # proplister prints a final empty line

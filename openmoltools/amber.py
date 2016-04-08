@@ -6,6 +6,7 @@ import shutil
 from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 import mdtraj.utils
+import simtk.openmm.app as app
 
 from openmoltools.utils import getoutput
 
@@ -461,3 +462,49 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         shutil.copy( 'out.inpcrd', inpcrd_filename )
 
     return prmtop_filename, inpcrd_filename
+
+def build_peptide_tleap(amino_acids):
+    """
+    Use tleap to generate a peptide topology
+    and positions.
+
+    Parameters
+    ----------
+    amino_acids : list of str
+        List of amino acids and caps in three-letter names
+        e.g. ['ACE', 'ALA', 'NME']
+
+    Returns
+    -------
+    topology : simtk.openmm.app.Topology object
+        Topology of the amino acid
+    positions : [n, 3] array
+        positions of atoms
+    """
+    aa_str = " ".join(amino_acids)
+    filename = "".join(amino_acids)
+    tleapstr = """
+    source oldff/leaprc.ff99SBildn
+    system = sequence {{ {amino_acid} }}
+    saveamberparm system {filename}.prmtop {filename}.inpcrd
+    """.format(amino_acid=aa_str, filename=filename)
+    cwd = os.getcwd()
+    temp_dir = tempfile.mkdtemp()
+    os.chdir(temp_dir)
+    tleap_file = open('tleap_commands', 'w')
+    tleap_file.writelines(tleapstr)
+    tleap_file.close()
+    tleap_cmd_str = "tleap -f %s " % tleap_file.name
+
+    #call tleap, log output to logger
+    output = getoutput(tleap_cmd_str)
+    logging.debug(output)
+
+    prmtop = app.AmberPrmtopFile("{filename}.prmtop".format(filename=filename))
+    inpcrd = app.AmberInpcrdFile("{filename}.inpcrd".format(filename=filename))
+    topology = prmtop.topology
+    positions = inpcrd.positions
+
+    os.chdir(cwd)
+    shutil.rmtree(temp_dir)
+    return topology, positions

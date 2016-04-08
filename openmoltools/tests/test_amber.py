@@ -138,3 +138,15 @@ def test_run_antechamber_charges():
     input_filename = utils.get_data_filename("chemicals/acetate/acetate.mol2")
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None, net_charge=-1)
+
+def test_generate_amino_acids():
+    """
+    Try to generate capped versions of each amino acid
+    """
+    aminos = ['ALA','ARG','ASN','ASP','CYS','GLN','GLU','GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER','THR','TRP','TYR','VAL']
+    for aa in aminos:
+        aa_list = ['ACE', aa, 'NME']
+        topology, position = amber.build_peptide_tleap(aa_list)
+        residues = list(topology.residues())
+        for i, aa in enumerate(aa_list):
+            assert aa == residues[i].name

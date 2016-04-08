@@ -61,7 +61,7 @@ env:
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
-    - secure: "gHW0bvR0blzHALWiODT0t+eg2tpXXIx8uR3ZNFjldDbuLqcGRs0UCZzy2J42/Yl1OHcjkN4SRZGz1EBsF6DRSI9XbSxOy/FH3kwZwr9ROOBYQ50/6JLwsN2iZnw6EPpjfpx/1pehRu49ZKU3tM8N7MA61OR/dm8ExAynSxJHZME="
+    - secure: "S9I5imZ0CJdwfhHzy+Beh8NTFm2ZYpMFCLgvBYT/UsifIKlGynUK2xGi7bDnHLpslT45FUMmjzdpf2QNrfbivVJgiSDTQJc1GCIqGFFKFqerJEEYUkXlBxvWNO+poSOMIzkJqd7xsTodt4CYhGJM1dT6ocaSM7UJgAErrcRJfLo="
 
 after_success:
   - echo "after_success"
