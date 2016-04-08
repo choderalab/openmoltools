@@ -332,7 +332,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
 
     return template, ffxml.getvalue()
 
-def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
+def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False):
     """
     Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -345,10 +345,11 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
         All molecules must have explicit hydrogens.
         Net charge will be inferred from the net formal charge on each molecule.
         Partial charges will be determined automatically using oequacpac and canonical AM1-BCC charging rules.
-
-    ignoreFailures: boolean, default False
-        Whether to add a failed molecule to the list of failed molecules (True),
+    ignoreFailures: bool, optional, default=False
+        Determines whether to add a failed molecule to the list of failed molecules (True),
         or raise an Exception (False).
+    generateUniqueNames : bool, optional, default=False
+        If True, will generate globally unique names for templates.
 
     Returns
     -------
@@ -357,7 +358,6 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     failed_molecule_list : list of openeye.oechem.OEMol
         List of the oemols that could not be parameterized. Only returned if ignoreFailures=True
 
-
     Notes
     -----
     This method preserves stereochemistry during AM1-BCC charge parameterization.
@@ -365,15 +365,16 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     Atom names in molecules will be assigned Tripos atom names if any are blank or not unique.
 
     """
+    if not generateUniqueNames:
     # Check template names are unique.
-    template_names = set()
-    for molecule in molecules:
-        template_name = molecule.GetTitle()
-        if template_name == '<0>':
-            raise Exception("Molecule '%s' has invalid name" % template_name)
-        if template_name in template_names:
-            raise Exception("Molecule '%s' has template name collision." % template_name)
-        template_names.add(template_name)
+        template_names = set()
+        for molecule in molecules:
+            template_name = molecule.GetTitle()
+            if template_name == '<0>':
+                raise Exception("Molecule '%s' has invalid name" % template_name)
+            if template_name in template_names:
+                raise Exception("Molecule '%s' has template name collision." % template_name)
+            template_names.add(template_name)
 
     # Process molecules.
     import tempfile
@@ -384,7 +385,11 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False):
     failed_molecule_list = []
     for (molecule_index, molecule) in enumerate(molecules):
         # Set the template name based on the molecule title.
-        template_name = molecule.GetTitle()
+        if generateUniqueNames:
+            from uuid import uuid4
+            template_name = molecule.GetTitle() + '-' + str(uuid4())
+        else:
+            template_name = molecule.GetTitle()            
 
         # If any atom names are not unique, atom names
         _ensureUniqueAtomNames(molecule)
