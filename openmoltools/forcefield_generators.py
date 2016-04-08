@@ -249,8 +249,9 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     Atom names in molecules will be assigned Tripos atom names if any are blank or not unique.
 
     """
-    # Set the template name based on the molecule title.
-    template_name = molecule.GetTitle()
+    # Set the template name based on the molecule title plus a globally unique UUID.
+    from uuid import uuid4
+    template_name = molecule.GetTitle() + '-' + str(uuid4())
 
     # If any atom names are not unique, atom names
     _ensureUniqueAtomNames(molecule)
