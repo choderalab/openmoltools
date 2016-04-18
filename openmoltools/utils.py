@@ -553,6 +553,15 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
 
     #Import ParmEd
     import parmed
+    #Require version 2.0.4 or later of ParmEd, otherwise ParmEd corrupts [ defaults ] section in GROMACS topologies with incorrect FudgeLJ/FudgeQQ
+    try:
+        ver = parmed.version
+    except:
+        oldParmEd = Exception('ERROR: ParmEd is too old, please upgrade to 2.0.4 or later')
+        raise oldParmEd
+    if ver < (2,0,4):
+        raise RuntimeError("ParmEd is too old, please upgrade to 2.0.4 or later")
+
 
     #Read AMBER to ParmEd object
     structure = parmed.amber.AmberParm( in_prmtop, in_crd )
