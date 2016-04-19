@@ -435,6 +435,16 @@ def randomize_mol2_residue_names(mol2_filenames):
     re-write the MOL2 files using ParmEd with the unique identifiers.
     """
     import parmed
+
+    # We require at least ParmEd 2.5.1 because of issues with the .mol2 writer (issue #691 on ParmEd) prior to that.
+    try: #Try to get version tag
+        ver = parmed.version
+    except: #If too old for version tag, it is too old
+        oldParmEd = Exception('ERROR: ParmEd is too old, please upgrade to 2.0.4 or later')
+        raise oldParmEd
+    if ver < (2,5,1):
+        raise RuntimeError("ParmEd is too old, please upgrade to 2.0.4 or later")
+
     names = get_unique_names(len(mol2_filenames))
 
     for k, filename in enumerate(mol2_filenames):
