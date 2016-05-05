@@ -23,7 +23,7 @@ requirements:
     - ambermini
     - pytables
     - parmed-dev
-#    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
     - setuptools
@@ -38,7 +38,7 @@ requirements:
     - pytables
     - parmed-dev
     - libgfortran ==1.0 # [linux]
-#    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
   requires:
