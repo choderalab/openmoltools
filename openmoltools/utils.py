@@ -5,6 +5,7 @@ import os
 import tempfile
 import logging
 import subprocess
+import functools
 from pkg_resources import resource_filename
 import contextlib
 import shutil
@@ -22,6 +23,10 @@ from openmoltools import amber_parser, system_checker
 logger = logging.getLogger(__name__)
 
 
+# ------------------------------------------------------------------------------
+# PYTHON 2-3 COMPATIBILITY FUNCTIONS
+# ------------------------------------------------------------------------------
+
 def getoutput(cmd):
     """Compatibility function to substitute deprecated commands.getoutput in Python2.7"""
     try:
@@ -34,6 +39,39 @@ def getoutput(cmd):
     except:
         return str(out)
 
+
+def wraps_py2(wrapped, *args):
+    """Wrap a function and add the __wrapped__ attribute.
+
+    In Python 2, functools.wraps does not add the __wrapped__ attribute, and it
+    becomes impossible to retrieve the signature of the wrapped method.
+
+    """
+    def decorator(wrapper):
+        functools.update_wrapper(wrapper, wrapped, *args)
+        wrapper.__wrapped__ = wrapped
+        return wrapper
+    return decorator
+
+
+def unwrap_py2(func):
+    """Unwrap a wrapped function.
+
+    The function inspect.unwrap has been implemented only in Python 3.4. With
+    Python 2, this works only for functions wrapped by wraps_py2().
+
+    """
+    unwrapped_func = func
+    try:
+        while True:
+            unwrapped_func = unwrapped_func.__wrapped__
+    except AttributeError:
+        return unwrapped_func
+
+
+# ------------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# ------------------------------------------------------------------------------
 
 def find_gaff_dat():
     print("Warning: find_gaff_dat has been moved to openmoltools.amber.")
