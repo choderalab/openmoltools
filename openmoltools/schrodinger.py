@@ -8,7 +8,6 @@ import csv
 import shutil
 import logging
 import subprocess
-from functools import wraps
 
 import mdtraj
 
@@ -65,7 +64,7 @@ def is_schrodinger_suite_installed():
 
 
 def need_schrodinger(func):
-    @wraps(func)
+    @utils.wraps_py2(func)
     def _need_schrodinger(*args, **kwargs):
         """Decorator that checks if the Schrodinger's suite is installed."""
         if not is_schrodinger_suite_installed():
@@ -166,7 +165,7 @@ def run_structconvert(input_file_path, output_file_path):
 
 
 def autoconvert_maestro(func):
-    @wraps(func)
+    @utils.wraps_py2(func)
     def _autoconvert_maestro(input_file_path, output_file_path, *args, **kwargs):
         """Decorator that make a function support more than only Maestro files.
 
