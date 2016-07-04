@@ -376,7 +376,14 @@ class SystemChecker(object):
 
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
+ 
+        # Build list of atoms to help make output more useful
+        atoms0 = [ atom for atom in self.simulation0.topology.atoms() ]
+        atoms1 = [ atom for atom in self.simulation1.topology.atoms() ]
+
         
+        # Check torsions for equivalent
+       
         if force0.getNumTorsions() == 0 and force1.getNumTorsions() == 0:
             return  # Must leave now, otherwise try to access torsions that don't exist.
 
@@ -426,19 +433,31 @@ class SystemChecker(object):
         assert diff_keys == set(), "Systems have different (proper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
+            # Store strings for printing debug info
+            torsion_atoms0 = '%s - %s - %s - %s' % (atoms0[i0].name, atoms0[i1].name, atoms0[i2].name, atoms0[i3].name )
+            torsion_atoms1 = '%s - %s - %s - %s' % (atoms1[i0].name, atoms1[i1].name, atoms1[i2].name, atoms1[i3].name )
+
+            # Proceed to check
             entries0 = dict0[i0, i1, i2, i3]
             entries1 = dict1[i0, i1, i2, i3]
-            assert len(entries0) == len(entries1), "Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
+            if len(entries0) != len(entries1):
+                print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                raise Exception("Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))) 
 
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
 
-            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
+            if set(subdict0.keys()) != set(subdict1.keys()):
+                print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                print("Keys for system0: '%s'; keys for system1: '%s'" % (subdict0.keys(), subdict1.keys() ) )
+                raise Exception("Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3) )
 
             for (per, phase) in subdict0.keys():
                 val0 = subdict0[per, phase]
                 val1 = subdict1[per, phase]
-                assert compare(val0, val1), "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+                if not compare(val0, val1):
+                    print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                    raise Exception( "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1) )
 
     def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):
         """Check that force0 and force1 are equivalent PeriodicTorsion forces.
