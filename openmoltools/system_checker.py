@@ -442,7 +442,7 @@ class SystemChecker(object):
             entries1 = dict1[i0, i1, i2, i3]
             if len(entries0) != len(entries1):
                 print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
-                raise Exception("Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))) 
+                raise Exception("Error:  (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))) 
 
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
@@ -450,14 +450,14 @@ class SystemChecker(object):
             if set(subdict0.keys()) != set(subdict1.keys()):
                 print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
                 print("Keys for system0: '%s'; keys for system1: '%s'" % (subdict0.keys(), subdict1.keys() ) )
-                raise Exception("Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3) )
+                raise Exception("Error: (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different terms." % (i0, i1, i2, i3) )
 
             for (per, phase) in subdict0.keys():
                 val0 = subdict0[per, phase]
                 val1 = subdict1[per, phase]
                 if not compare(val0, val1):
                     print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
-                    raise Exception( "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1) )
+                    raise Exception( "Error: (proper) PeriodicTorsionForce (atoms %d, %d, %d, %d) strength (periodicity %d, phase %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1) )
 
     def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):
         """Check that force0 and force1 are equivalent PeriodicTorsion forces.
