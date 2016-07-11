@@ -22,11 +22,24 @@ def compare(x0, x1, relative=False):
     """Compare two quantities relative to EPSILON."""
 
     if relative is True:
-        denominator = abs(x1)
+        # Watch out for zero division
+        if abs(x1) > 0:
+            denominator = abs(x1)
+        elif abs(x0) > 0:
+            denominator = abs(x0)
+        else:
+            return 0
     else:
         denominator = 1.0
+    value = abs(x0-x1)/denominator
 
-    return (abs(x0 - x1) / denominator) < EPSILON
+    # Make sure return is unitless
+    try:
+        value = value/value.unit
+    except AttributeError:
+        pass
+
+    return (value) < EPSILON
 
 reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
 
@@ -316,7 +329,7 @@ class SystemChecker(object):
         #unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
         unit_q = u.elementary_charge
         unit_sigma = u.angstrom
-        unit_epsilon = u.kiloloule_per_mole
+        unit_epsilon = u.kilojoule_per_mole
 
         for k in range(n_atoms):
             q0, sigma0, epsilon0 = force0.getParticleParameters(k)
