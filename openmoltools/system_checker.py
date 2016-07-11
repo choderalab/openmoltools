@@ -211,8 +211,9 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
 
         i0, i1, r0, k0 = force0.getBondParameters(0)
-        unit_r = r0.unit
-        unit_k = k0.unit
+        unit_r = u.angstrom
+        #unit_k = k0.unit
+        unit_k = u.kilojoules_per_mole/(u.angstrom)**2
 
         for k in range(n_bonds0):
             i0, i1, r0, k0 = force0.getBondParameters(k)
@@ -258,8 +259,10 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
 
         i0, i1, i2, theta0, k0 = force0.getAngleParameters(0)
-        unit_theta = theta0.unit
-        unit_k = k0.unit
+        #unit_theta = theta0.unit
+        unit_theta = u.degrees
+        #unit_k = k0.unit
+        unit_k = u.kilojoules_per_mole/(u.degrees)**2
 
         for k in range(n_angles0):
             i0, i1, i2, theta0, k0 = force0.getAngleParameters(k)
@@ -303,7 +306,10 @@ class SystemChecker(object):
         n_atoms = force0.getNumParticles()
 
         q, sigma, epsilon = force0.getParticleParameters(0)
-        unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
+        #unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
+        unit_q = u.elementary_charge
+        unit_sigma = u.angstrom
+        unit_epsilon = u.kiloloule_per_mole
 
         for k in range(n_atoms):
             q0, sigma0, epsilon0 = force0.getParticleParameters(k)
@@ -325,7 +331,10 @@ class SystemChecker(object):
         assert force0.getNumExceptions() == force1.getNumExceptions(), "Error: Systems have %d and %d exceptions in NonbondedForce, respectively." % (force0.getNumExceptions(), force1.getNumExceptions())
 
         i0, i1, qq, sigma, epsilon = force0.getExceptionParameters(0)
-        unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
+        #unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
+        unit_qq = u.elementary_charge
+        unit_sigma = u.angstrom
+        unit_epsilon = u.kilojoule_per_mole
 
         dict0, dict1 = {}, {}
         for k in range(n_exceptions):
@@ -389,7 +398,9 @@ class SystemChecker(object):
 
         F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
         i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
-        phase_unit, k0_unit = phase.unit, k0.unit
+        #phase_unit, k0_unit = phase.unit, k0.unit
+        k0_unit = u.kilojoules_per_mole
+        phase_unit = u.degrees
 
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
@@ -504,7 +515,9 @@ class SystemChecker(object):
 
         F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
         i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
-        phase_unit, k0_unit = phase.unit, k0.unit
+        #phase_unit, k0_unit = phase.unit, k0.unit
+        k0_unit = u.kilojoules_per_mole
+        phase_unit = u.degrees
 
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
