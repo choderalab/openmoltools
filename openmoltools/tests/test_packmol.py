@@ -48,8 +48,9 @@ def test_packmol_simulation_ternary():
     integrator = mm.LangevinIntegrator(temperature, friction, timestep)
 
     simulation = app.Simulation(top, system, integrator)
+    simulation.minimizeEnergy()
     simulation.context.setPositions(xyz)
-
+    simulation.minimizeEnergy()
     simulation.step(25)
 
 @skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
@@ -84,6 +85,7 @@ def test_packmol_simulation_ternary_bydensity():
 
     simulation = app.Simulation(top, system, integrator)
     simulation.context.setPositions(xyz)
+    simulation.minimizeEnergy()
 
     simulation.step(25)
 

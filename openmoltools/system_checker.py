@@ -22,11 +22,24 @@ def compare(x0, x1, relative=False):
     """Compare two quantities relative to EPSILON."""
 
     if relative is True:
-        denominator = abs(x1)
+        # Watch out for zero division
+        if abs(x1) > 0:
+            denominator = abs(x1)
+        elif abs(x0) > 0:
+            denominator = abs(x0)
+        else:
+            return 0
     else:
         denominator = 1.0
+    value = abs(x0-x1)/denominator
 
-    return (abs(x0 - x1) / denominator) < EPSILON
+    # Make sure return is unitless
+    try:
+        value = value/value.unit
+    except AttributeError:
+        pass
+
+    return (value) < EPSILON
 
 reduce_precision = lambda x: float(np.float16(x))  # Useful for creating dictionary keys with floating point numbers that may differ at insignificant decimal places
 
@@ -211,8 +224,9 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
 
         i0, i1, r0, k0 = force0.getBondParameters(0)
-        unit_r = r0.unit
-        unit_k = k0.unit
+        unit_r = u.angstrom
+        #unit_k = k0.unit
+        unit_k = u.kilojoules_per_mole/(u.angstrom)**2
 
         for k in range(n_bonds0):
             i0, i1, r0, k0 = force0.getBondParameters(k)
@@ -236,7 +250,11 @@ class SystemChecker(object):
             for (i0, i1) in dict0.keys():
                 val0 = dict0[i0, i1][k]
                 val1 = dict1[i0, i1][k]
-                assert compare(val0, val1), "Error: Harmonic Bond (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
+                if parameter_name=='r0':
+                    assert compare(val0, val1), "Error: Harmonic Bond distance (%d, %d) has equilibrium distances of %f and %f angstroms, respectively." % (i0, i1, val0, val1)
+                else:
+                    assert compare(val0, val1), "Error: Harmonic Bond force constant (%d, %d) has values of %f and %f kJ/mol, respectively." % (i0, i1, val0, val1)
+
 
     def check_angles(self, force0, force1):
         """Check that force0 and force1 are equivalent Angle forces.
@@ -258,8 +276,10 @@ class SystemChecker(object):
         dict0, dict1 = {}, {}
 
         i0, i1, i2, theta0, k0 = force0.getAngleParameters(0)
-        unit_theta = theta0.unit
-        unit_k = k0.unit
+        #unit_theta = theta0.unit
+        unit_theta = u.degrees
+        #unit_k = k0.unit
+        unit_k = u.kilojoules_per_mole/(u.degrees)**2
 
         for k in range(n_angles0):
             i0, i1, i2, theta0, k0 = force0.getAngleParameters(k)
@@ -283,7 +303,10 @@ class SystemChecker(object):
             for (i0, i1, i2) in dict0.keys():
                 val0 = dict0[i0, i1, i2][k]
                 val1 = dict1[i0, i1, i2][k]
-                assert compare(val0, val1), "Error: Harmonic Angle (%d, %d, %d) has %s values of %f and %f, respectively." % (i0, i1, i2, parameter_name, val0, val1)
+                if parameter_name=='theta0':
+                    assert compare(val0, val1), "Error: Harmonic Angle (%d, %d, %d) has angle values of %f and %f degrees, respectively." % (i0, i1, i2, val0, val1)
+                else:
+                    assert compare(val0, val1), "Error: Harmonic Angle (%d, %d, %d) has force constant values of %f and %f kJ/(mol degree**2), respectively." % (i0, i1, i2, val0, val1)
 
     def check_nonbonded(self, force0, force1):
         """Check that force0 and force1 are equivalent Nonbonded forces.
@@ -303,7 +326,10 @@ class SystemChecker(object):
         n_atoms = force0.getNumParticles()
 
         q, sigma, epsilon = force0.getParticleParameters(0)
-        unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
+        #unit_q, unit_sigma, unit_epsilon = q.unit, sigma.unit, epsilon.unit
+        unit_q = u.elementary_charge
+        unit_sigma = u.angstrom
+        unit_epsilon = u.kilojoule_per_mole
 
         for k in range(n_atoms):
             q0, sigma0, epsilon0 = force0.getParticleParameters(k)
@@ -315,17 +341,20 @@ class SystemChecker(object):
             assert compare(q0, q1), "Error: Particle %d has charges of %f and %f, respectively." % (k, q0, q1)
 
             if epsilon0 != 0.:
-                assert compare(sigma0, sigma1), "Error: Particle %d has sigma of %f and %f, respectively." % (k, sigma0, sigma1)
+                assert compare(sigma0, sigma1), "Error: Particle %d has sigma of %f and %f angstroms, respectively." % (k, sigma0, sigma1)
             else:
-                logger.info("Skipping comparison of sigma (%f, %f) on particle %d because epsilon has values %f, %f" % (sigma0, sigma1, k, epsilon0, epsilon1))
+                logger.info("Skipping comparison of sigma (%f, %f) on particle %d because epsilon has values %f, %f kJ/mol" % (sigma0, sigma1, k, epsilon0, epsilon1))
 
-            assert compare(epsilon0, epsilon1), "Error: Particle %d has epsilon of %f and %f, respectively." % (k, epsilon0, epsilon1)
+            assert compare(epsilon0, epsilon1), "Error: Particle %d has epsilon of %f and %f kJ/mol, respectively." % (k, epsilon0, epsilon1)
 
         n_exceptions = force0.getNumExceptions()
         assert force0.getNumExceptions() == force1.getNumExceptions(), "Error: Systems have %d and %d exceptions in NonbondedForce, respectively." % (force0.getNumExceptions(), force1.getNumExceptions())
 
         i0, i1, qq, sigma, epsilon = force0.getExceptionParameters(0)
-        unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
+        #unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
+        unit_qq = u.elementary_charge
+        unit_sigma = u.angstrom
+        unit_epsilon = u.kilojoule_per_mole
 
         dict0, dict1 = {}, {}
         for k in range(n_exceptions):
@@ -349,7 +378,12 @@ class SystemChecker(object):
                 val1 = dict1[i0, i1][k]
                 if parameter_name == "sigma" and dict0[i0, i1][2] == 0.0 and dict1[i0, i1][2] == 0.0:
                     continue  # If both epsilon parameters are zero, then sigma doesn't matter so skip the comparison.
-                assert compare(val0, val1), "Error: NonBondedForce Exception (%d, %d) has %s values of %f and %f, respectively." % (i0, i1, parameter_name, val0, val1)
+                if parameter_name =="sigma":
+                    assert compare(val0, val1), "Error: NonBondedForce Exception, atom (%d, %d) has sigma values of %f and %f angstroms, respectively." % (i0, i1, parameter_name, val0, val1)
+                elif parameter_name=="qq":
+                    assert compare(val0, val1), "Error: NonBondedForce Exception atom (%d, %d) has charge values of %f and %f elementary charge, respectively." % (i0, i1, val0, val1)
+                else:
+                    assert compare(val0, val1), "Error: NonBondedForce Exception, atom (%d, %d) has epsilon values of %f and %f kJ/mol, respectively." % (i0, i1, val0, val1)
 
     def check_proper_torsions(self, force0, force1, bond_force0, bond_force1):
         """Check that force0 and force1 are equivalent PeriodicTorsion forces.
@@ -376,13 +410,22 @@ class SystemChecker(object):
 
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
+ 
+        # Build list of atoms to help make output more useful
+        atoms0 = [ atom for atom in self.simulation0.topology.atoms() ]
+        atoms1 = [ atom for atom in self.simulation1.topology.atoms() ]
+
         
+        # Check torsions for equivalent
+       
         if force0.getNumTorsions() == 0 and force1.getNumTorsions() == 0:
             return  # Must leave now, otherwise try to access torsions that don't exist.
 
         F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
         i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
-        phase_unit, k0_unit = phase.unit, k0.unit
+        #phase_unit, k0_unit = phase.unit, k0.unit
+        k0_unit = u.kilojoules_per_mole
+        phase_unit = u.degrees
 
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
@@ -426,19 +469,31 @@ class SystemChecker(object):
         assert diff_keys == set(), "Systems have different (proper) PeriodicTorsionForce entries: extra keys are: \n%s" % diff_keys
 
         for (i0, i1, i2, i3) in dict0.keys():
+            # Store strings for printing debug info
+            torsion_atoms0 = '%s - %s - %s - %s' % (atoms0[i0].name, atoms0[i1].name, atoms0[i2].name, atoms0[i3].name )
+            torsion_atoms1 = '%s - %s - %s - %s' % (atoms1[i0].name, atoms1[i1].name, atoms1[i2].name, atoms1[i3].name )
+
+            # Proceed to check
             entries0 = dict0[i0, i1, i2, i3]
             entries1 = dict1[i0, i1, i2, i3]
-            assert len(entries0) == len(entries1), "Error:  (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))
+            if len(entries0) != len(entries1):
+                print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                raise Exception("Error:  (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))) 
 
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
 
-            assert set(subdict0.keys()) == set(subdict1.keys()), "Error: (proper) PeriodicTorsionForce entry (%d, %d, %d, %d) has different terms." % (i0, i1, i2, i3)
+            if set(subdict0.keys()) != set(subdict1.keys()):
+                print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                print("Keys for system0: '%s'; keys for system1: '%s'" % (subdict0.keys(), subdict1.keys() ) )
+                raise Exception("Error: (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different terms." % (i0, i1, i2, i3) )
 
             for (per, phase) in subdict0.keys():
                 val0 = subdict0[per, phase]
                 val1 = subdict1[per, phase]
-                assert compare(val0, val1), "Error: (proper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+                if not compare(val0, val1):
+                    print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
+                    raise Exception( "Error: (proper) PeriodicTorsionForce (atoms %d, %d, %d, %d, periodicity %d, phase %f degrees) has barrier height values of %f and %f kJ/mol, respectively." % (i0, i1, i2, i3, per, phase, val0, val1) )
 
     def check_improper_torsions(self, force0, force1, bond_force0, bond_force1):
         """Check that force0 and force1 are equivalent PeriodicTorsion forces.
@@ -485,7 +540,9 @@ class SystemChecker(object):
 
         F = force0 if force0.getNumTorsions() > 0 else force1  # Either force0 or force1 is nonempty, so find that one.
         i0, i1, i2, i3, per, phase, k0 = F.getTorsionParameters(0)
-        phase_unit, k0_unit = phase.unit, k0.unit
+        #phase_unit, k0_unit = phase.unit, k0.unit
+        k0_unit = u.kilojoules_per_mole
+        phase_unit = u.degrees
 
         dict0, dict1 = {}, {}
         for k in range(force0.getNumTorsions()):
@@ -541,7 +598,7 @@ class SystemChecker(object):
             for (per, phase) in subdict0.keys():
                 val0 = subdict0[per, phase]
                 val1 = subdict1[per, phase]
-                assert compare(val0, val1), "Error: (improper) PeriodicTorsionForce strength (%d, %d, %d, %d) (%d, %f) has values of %f and %f, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
+                assert compare(val0, val1), "Error: (improper) PeriodicTorsionForce (atoms %d, %d, %d, %d, periodicity %d, phase %f degrees) has barrier height values of %f and %f kJ/mol, respectively." % (i0, i1, i2, i3, per, phase, val0, val1)
 
     def zero_degenerate_impropers(self, f):
         """Set the force constant to zero for improper dihedrals that
@@ -616,7 +673,7 @@ class SystemChecker(object):
         
         if not skip_assert:
             delta = abs(energy0 - energy1)
-            assert delta < ENERGY_EPSILON, "Error, energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            assert delta < ENERGY_EPSILON, "Error, energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
 
         return energy0, energy1
 
@@ -674,13 +731,13 @@ class SystemChecker(object):
 
         if not skip_assert:
             delta = abs(energy0["bond"] - energy1["bond"])
-            assert delta < COMPONENT_ENERGY_EPSILON, "Error, bond energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, bond energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
             delta = abs(energy0["angle"] - energy1["angle"])
-            assert delta < COMPONENT_ENERGY_EPSILON, "Error, angle energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, angle energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
             delta = abs(energy0["nb"] - energy1["nb"])
-            assert delta < COMPONENT_ENERGY_EPSILON, "Error, NB energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            assert delta < COMPONENT_ENERGY_EPSILON, "Error, NB energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
             delta = abs(energy0["torsion"] - energy1["torsion"])
-            assert delta < TORSION_ENERGY_EPSILON, "Error, torsion energy difference (%f) is greater than %f" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
+            assert delta < TORSION_ENERGY_EPSILON, "Error, torsion energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
 
 
         return energy0, energy1
