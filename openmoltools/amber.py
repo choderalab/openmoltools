@@ -393,7 +393,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     return gaff_mol2_filename, frcmod_filename
 
 
-def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None, log_debug_output=False):
+def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filename=None, inpcrd_filename=None, log_debug_output=False, leaprc='leaprc.gaff'):
     """Run AmberTools tleap to create simulation files for AMBER
 
     Parameters
@@ -410,6 +410,8 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
         Amber inpcrd file produced by tleap, defaults to molecule_name
     log_debug_output : bool, optional, default=False
         If true, will send output of tleap to logger.
+    leaprc : str, optional, default = 'leaprc.gaff'
+        Optionally, specify alternate leaprc to use, such as `leaprc.gaff2`
 
     Returns
     -------
@@ -436,14 +438,14 @@ def run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename, prmtop_filenam
 
         tleap_input = """
     source oldff/leaprc.ff99SB
-    source leaprc.gaff
+    source %s
     LIG = loadmol2 file.mol2
     check LIG
     loadamberparams file.frcmod
     saveamberparm LIG out.prmtop out.inpcrd
     quit
 
-"""
+""" % leaprc
 
         file_handle = open('tleap_commands', 'w')
         file_handle.writelines(tleap_input)
