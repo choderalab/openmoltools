@@ -28,20 +28,27 @@ before_install:
 install:
 
 script:
-  # Add omnia channel
+  # Create a test environment
+  - conda create --yes -n test python=$python
+  # Activate the test environment
+  - source activate test
+  # Add org channel
   - conda config --add channels ${ORGNAME}
-  # Build conda dev package
+  # Add omnia dev channels
+  - conda config --add channels https://conda.anaconda.org/omnia/label/dev
+  # Install OpenEye toolkit
+  - conda install --yes --quiet pip
+  - pip install $OPENEYE_CHANNEL openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
+  # Build the recipe
   - conda build devtools/conda-recipe
-  # Activate test environment
-  - source activate _test
-  # Install package prerequisites
-  - conda install --yes --quiet pip nose nose-timer
+  # Install the package
+  - conda install --yes --use-local ${PACKAGENAME}-dev
+  # Install testing dependencies
+  - conda install --yes --quiet nose nose-timer
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
-  # Install OpenEye toolkit if we have unencrypted the license file.
-  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then pip install $OPENEYE_CHANNEL openeye-toolkits; fi
   # Test the package
-  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-doctest --with-timer -a '!slow' && cd ..
+  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
 
 env:
   matrix:
