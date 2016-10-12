@@ -53,13 +53,13 @@ script:
 env:
   matrix:
     # OpenEye production
-    - CONDA_PY=27  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
-    - CONDA_PY=34  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
-    - CONDA_PY=35  OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
     # OpenEye beta
-    - CONDA_PY=27  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
-    - CONDA_PY=34  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
-    - CONDA_PY=35  OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
 
   global:
     - ORGNAME="omnia"

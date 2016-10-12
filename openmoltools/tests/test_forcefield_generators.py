@@ -389,7 +389,38 @@ def test_system_generator():
         f.description = 'Testing SystemGenerator on %s' % name
         yield f
 
+def imatinib_timing():
+    print("Loading imatinib...")
+    # Load the PDB file.
+    from simtk.openmm.app import PDBFile
+    pdb_filename = utils.get_data_filename("chemicals/imatinib/imatinib.pdb")
+    pdb = PDBFile(pdb_filename)
+    # Create a ForceField object.
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    forcefield = ForceField(gaff_xml_filename)
+    # Add the residue template generator.
+    from openmoltools.forcefield_generators import gaffTemplateGenerator
+    forcefield.registerTemplateGenerator(gaffTemplateGenerator)
+    # Parameterize system.
+    system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff)
+    integrator = openmm.LangevinIntegrator(300 * unit.kelvin, 5.0 / unit.picoseconds, 1.0 * unit.femtoseconds)
+    # Create Context
+    context = openmm.Context(system, integrator)
+    context.setPositions(pdb.positions)
+    integrator.step(100)
+
+    import time
+    nsteps = 10000000
+    initial_time = time.time()
+    integrator.step(nsteps)
+    state = context.getState().getPeriodicBoxVectors() # force dynamics
+    final_time = time.time()
+    elapsed_time = final_time / initial_time
+    time_per_step = elapsed_time / float(nsteps)
+    print('time per force evaluation is %.3f us' % (time_per_step*1e6))
 
 if __name__ == '__main__':
+    imatinib_timing()
+
     #test_PerceiveBondOrdersExplicitHydrogens(write_pdf=True)
     unittest.main()
