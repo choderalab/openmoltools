@@ -389,7 +389,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
             from uuid import uuid4
             template_name = molecule.GetTitle() + '-' + str(uuid4())
         else:
-            template_name = molecule.GetTitle()            
+            template_name = molecule.GetTitle()
 
         # If any atom names are not unique, atom names
         _ensureUniqueAtomNames(molecule)
