@@ -17,7 +17,6 @@ try:
     from rdkit.Chem import AllChem
 except ImportError:
     HAVE_RDKIT = False
-
 @skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
 @skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary():
@@ -40,7 +39,7 @@ def test_packmol_simulation_ternary():
     forcefield = app.ForceField(ffxml)
 
     temperature = 300 * u.kelvin
-    friction = 0.1 / u.picosecond
+    friction = 91.0 / u.picosecond
     timestep = 0.1 * u.femtosecond
 
     system = forcefield.createSystem(top, nonbondedMethod=app.PME, nonbondedCutoff=1.0 * u.nanometers, constraints=None)
@@ -48,7 +47,6 @@ def test_packmol_simulation_ternary():
     integrator = mm.LangevinIntegrator(temperature, friction, timestep)
 
     simulation = app.Simulation(top, system, integrator)
-    simulation.minimizeEnergy()
     simulation.context.setPositions(xyz)
     simulation.minimizeEnergy()
     simulation.step(25)
@@ -76,7 +74,7 @@ def test_packmol_simulation_ternary_bydensity():
     forcefield = app.ForceField(ffxml)
 
     temperature = 300 * u.kelvin
-    friction = 0.1 / u.picosecond
+    friction = 91.0 / u.picosecond
     timestep = 0.1 * u.femtosecond
 
     system = forcefield.createSystem(top, nonbondedMethod=app.PME, nonbondedCutoff=1.0 * u.nanometers, constraints=None)
@@ -88,4 +86,3 @@ def test_packmol_simulation_ternary_bydensity():
     simulation.minimizeEnergy()
 
     simulation.step(25)
-
