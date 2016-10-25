@@ -303,7 +303,8 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         logger.info("Angles0 - Angles1 = %s" % (keys0.difference(keys1)))
         logger.info("Angles1 - Angles0 = %s" % (keys1.difference(keys0)))
-        assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicAngle Forces"
+        diff_keys = keys0.symmetric_difference(keys1)
+        assert diff_keys == set(), "Systems have different HarmonicAngleForce entries: extra keys are: \n%s" % diff_keys
 
         for k, parameter_name in enumerate(["theta0", "k0"]):
             for (i0, i1, i2) in dict0.keys():
