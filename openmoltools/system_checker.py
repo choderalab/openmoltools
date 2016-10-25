@@ -194,15 +194,21 @@ class SystemChecker(object):
             elif type(force) == mm.NonbondedForce:
                 self.nonbonded_force1 = force
 
-    def check_force_parameters(self):
+    def check_force_parameters(self, skipImpropers = False):
         """Check that force parameters are the same, up to some equivalence.
+
+        Arguments:
+        ----------
+        skipImpropers : bool (optional), default False
+            Skip checking of impropers if desired (i.e. for a force field using a different form for impropers).
         """
         self.check_bonds(self.bond_force0, self.bond_force1)
         self.check_angles(self.angle_force0, self.angle_force1)
         self.check_nonbonded(self.nonbonded_force0, self.nonbonded_force1)
         self.check_proper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
-        self.check_improper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
-        logger.info("Note: skipping degenerate impropers with < 4 atoms.")
+        if not skipImpropers:
+            self.check_improper_torsions(self.torsion_force0, self.torsion_force1, self.bond_force0, self.bond_force1)
+            logger.info("Note: skipping degenerate impropers with < 4 atoms.")
 
     def check_bonds(self, force0, force1):
         """Check that force0 and force1 are equivalent Bond forces.
@@ -297,7 +303,8 @@ class SystemChecker(object):
         keys1 = set(dict1.keys())
         logger.info("Angles0 - Angles1 = %s" % (keys0.difference(keys1)))
         logger.info("Angles1 - Angles0 = %s" % (keys1.difference(keys0)))
-        assert set(dict0.keys()) == set(dict1.keys()), "Systems have different HarmonicAngle Forces"
+        diff_keys = keys0.symmetric_difference(keys1)
+        assert diff_keys == set(), "Systems have different HarmonicAngleForce entries: extra keys are: \n%s" % diff_keys
 
         for k, parameter_name in enumerate(["theta0", "k0"]):
             for (i0, i1, i2) in dict0.keys():
@@ -410,14 +417,14 @@ class SystemChecker(object):
 
         bond_set0 = get_symmetrized_bond_set(bond_force0)
         bond_set1 = get_symmetrized_bond_set(bond_force1)
- 
+
         # Build list of atoms to help make output more useful
         atoms0 = [ atom for atom in self.simulation0.topology.atoms() ]
         atoms1 = [ atom for atom in self.simulation1.topology.atoms() ]
 
-        
+
         # Check torsions for equivalent
-       
+
         if force0.getNumTorsions() == 0 and force1.getNumTorsions() == 0:
             return  # Must leave now, otherwise try to access torsions that don't exist.
 
@@ -478,7 +485,7 @@ class SystemChecker(object):
             entries1 = dict1[i0, i1, i2, i3]
             if len(entries0) != len(entries1):
                 print("Compared torsion involving atoms '%s' with that involving atoms '%s': " % (torsion_atoms0, torsion_atoms1))
-                raise Exception("Error:  (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1))) 
+                raise Exception("Error:  (proper) PeriodicTorsionForce entry (atoms %d, %d, %d, %d) has different numbers of terms (%d and %d, respectively)." % (i0, i1, i2, i3, len(entries0), len(entries1)))
 
             subdict0 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries0)
             subdict1 = dict(((per, reduce_precision(phase)), k0) for (per, phase, k0) in entries1)
@@ -647,8 +654,8 @@ class SystemChecker(object):
             if True, zero out all impropers with < 4 atoms.
         skip_assert, bool, optional, default=False
             If False, this function will raise an AssertionError if
-            the energy groups are not identical.            
-        
+            the energy groups are not identical.
+
         Notes
         -----
         If zero_degenerate_impropers is True, this function WILL MODIFY
@@ -659,7 +666,7 @@ class SystemChecker(object):
             xyz = self.simulation0.context.getState(getPositions=True).getPositions()
             self.simulation0.context.reinitialize()
             self.simulation0.context.setPositions(xyz)
-            
+
             self.zero_degenerate_impropers(self.torsion_force1)
             xyz = self.simulation1.context.getState(getPositions=True).getPositions()
             self.simulation1.context.reinitialize()
@@ -670,7 +677,7 @@ class SystemChecker(object):
 
         state1 = self.simulation1.context.getState(getEnergy=True)
         energy1 = state1.getPotentialEnergy()
-        
+
         if not skip_assert:
             delta = abs(energy0 - energy1)
             assert delta < ENERGY_EPSILON, "Error, energy difference (%f kJ/mol) is greater than %f kJ/mol" % (delta / u.kilojoules_per_mole, ENERGY_EPSILON / u.kilojoules_per_mole)
@@ -680,12 +687,12 @@ class SystemChecker(object):
 
     def check_energy_groups(self, skip_assert=False):
         """Return the groupwise energies of the two simulations.
-        
+
         Parameters
         ----------
         skip_assert, bool, optional, default=False
             If False, this function will raise an AssertionError if
-            the energy groups are not identical. 
+            the energy groups are not identical.
 
         Returns
         -------
@@ -695,7 +702,7 @@ class SystemChecker(object):
         energy1 : dict
             A dictionary with keys "bond", "angle", "nb", "torsion" and values
             corresponding to the energies of these components for the second simulation object
-            
+
         """
 
         self.bond_force0.setForceGroup(0)
@@ -708,8 +715,8 @@ class SystemChecker(object):
         self.nonbonded_force1.setForceGroup(2)
 
         self.torsion_force0.setForceGroup(3)
-        self.torsion_force1.setForceGroup(3)        
-        
+        self.torsion_force1.setForceGroup(3)
+
 
         xyz = self.simulation0.context.getState(getPositions=True).getPositions()
         self.simulation0.context.reinitialize()
@@ -717,7 +724,7 @@ class SystemChecker(object):
 
         xyz = self.simulation1.context.getState(getPositions=True).getPositions()
         self.simulation1.context.reinitialize()
-        self.simulation1.context.setPositions(xyz)        
+        self.simulation1.context.setPositions(xyz)
 
         energy0 = {}
         energy1 = {}
