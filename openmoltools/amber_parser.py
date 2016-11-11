@@ -7,7 +7,6 @@ import subprocess
 import datetime
 from six.moves import cStringIO
 import mdtraj as md
-from collections import namedtuple
 import logging
 logger = logging.getLogger(__name__)
 
