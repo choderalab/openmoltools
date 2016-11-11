@@ -251,8 +251,8 @@ class AmberParser(object):
                     # Periodicity parameter pn is an int stored as a float,
                     # and a negative sign indicates additional dihedral terms are added on the next line
                     pn = int(float(params['pn']))
+                    pk_over_idivf = float(params['pk']) / float(params['idivf'])
                     if continueTorsion:
-                        pk_over_idivf = float(params['pk']) / float(params['idivf'])
                         self.torsions[-1] += [pk_over_idivf, params['phase'], abs(pn)]
                     else:
                         self.torsions.append([params['ipt'], params['jpt'], params['kpt'], params['lpt'], pk_over_idivf, params['phase'], abs(pn)])
