@@ -339,9 +339,9 @@ class AmberParser(object):
 
         # prevent potential IndexError from line being too short
         try:
-            apol = line[14:24].strip()
+            apol = line[14:24].split()[0].strip()
         except IndexError:
-            apol = line[14:-1].strip()
+            apol = line[14:-1].split()[0].strip()
         return locals()
 
 
@@ -397,9 +397,9 @@ class AmberParser(object):
         rk = line[5:15].strip()
         # prevent potential IndexError from line being too short
         try:
-            req = line[15:25].strip()
+            req = line[15:25].split()[0].strip()
         except IndexError:
-            req = line[15:-1].strip()
+            req = line[15:-1].split()[0].strip()
 
         return locals()
 
@@ -457,9 +457,9 @@ class AmberParser(object):
 
         # prevent potential IndexError from line being too short
         try:
-            teq = line[18:28].strip()
+            teq = line[18:28].split()[0].strip()
         except IndexError:
-            teq = line[18:-1].strip()
+            teq = line[18:-1].split()[0].strip()
         return locals()
 
     @staticmethod
@@ -542,9 +542,9 @@ class AmberParser(object):
         phase = line[30:45].strip()
         # prevent potential IndexError from line being too short
         try:
-            pn = line[45:60].strip()
+            pn = line[45:60].split()[0].strip()
         except IndexError:
-            pn = line[45:-1].strip()
+            pn = line[45:-1].split()[0].strip()
 
         return locals()
 
@@ -614,9 +614,9 @@ class AmberParser(object):
         phase = line[30:45].strip()
         # prevent potential IndexError from line being too short
         try:
-            pn = line[45:60].strip()
+            pn = line[45:60].split()[0].strip()
         except IndexError:
-            pn = line[45:-1].strip()
+            pn = line[45:-1].split()[0].strip()
 
         return locals()
 
@@ -668,7 +668,7 @@ class AmberParser(object):
         # or reaches 19 which is the maximum according to format
         try:
             for n in range(1,20):
-                ieqv.append(line[4*n:4*n+2].strip())
+                ieqv.append(line[4*n:4*n+2].split()[0].strip())
         except IndexError:
             pass
 
@@ -831,23 +831,23 @@ class AmberParser(object):
 
             # prevent IndexError from line being too short
             try:
-                rmin = line[30:40].strip()
+                rmin = line[30:40].split()[0].strip()
             except IndexError:
-                rmin = line[30:-1].strip()
+                rmin = line[30:-1].split()[0].strip()
         elif kindnb.upper() == "RE":
             r = line[10:20].strip()
             # prevent IndexError from line being too short
             try:
-                edep = line[20:30].strip()
+                edep = line[20:30].split()[0].strip()
             except IndexError:
-                edep = line[20:-1].strip()
+                edep = line[20:-1].split()[0].strip()
         elif kindnb.upper() == "AC":
             a = line[10:20].strip()
             # prevent IndexError from line being too short
             try:
-                c = line[20:30].strip()
+                c = line[20:30].split()[0].strip()
             except IndexError:
-                c = line[20:-1].strip()
+                c = line[20:-1].split()[0].strip()
         else:
             raise ValueError("Unsupported NB format {nbformat}".format(**locals()))
 
