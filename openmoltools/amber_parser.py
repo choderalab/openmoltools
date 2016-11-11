@@ -7,7 +7,6 @@ import subprocess
 import datetime
 from six.moves import cStringIO
 import mdtraj as md
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -221,67 +220,641 @@ class AmberParser(object):
         block = 0
         continueTorsion = False
         for line in open(inputfile):
-            line = line.strip()
+            # Use to detect blank lines
+            line_length = len(line.strip())
             if block == 0:     # Title
                 block += 1
             elif block == 1:   # Mass
-                fields = line.split()
-                if len(fields) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    self.masses[fields[0]] = float(fields[1])
+                    params = self._parse_dat_atom_symbols_and_masses(line)
+                    self.masses[params['kndsym']] = float(params['amass'])
             elif block == 2:   # Hydrophilic atoms
                 block += 1
             elif block == 3:   # Bonds
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line[5:].split()
-                    self.bonds.append((line[:2].strip(), line[3:5].strip(), fields[0], fields[1]))
+                    params = self._parse_dat_bond_length_parameters(line)
+                    self.bonds.append([params['ibt'], params['jbt'], params['rk'], params['req']])
             elif block == 4:   # Angles
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line[8:].split()
-                    self.angles.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), fields[0], fields[1]))
+                    params = self._parse_dat_bond_angle_parameters(line)
+                    self.angles.append([params['itt'], params['jtt'], params['ktt'], params['tk'], params['teq']])
             elif block == 5:   # Torsions
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line[11:].split()
-                    periodicity = int(float(fields[3]))
+                    params = self._parse_dat_dihedral_parameters(line)
+                    # Periodicity parameter pn is an int stored as a float,
+                    # and a negative sign indicates additional dihedral terms are added on the next line
+                    pn = int(float(params['pn']))
+                    pk_over_idivf = float(params['pk']) / float(params['idivf'])
                     if continueTorsion:
-                        self.torsions[-1] += [float(fields[1]) / float(fields[0]), fields[2], abs(periodicity)]
+                        self.torsions[-1] += [pk_over_idivf, params['phase'], abs(pn)]
                     else:
-                        self.torsions.append([line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), float(fields[1]) / float(fields[0]), fields[2], abs(periodicity)])
-                    continueTorsion = (periodicity < 0)
+                        self.torsions.append([params['ipt'], params['jpt'], params['kpt'], params['lpt'], pk_over_idivf, params['phase'], abs(pn)])
+                    continueTorsion = (pn < 0)
             elif block == 6:   # Improper torsions
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line[11:].split()
-                    self.impropers.append((line[:2].strip(), line[3:5].strip(), line[6:8].strip(), line[9:11].strip(), fields[0], fields[1], fields[2]))
+                    params = self._parse_dat_improper_dihedral_parameters(line)
+                    self.impropers.append((params['ipt'], params['jpt'], params['kpt'], params['lpt'],params['pk'], params['phase'], params['pn']))
             elif block == 7:   # 10-12 hbond potential
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
             elif block == 8:   # VDW equivalents
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line.split()
-                    for atom in fields[1:]:
-                        self.vdwEquivalents[atom] = fields[0]
+                    symbols = self._parse_dat_6_12_equivalence_symbols(line)
+                    for atom in symbols['ieqv']:
+                        self.vdwEquivalents[atom] = symbols['iorg']
             elif block == 9:   # VDW type
                 block += 1
-                self.vdwType = line.split()[1]
+                spec = self._parse_dat_6_12_potential_kind(line)
+                self.vdwType = spec['kindnb'].upper()
                 if self.vdwType not in ['RE', 'AC']:
                     raise ValueError('Nonbonded type (KINDNB) must be RE or AC')
             elif block == 10:   # VDW parameters
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
-                    fields = line.split()
-                    self.vdw[fields[0]] = (fields[1], fields[2])
+                    params = self._parse_dat_6_12_nb_parameters(line, spec['kindnb'])
+                    if self.vdwType == "RE":
+                        self.vdw[params['ltynb']] = (params['r'], params['edep'])
+                    elif self.vdwType == "AC":
+                        self.vdw[params['ltynb']] = (params['a'], params['c'])
+
+    @staticmethod
+    def _parse_dat_atom_symbols_and_masses(line):
+        """
+        Parse a line in a parm.dat file using atom symbol and mass specification.
+
+        Parameters
+        ----------
+        line : str
+            Single line string containing atom symbol and mass parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        kndsym : str
+        amass : str
+        atpol : str
+        line :str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 2 -      ***** INPUT FOR ATOM SYMBOLS AND MASSES *****
+
+                    KNDSYM , AMASS, ATPOL
+
+                        FORMAT(A2,2X,F10.2x,f10.2)
+
+         KNDSYM     The unique atom symbol used in the system.
+
+         AMASS      Atomic mass of the center having the symbol "KNDSYM".
+
+         ATPOL      The atomic polarizability for each atom (in A**3)
+                    This is the type of polarizability used in sander
+                    and gibbs. No parameters are supplied for this since
+                    the feature is still in development (Amber 4.1).
+
+              NOTE: All the unique atomic symbols and their masses must
+                    be read.  The input is terminated by a blank card.
+
+        Examples
+        --------
+        c3 12.01         0.878               Sp3 C
+        ca 12.01         0.360               Sp2 C in pure aromatic systems
+
+        """
+        kndsym = line[0:2].strip()
+        amass = line[4:14].strip()
+
+        # prevent potential IndexError from line being too short
+        try:
+            apol = line[14:24].split()[0].strip()
+        except IndexError:
+            apol = line[14:-1].split()[0].strip()
+        return locals()
+
+
+
+    @staticmethod
+    def _parse_dat_bond_length_parameters(line):
+        """
+        Parse a line in a parm.dat file using bond length format specification.
+
+        Parameters
+        ----------
+        line : str
+            Single line string containing bond length parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        ibt : str
+        jbt : str
+        rk : str
+        req : str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 4 -      ***** INPUT FOR BOND LENGTH PARAMETERS *****
+
+                    IBT , JBT , RK , REQ
+
+                        FORMAT(A2,1X,A2,2F10.2)
+
+         IBT,JBT    Atom symbols for the two bonded atoms.
+
+         RK         The harmonic force constant for the bond "IBT"-"JBT".
+                    The unit is kcal/mol/(A**2).
+
+         REQ        The equilibrium bond length for the above bond in Angstroms
+
+                    The input is terminated by a blank card.
+
+        Examples
+        --------
+
+        n -os  395.0    1.4103       SOURCE4      30	0.0112
+        no-s4  143.0    1.9960       SOURCE3       3	0.0313
+        no-s6  149.6    1.9760       SOURCE3       3	0.0520
+        """
+
+        ibt = line[0:2].strip()
+        jbt = line[3:5].strip()
+        rk = line[5:15].strip()
+        # prevent potential IndexError from line being too short
+        try:
+            req = line[15:25].split()[0].strip()
+        except IndexError:
+            req = line[15:-1].split()[0].strip()
+
+        return locals()
+
+    @staticmethod
+    def _parse_dat_bond_angle_parameters(line):
+        """
+        Parse a line in a parm.dat file using bond angle format specification.
+        Parameters
+        ----------
+        line : str
+            Single line string containing bond angle parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        itt : str
+        jtt : str
+        ktt : str
+        tk : str
+        teq : str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 5 -      ***** INPUT FOR BOND ANGLE PARAMETERS *****
+
+
+                    ITT , JTT , KTT , TK , TEQ
+
+                        FORMAT(A2,1X,A2,1X,A2,2F10.2)
+
+         ITT,...    The atom symbols for the atoms making an angle.
+
+         TK         The harmonic force constants for the angle "ITT"-"JTT"-
+                    "KTT" in units of kcal/mol/(rad**2) (radians are the
+                    traditional unit for angle parameters in force fields).
+
+         TEQ        The equilibrium bond angle for the above angle in degrees.
+
+                    The input is terminated by a blank card.
+
+        Examples
+        --------
+        n3-c3-n3   69.61      109.59	SOURCE4           27	1.8125
+        n3-c3-nc   68.79      113.29	SOURCE3            1	0.0000
+        n3-c3-nd   68.79      113.29	SOURCE3            1	same_as_n3-c3-nc
+        c1-sh-hs   48.23       95.99	calculated_based_on_C#C-SH       0
+        """
+        itt = line[0:2].strip()
+        jtt = line[3:5].strip()
+        ktt = line[6:8].strip()
+        tk = line[8:18].strip()
+
+        # prevent potential IndexError from line being too short
+        try:
+            teq = line[18:28].split()[0].strip()
+        except IndexError:
+            teq = line[18:-1].split()[0].strip()
+        return locals()
+
+    @staticmethod
+    def _parse_dat_dihedral_parameters(line):
+        """
+        Parse a line in a parm.dat file using dihedral format specification.
+        Parameters
+        ----------
+        line : str
+            Single line string containing dihedral parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        ipt : str
+        jpt : str
+        kpt : str
+        lpt : str
+        idivf : str
+        pk : str
+        phase : str
+        pn : str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 6 -      ***** INPUT FOR DIHEDRAL PARAMETERS *****
+
+                    IPT , JPT , KPT , LPT , IDIVF , PK , PHASE , PN
+
+                        FORMAT(A2,1X,A2,1X,A2,1X,A2,I4,3F15.2)
+
+         IPT, ...   The atom symbols for the atoms forming a dihedral
+                    angle.  If IPT .eq. 'X ' .and. LPT .eq. 'X ' then
+                    any dihedrals in the system involving the atoms "JPT" and
+                    and "KPT" are assigned the same parameters.  This is
+                    called the general dihedral type and is of the form
+                    "X "-"JPT"-"KPT"-"X ".
+
+         IDIVF      The factor by which the torsional barrier is divided.
+                    Consult Weiner, et al., JACS 106:765 (1984) p. 769 for
+                    details. Basically, the actual torsional potential is
+
+                           (PK/IDIVF) * (1 + cos(PN*phi - PHASE))
+
+         PK         The barrier height divided by a factor of 2.
+
+         PHASE      The phase shift angle in the torsional function.
+
+                    The unit is degrees.
+
+         PN         The periodicity of the torsional barrier.
+                    NOTE: If PN .lt. 0.0 then the torsional potential
+                          is assumed to have more than one term, and the
+                          values of the rest of the terms are read from the
+                          next cards until a positive PN is encountered.  The
+                          negative value of pn is used only for identifying
+                          the existence of the next term and only the
+                          absolute value of PN is kept.
+
+            The input is terminated by a blank card.
+
+        Examples
+        --------
+        X -c -cy-X    6    0.000       180.000           2.000      JCC, 7, (1986), 230
+        X -c -ca-X    4    4.000       180.000           2.000      optimized by Junmei Wang, Jan-2013
+        X -c -cc-X    4   11.500       180.000           2.000      statistic value
+
+
+        """
+
+        ipt = line[0:2].strip()
+        jpt = line[3:5].strip()
+        kpt = line[6:8].strip()
+        lpt = line[9:11].strip()
+        idivf = line[11:15].strip()
+        pk = line[15:30].strip()
+        phase = line[30:45].strip()
+        # prevent potential IndexError from line being too short
+        try:
+            pn = line[45:60].split()[0].strip()
+        except IndexError:
+            pn = line[45:-1].split()[0].strip()
+
+        return locals()
+
+    @staticmethod
+    def _parse_dat_improper_dihedral_parameters(line):
+        """
+        Parse a line in a parm.dat file using improper dihedral format specification.
+        Parameters
+        ----------
+        line : str
+            Single line string containing dihedral parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        ipt : str
+        jpt : str
+        kpt : str
+        lpt : str
+        idivf : str
+        pk : str
+        phase : str
+        pn : str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+         - 7 -      ***** INPUT FOR IMPROPER DIHEDRAL PARAMETERS *****
+
+                    IPT , JPT , KPT , LPT , IDIVF , PK , PHASE , PN
+
+                        FORMAT(A2,1X,A2,1X,A2,1X,A2,I4,3F15.2)
+
+                    The input is the same as in for the dihedrals except that
+                    the torsional barrier height is NOT divided by the factor
+                    idivf.  The improper torsions are defined between any four
+                    atoms not bonded (in a successive fashion) with each other
+                    as in the case of "regular" or "proper" dihedrals.  Improper
+                    dihedrals are used to keep certain groups planar and to
+                    prevent the racemization of certain centers in the united
+                    atom model.  Consult the above reference for details.
+
+             Important note: all general type improper dihedrals
+                             (e.g. x -x -ct-hc) should appear before all
+                             specifics (ct-ct-ct-hc) in the parm list.
+                             Otherwise the generals will override the
+                             specific with no warning.
+
+             The input is terminated by a blank card.
+
+        Examples
+        --------
+        X -o -c -o          1.1          180.          2.           JCC,7,(1986),230
+        X -X -c -o          10.5         180.          2.           JCC,7,(1986),230
+
+
+        """
+
+        ipt = line[0:2].strip()
+        jpt = line[3:5].strip()
+        kpt = line[6:8].strip()
+        lpt = line[9:11].strip()
+        idivf = line[11:15].strip()
+        pk = line[15:30].strip()
+        phase = line[30:45].strip()
+        # prevent potential IndexError from line being too short
+        try:
+            pn = line[45:60].split()[0].strip()
+        except IndexError:
+            pn = line[45:-1].split()[0].strip()
+
+        return locals()
+
+    @staticmethod
+    def _parse_dat_6_12_equivalence_symbols(line):
+        """
+        Parse a line in a parm.dat file using equivalencing symbols for non-bonded 6-12 potential specification.
+
+        Parameters
+        ----------
+        line : str
+            Single line string containing equivalencing symbols for 6-12 non-bonded parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        iorg : str
+        ieqv : list of str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 9 -      ***** INPUT FOR EQUIVALENCING ATOM SYMBOLS FOR
+                          THE NON-BONDED 6-12 POTENTIAL PARAMETERS *****
+
+                          IORG , IEQV(I) , I = 1 , 19
+
+                              FORMAT(20(A2,2X))
+
+         IORG        The atom symbols to which other atom symbols are to be
+                     equivalenced in generating the 6-12 potential parameters.
+
+         IEQV(I)     The atoms symbols which are to be equivalenced to the
+                     atom symbol "IORG".  If more than 19 atom symbols have
+                     to be equivalenced to a given atom symbol they can be
+                     included as extra cards.
+
+                     It is advisable not to equivalence any hydrogen bond
+                     atom type atoms with any other atom types.
+
+          NOTE: The input is terminated by a blank card.
+
+        """
+        ieqv = list()
+        iorg = line[0:2].strip()
+        # continue adding names till line runs out,
+        # or reaches 19 which is the maximum according to format
+        try:
+            for n in range(1,20):
+                ieqv.append(line[4*n:4*n+2].split()[0].strip())
+        except IndexError:
+            pass
+
+        return dict(ieqv=ieqv, iorg=iorg, line=line)
+
+    @staticmethod
+    def _parse_dat_6_12_potential_kind(line):
+        """
+        Parse a line in a parm.dat file using input for non-bonded 6-12 potential specification.
+
+        Parameters
+        ----------
+        line : str
+            Single line string containing the input format for 6-12 non-bonded parameters in a parm.dat file.
+
+        Returns
+        -------
+        dict containing
+        label : str
+        kindb : str
+        line : str
+
+        Notes
+        -----
+        Original format specification http://ambermd.org/formats.html#parm.dat
+
+        - 10 -      ***** INPUT FOR THE 6-12 POTENTIAL PARAMETERS *****
+
+                     LABEL , KINDNB
+
+                         FORMAT(A4,6X,A2)
+
+         LABEL       The name of the non-bonded input parameter to be
+                     used.  It has to be matched with "NAMNB" read through
+                     unit 5.  The program searches the file to load the
+                     the required non-bonded parameters.  If that name is
+                     not found the run will be terminated.
+
+         KINDNB      Flag for the type of 6-12 parameters.
+
+          'SK'       Slater-Kirkwood parameters are input.
+                     see "caution" below.
+
+          'RE'       van der Waals radius and the potential well depth
+                     parameters are read.
+
+          'AC'       The 6-12 potential coefficients are read.
+
+             NOTE: All the non equivalenced atoms' parameters have to
+                   be given.
+
+           The input is terminated when label .eq. 'END'
+
+        Examples
+        --------
+        MOD4      RE
+
+        """
+
+        label = line[0:4].strip()
+        kindnb = line[10:12].strip()
+
+        if kindnb not in ["SK", "RE", "AC"]:
+            raise ValueError("Unsupported 6-12 potential format {kindb}".format(**locals()))
+
+        return locals()
+
+    @staticmethod
+    def _parse_dat_6_12_nb_parameters(line, kindnb):
+        """
+        Parse a line in a parm.dat file using RE format for 6-12 potential specification.
+
+        Parameters
+        ----------
+        line : str
+            Single line string containing equivalencing symbols for 6-12 non-bonded parameters in a parm.dat file.
+
+        kindnb : str
+            The kind of format for the nonbonded parameter line ("SK", "RE", or "AC")
+
+        Returns
+        -------
+        dict containing
+        lytnb : str
+        line : str
+        kindnb : str
+
+        and for SK
+
+        pol : str
+        xneff : str
+        rmin :str
+
+        or for RE
+
+        r : str
+        edep : str
+
+        or for AC
+        a : str
+        c : str
+
+
+        Notes
+        -----
+
+        This code assumes the format is   FORMAT(2X,A2,6X,2F10.6) for 10B and 10C
+
+        Original format specification http://ambermd.org/formats.html#parm.dat
+         - 10A -     ***** ONLY IF KINDNB .EQ. 'SK' *****
+
+                     LTYNB , POL , XNEFF , RMIN
+
+                         FORMAT(2X,A2,6X,3F10.6)
+
+         LTYNB       Atom symbol.
+
+         POL         Atomic polarizability for the atom centers having the
+                     the above symbol.
+
+         XNEFF       Effective number of electrons on the atom centers having
+                     the above symbol.
+
+         RMIN        van der Waals radius of the atom center having the above
+                     symbol.
+
+
+        - 10B -     ***** ONLY IF KINDNB .EQ. 'RE' *****
+
+                     LTYNB , R , EDEP
+
+         LTYNB       Atom symbol.
+
+         R           The van der Waals radius of the atoms having the symbol
+                     "LTYNB"  (Angstoms)
+
+         EDEP        The 6-12 potential well depth. (kcal/mol)
+
+        ------------------------------------------------------------------------
+
+         - 10C -     ***** ONLY IF KINDNB .EQ. 'AC' *****
+
+                     LTYNB , A , C
+
+         LTYNB       Atom symbol.
+
+         A           The coefficient of the 12th power term (A/r**12).
+
+         C           The coefficient of the 6th power term (-C/r**6).
+
+        Examples
+        --------
+          c1          1.9080  0.2100             cp C DLM 11/2007 well depth from OPLS replacing 0.0860
+          c2          1.9080  0.0860             sp2 atom in the middle of C=CD-CD=C
+
+        """
+        ltynb = line[2:4].strip()
+        if kindnb.upper() == "SK":
+            pol = line[10:20].strip()
+            xneff = line[20:30].strip()
+
+            # prevent IndexError from line being too short
+            try:
+                rmin = line[30:40].split()[0].strip()
+            except IndexError:
+                rmin = line[30:-1].split()[0].strip()
+        elif kindnb.upper() == "RE":
+            r = line[10:20].strip()
+            # prevent IndexError from line being too short
+            try:
+                edep = line[20:30].split()[0].strip()
+            except IndexError:
+                edep = line[20:-1].split()[0].strip()
+        elif kindnb.upper() == "AC":
+            a = line[10:20].strip()
+            # prevent IndexError from line being too short
+            try:
+                c = line[20:30].split()[0].strip()
+            except IndexError:
+                c = line[20:-1].split()[0].strip()
+        else:
+            raise ValueError("Unsupported NB format {nbformat}".format(**locals()))
+
+        return locals()
 
     def process_frc_file(self, inputfile):
         """Process an AMBER .frc file.

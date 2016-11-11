@@ -54,19 +54,21 @@ script:
 env:
   matrix:
     # OpenEye production
-    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
-    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
-    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/openeye/channel/main/simple"
+    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/OpenEye/simple/"
+    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/OpenEye/simple/"
+    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="-i https://pypi.anaconda.org/OpenEye/simple/"
     # OpenEye beta
-    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
-    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
-    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/openeye/channel/beta/simple"
+    - CONDA_PY=27 python=2.7 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/OpenEye/simple/"
+    - CONDA_PY=34 python=3.4 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/OpenEye/simple/"
+    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="--pre -i https://pypi.anaconda.org/OpenEye/simple/"
 
   global:
     - ORGNAME="omnia"
     - PACKAGENAME="openmoltools"
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
+    # The architecture to download for the OpenEye toolkits
+    - OE_ARCH="linux-x64"
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
     - secure: "S9I5imZ0CJdwfhHzy+Beh8NTFm2ZYpMFCLgvBYT/UsifIKlGynUK2xGi7bDnHLpslT45FUMmjzdpf2QNrfbivVJgiSDTQJc1GCIqGFFKFqerJEEYUkXlBxvWNO+poSOMIzkJqd7xsTodt4CYhGJM1dT6ocaSM7UJgAErrcRJfLo="
 
