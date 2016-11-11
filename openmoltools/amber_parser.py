@@ -220,11 +220,12 @@ class AmberParser(object):
         block = 0
         continueTorsion = False
         for line in open(inputfile):
-            line = line.strip()
+            # Use to detect blank lines
+            line_length = len(line.strip())
             if block == 0:     # Title
                 block += 1
             elif block == 1:   # Mass
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_atom_symbols_and_masses(line)
@@ -232,19 +233,19 @@ class AmberParser(object):
             elif block == 2:   # Hydrophilic atoms
                 block += 1
             elif block == 3:   # Bonds
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_bond_length_parameters(line)
                     self.bonds.append([params['ibt'], params['jbt'], params['rk'], params['req']])
             elif block == 4:   # Angles
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_bond_angle_parameters(line)
                     self.angles.append([params['itt'], params['jtt'], params['ktt'], params['tk'], params['teq']])
             elif block == 5:   # Torsions
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_dihedral_parameters(line)
@@ -258,16 +259,16 @@ class AmberParser(object):
                         self.torsions.append([params['ipt'], params['jpt'], params['kpt'], params['lpt'], pk_over_idivf, params['phase'], abs(pn)])
                     continueTorsion = (pn < 0)
             elif block == 6:   # Improper torsions
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_improper_dihedral_parameters(line)
                     self.impropers.append((params['ipt'], params['jpt'], params['kpt'], params['lpt'],params['pk'], params['phase'], params['pn']))
             elif block == 7:   # 10-12 hbond potential
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
             elif block == 8:   # VDW equivalents
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     symbols = self._parse_dat_6_12_equivalence_symbols(line)
@@ -276,17 +277,18 @@ class AmberParser(object):
             elif block == 9:   # VDW type
                 block += 1
                 spec = self._parse_dat_6_12_potential_kind(line)
-                if spec['kindnb'].upper() not in ['RE', 'AC']:
+                self.vdwType = spec['kindnb'].upper()
+                if self.vdwType not in ['RE', 'AC']:
                     raise ValueError('Nonbonded type (KINDNB) must be RE or AC')
             elif block == 10:   # VDW parameters
-                if len(line) == 0:
+                if line_length == 0:
                     block += 1
                 else:
                     params = self._parse_dat_6_12_nb_parameters(line, spec['kindnb'])
-                    if spec['kindnb'].upper() == "RE":
+                    if self.vdwType == "RE":
                         self.vdw[params['ltynb']] = (params['r'], params['edep'])
-                    elif spec['kindb'].upper() == "AC":
-                        self.vdw[params['ltynb']] = (params['A'], params['C'])
+                    elif self.vdwType == "AC":
+                        self.vdw[params['ltynb']] = (params['a'], params['c'])
 
     @staticmethod
     def _parse_dat_atom_symbols_and_masses(line):
@@ -754,6 +756,7 @@ class AmberParser(object):
         dict containing
         lytnb : str
         line : str
+        kindnb : str
 
         and for SK
 
