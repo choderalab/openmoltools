@@ -219,7 +219,7 @@ def _writeMolecule(molecule, output_filename):
     #oechem.OEWriteMolecule(ofs, molecule)
     #ofs.close()
 
-def generateResidueTemplate(molecule, residue_atoms=None):
+def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     """
     Generate an residue template for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -234,6 +234,10 @@ def generateResidueTemplate(molecule, residue_atoms=None):
         Partial charges will be determined automatically using oequacpac and canonical AM1-BCC charging rules.
     residue_atomset : set of OEAtom, optional, default=None
         If not None, only the atoms in this set will be used to construct the residue template
+    normalize : bool, optional, default=True
+        If True, normalize the molecule by checking aromaticity, adding
+        explicit hydrogens, and renaming by IUPAC name.
+        
 
     Returns
     -------
@@ -260,7 +264,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
     net_charge = _computeNetCharge(molecule)
 
     # Generate canonical AM1-BCC charges and a reference conformation.
-    molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+    molecule = get_charges(molecule, strictStereo=False, keep_confs=1, normalize=normalize)
 
     # DEBUG: This may be necessary.
     molecule.SetTitle('MOL')
@@ -332,7 +336,7 @@ def generateResidueTemplate(molecule, residue_atoms=None):
 
     return template, ffxml.getvalue()
 
-def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False):
+def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True):
     """
     Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -350,6 +354,9 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         or raise an Exception (False).
     generateUniqueNames : bool, optional, default=False
         If True, will generate globally unique names for templates.
+    normalize : bool, optional, default=True
+        If True, normalize the molecule by checking aromaticity, adding
+        explicit hydrogens, and renaming by IUPAC name.
 
     Returns
     -------
@@ -399,10 +406,10 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
 
         # Generate canonical AM1-BCC charges and a reference conformation.
         if not ignoreFailures:
-            molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+            molecule = get_charges(molecule, strictStereo=False, keep_confs=1, normalize=normalize)
         else:
             try:
-                molecule = get_charges(molecule, strictStereo=False, keep_confs=1)
+                molecule = get_charges(molecule, strictStereo=False, keep_confs=1, normalize=normalize)
             except:
                 failed_molecule_list.append(molecule)
 
