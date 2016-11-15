@@ -3,6 +3,7 @@ import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
 import numpy as np
+import re
 from mdtraj.testing import eq
 from unittest import skipIf
 from openmoltools import utils, packmol
@@ -35,6 +36,7 @@ try:
 except ImportError:
     HAVE_PARMED = False
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_butanol_keepconfs():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
@@ -52,6 +54,35 @@ def test_butanol_unnormalized():
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
     assert m0.GetTitle() == m1.GetTitle(), "The title of the molecule should not be changed by normalization."
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 output.tripos.mol2")
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2_standardize():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 standardize output.tripos.mol2", standardize=True)
+    with open("testing mol2 standardize output.tripos.mol2", "r") as outfile:
+        text = outfile.read()
+    # This should not find the text we added, to make sure the molecule is standardized.
+    assert re.search("MyNameIsAtom", text) is None
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2_no_standardize():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 nostandardize output.tripos.mol2", standardize=False)
+    with open("testing mol2 nostandardize output.tripos.mol2", "r") as outfile:
+        text = outfile.read()
+    # This should find the text we added, to make sure the molecule is not standardized.
+    assert re.search("MyNameIsAtom", text) is not None
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol():
@@ -148,7 +179,6 @@ def test_ffxml():
         trajectories, ffxml = openmoltools.openeye.oemols_to_ffxml([charged0, charged1])
 
 
-
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml_simulation():
     """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
@@ -205,11 +235,13 @@ def test_ffxml_simulation():
             print("running")
             simulation.step(1)
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
 def test_charge_fail1():
     with utils.enter_temp_directory():
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
@@ -217,10 +249,12 @@ def test_charge_fail2():
     m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
     with utils.enter_temp_directory():    
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success2():

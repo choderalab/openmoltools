@@ -271,7 +271,7 @@ def get_names_to_charges(molecule):
     return data, molrepr
 
 
-def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_name="MOL"):
+def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_name="MOL", standardize=True):
     """Convert OE molecule to tripos mol2 file.
 
     Parameters
@@ -287,6 +287,10 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
         OpenEye writes mol2 files with <0> as the residue / ligand name.
         This chokes many mol2 parsers, so we replace it with a string of
         your choosing.
+    standardize: bool, optional, default=True
+        Use a high-level writer, which will standardize the molecular properties.
+        Set this to false if you wish to retain things such as atom names.
+        In this case, a low-level writer will be used.
 
     Returns
     -------
@@ -310,7 +314,11 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
     ofs.SetFormat(oechem.OEFormat_MOL2H)
     for k, mol in enumerate(molecule.GetConfs()):
         if k == conformer:
-            oechem.OEWriteMolecule(ofs, mol)
+            # Standardize will override molecular properties(atom names etc.)
+            if standardize:
+                oechem.OEWriteMolecule(ofs, mol)
+            else:
+                oechem.OEWriteMol2File(ofs, mol)
 
     ofs.close()
 
