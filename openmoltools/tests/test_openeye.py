@@ -36,6 +36,7 @@ try:
 except ImportError:
     HAVE_PARMED = False
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_butanol_keepconfs():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
@@ -81,8 +82,6 @@ def test_output_mol2_no_standardize():
         text = outfile.read()
     # This should find the text we added, to make sure the molecule is not standardized.
     assert re.search("MyNameIsAtom", text) is not None
-
-
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
@@ -180,7 +179,6 @@ def test_ffxml():
         trajectories, ffxml = openmoltools.openeye.oemols_to_ffxml([charged0, charged1])
 
 
-
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml_simulation():
     """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
@@ -237,11 +235,13 @@ def test_ffxml_simulation():
             print("running")
             simulation.step(1)
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
 def test_charge_fail1():
     with utils.enter_temp_directory():
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @raises(RuntimeError)
@@ -249,10 +249,12 @@ def test_charge_fail2():
     m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
     with utils.enter_temp_directory():    
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success2():
