@@ -3,6 +3,7 @@ import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
 import numpy as np
+import re
 from mdtraj.testing import eq
 from unittest import skipIf
 from openmoltools import utils, packmol
@@ -52,6 +53,37 @@ def test_butanol_unnormalized():
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
     assert m0.GetTitle() == m1.GetTitle(), "The title of the molecule should not be changed by normalization."
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 output.tripos.mol2")
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2_standardize():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 standardize output.tripos.mol2", standardize=True)
+    with open("testing mol2 standardize output.tripos.mol2", "r") as outfile:
+        text = outfile.read()
+    # This should not find the text we added, to make sure the molecule is standardized.
+    assert re.search("MyNameIsAtom", text) is None
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2_no_standardize():
+    molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
+    list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
+    openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 nostandardize output.tripos.mol2", standardize=False)
+    with open("testing mol2 nostandardize output.tripos.mol2", "r") as outfile:
+        text = outfile.read()
+    # This should find the text we added, to make sure the molecule is not standardized.
+    assert re.search("MyNameIsAtom", text) is not None
+
+
+
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol():

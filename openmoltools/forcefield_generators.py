@@ -178,6 +178,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
 
     return molecule
 
+
 def _computeNetCharge(molecule):
     """
     Compute the net formal charge on the molecule.
@@ -200,7 +201,8 @@ def _computeNetCharge(molecule):
     net_charge = np.array(charges).sum()
     return net_charge
 
-def _writeMolecule(molecule, output_filename):
+
+def _writeMolecule(molecule, output_filename, standardize=True):
     """
     Write the molecule to a file.
 
@@ -210,10 +212,12 @@ def _writeMolecule(molecule, output_filename):
         The molecule to write (will be modified by writer).
     output_filename : str
         The filename of file to be written; type is autodetected by extension.
+    standardize : bool, optional, default=True
+        Standardize molecular properties such as atom names in the output file.
 
     """
     from openmoltools.openeye import molecule_to_mol2
-    molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle())
+    molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle(), standardize=standardize)
     #from openeye import oechem
     #ofs = oechem.oemolostream(output_filename)
     #oechem.OEWriteMolecule(ofs, molecule)
@@ -278,7 +282,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     frcmod_filename = os.path.join(tmpdir, prefix + '.frcmod')
 
     # Write Tripos mol2 file as antechamber input.
-    _writeMolecule(molecule, input_mol2_filename)
+    _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
     # Parameterize the molecule with antechamber.
     run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
@@ -335,6 +339,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     params.write(ffxml)
 
     return template, ffxml.getvalue()
+
 
 def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True):
     """
@@ -422,7 +427,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         frcmod_filename     = prefix + '.frcmod'
 
         # Write Tripos mol2 file as antechamber input.
-        _writeMolecule(molecule, input_mol2_filename)
+        _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
         # Parameterize the molecule with antechamber.
         run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
