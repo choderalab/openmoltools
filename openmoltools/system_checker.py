@@ -358,8 +358,7 @@ class SystemChecker(object):
         assert force0.getNumExceptions() == force1.getNumExceptions(), "Error: Systems have %d and %d exceptions in NonbondedForce, respectively." % (force0.getNumExceptions(), force1.getNumExceptions())
 
         i0, i1, qq, sigma, epsilon = force0.getExceptionParameters(0)
-        #unit_qq, unit_sigma, unit_epsilon = qq.unit, sigma.unit, epsilon.unit
-        unit_qq = u.elementary_charge
+        unit_qq = u.elementary_charge**2
         unit_sigma = u.angstrom
         unit_epsilon = u.kilojoule_per_mole
 
