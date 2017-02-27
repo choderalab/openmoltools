@@ -373,7 +373,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         if log_debug_output: logger.debug(output)
 
         # Run parmchk.
-        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod -s %s" % gaff_version
         if log_debug_output: logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.frcmod'):
