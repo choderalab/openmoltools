@@ -284,7 +284,7 @@ GAFF_DAT_FILENAME = find_gaff_dat()
 
 
 def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_charge=None, gaff_mol2_filename=None, frcmod_filename=None,
-    input_format='mol2', resname=False, log_debug_output=False):
+    input_format='mol2', resname=False, log_debug_output=False, gaff_version = 'gaff'):
     """Run AmberTools antechamber and parmchk2 to create GAFF mol2 and frcmod files.
 
     Parameters
@@ -310,6 +310,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         Set the residue name used within output files to molecule_name
     log_debug_output : bool, optional, default=False
         If true, will send output of tleap to logger.
+    gaff_version : str, default = 'gaff'
+        One of ['gaff', 'gaff2']; selects which atom types to use.
 
     Returns
     -------
@@ -320,6 +322,9 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     """
     utils = import_("openmoltools.utils")
     ext = utils.parse_ligand_filename(input_filename)[1]
+
+    if not gaff_version in ['gaff', 'gaff2']:
+        raise Exception("Error: gaff_version must be one of 'gaff' or 'gaff2'")
 
     if gaff_mol2_filename is None:
         gaff_mol2_filename = molecule_name + '.gaff.mol2'
@@ -343,7 +348,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         shutil.copy( input_filename, local_input_filename )
 
         # Run antechamber.
-        cmd = "antechamber -i %(local_input_filename)s -fi %(input_format)s -o out.mol2 -fo mol2 -s 2" % vars()
+        cmd = "antechamber -i %(local_input_filename)s -fi %(input_format)s -o out.mol2 -fo mol2 -s 2 -at %(gaff_version)s" % vars()
         if charge_method is not None:
             cmd += ' -c %s' % charge_method
         if net_charge is not None:
@@ -368,7 +373,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         if log_debug_output: logger.debug(output)
 
         # Run parmchk.
-        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod"
+        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod -s %s" % gaff_version
         if log_debug_output: logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.frcmod'):

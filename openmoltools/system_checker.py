@@ -387,7 +387,7 @@ class SystemChecker(object):
                 if parameter_name =="sigma":
                     assert compare(val0, val1), "Error: NonBondedForce Exception, atom (%d, %d) has sigma values of %f and %f angstroms, respectively." % (i0, i1, parameter_name, val0, val1)
                 elif parameter_name=="qq":
-                    assert compare(val0, val1), "Error: NonBondedForce Exception atom (%d, %d) has charge values of %f and %f elementary charge, respectively." % (i0, i1, val0, val1)
+                    assert compare(val0, val1), "Error: NonBondedForce Exception atom (%d, %d) has squared charge values of %f and %f (elementary charge)**2, respectively." % (i0, i1, val0, val1)
                 else:
                     assert compare(val0, val1), "Error: NonBondedForce Exception, atom (%d, %d) has epsilon values of %f and %f kJ/mol, respectively." % (i0, i1, val0, val1)
 
