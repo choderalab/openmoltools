@@ -24,7 +24,7 @@ except ImportError:
 
 
 ##########################
-VERSION = "0.7.6.dev0"
+VERSION = "0.8.0.dev0"
 ISRELEASED = False
 __version__ = VERSION
 ##########################
@@ -34,7 +34,7 @@ CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
 Intended Audience :: Developers
-License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
+License :: OSI Approved :: MIT License
 Programming Language :: C
 Programming Language :: Python
 Programming Language :: Python :: 3
