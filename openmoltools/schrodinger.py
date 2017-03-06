@@ -268,7 +268,7 @@ def run_maesubset(input_file_path, output_file_path, range):
 @need_schrodinger
 @autoconvert_maestro
 def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
-             ph_tolerance=None, min_probability=None, tautomerize=True, extract_range=None):
+             ph_tolerance=None, min_probability=None, tautomerize=True, extract_range=None, max_atoms=150):
     """Run Schrodinger's epik command line utility to enumerate protonation and
     tautomeric states.
 
@@ -292,6 +292,8 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
         If not None, the function uses the Schrodinger's utility maesubset to
         extract only a subset of the generated structures. This is the 0-based
         indices of the structures to extract from the input files.
+    max_atoms : int, optional
+        Structures containing more than max_atoms atoms will not be adjusted. (default is 150)
     """
 
     # Locate epik executable
@@ -307,6 +309,7 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
     epik_args['pht'] = '-pht {}'.format(ph_tolerance) if ph_tolerance else ''
     epik_args['nt'] = '' if tautomerize else '-nt'
     epik_args['p'] = '-p {}'.format(min_probability) if min_probability else ''
+    epik_args['ma'] = '-ma {}'.format(max_atoms)    
 
     # Determine if we need to convert input and/or output file
     if extract_range is None:
@@ -316,7 +319,7 @@ def run_epik(input_file_path, output_file_path, max_structures=32, ph=7.4,
 
     # Epik command. We need list in case there's a space in the paths
     cmd = [epik_path, '-imae', input_file_path, '-omae', epik_output]
-    cmd += '-ms {ms} -ph {ph} {pht} {nt} {p} -pKa_atom -WAIT -NO_JOBCONTROL'.format(
+    cmd += '-ms {ms} -ph {ph} {ma} {pht} {nt} {p} -pKa_atom -WAIT -NO_JOBCONTROL'.format(
             **epik_args).split()
 
     # We run with output_dir as working directory to save there the log file
