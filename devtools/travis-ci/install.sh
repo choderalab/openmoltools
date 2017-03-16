@@ -10,4 +10,4 @@ PIP_ARGS="-U"
 
 export PATH=$HOME/miniconda/bin:$PATH
 
-conda install --yes conda-build jinja2 anaconda-client pip
+conda install --yes conda-build=2.1.5 jinja2 anaconda-client pip
