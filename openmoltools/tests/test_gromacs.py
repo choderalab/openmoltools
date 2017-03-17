@@ -27,8 +27,8 @@ def test_gromacs_merge():
         amber.run_tleap( 'benzene', gaff_mol2_filename2, frcmod_filename2, prmtop_filename2, crd_filename2 )
 
         #Convert to GROMACS
-        utils.convert_via_acpype( "etoh", prmtop_filename1, crd_filename1, out_top = top_filename1, out_gro = gro_filename1 ) 
-        utils.convert_via_acpype( "benzene", prmtop_filename2, crd_filename2, out_top = top_filename2, out_gro = gro_filename2 )
+        utils.amber_to_gromacs( "etoh", prmtop_filename1, crd_filename1, out_top = top_filename1, out_gro = gro_filename1 )
+        utils.amber_to_gromacs( "benzene", prmtop_filename2, crd_filename2, out_top = top_filename2, out_gro = gro_filename2 )
 
         #Merge topologies
         gromacs.merge_topologies( [ top_filename1, top_filename2], './combined.top', 'combined', molecule_numbers = [1, 5], molecule_names = ['etoh', 'benzene'] )
@@ -46,7 +46,7 @@ def test_gromacs_solvate():
         #Amber setup
         amber.run_tleap( 'etoh', gaff_mol2_filename, frcmod_filename, 'etoh.prmtop', 'etoh.crd' )
         #GROMACS conversion
-        utils.convert_via_acpype( 'etoh', 'etoh.prmtop', 'etoh.crd', 'etoh.top', 'etoh.gro' )
+        utils.amber_to_gromacs( 'etoh', 'etoh.prmtop', 'etoh.crd', 'etoh.top', 'etoh.gro' )
         #Solvate
         gromacs.do_solvate( 'etoh.top', 'etoh.gro', 'etoh_solvated.top', 'etoh_solvated.gro', 1.2, 'dodecahedron', 'spc216', 'tip3p.itp' )
  

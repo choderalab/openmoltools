@@ -59,14 +59,6 @@ def test_run_test_molecule():
     with utils.enter_temp_directory():  # Prevents creating tons of GAFF files everywhere.
         utils.test_molecule(molecule_name, input_filename)
 
-def test_acpype_conversion():
-    molecule_name = 'sustiva'
-    input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
-    with utils.enter_temp_directory(): # Prevents creating tons of GAFF files everywhere.
-        gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
-        prmtop, inpcrd = amber.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
-        out_top, out_gro = utils.convert_via_acpype( molecule_name, prmtop, inpcrd ) 
-
 def test_parmed_conversion():
     molecule_name = 'sustiva'
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
