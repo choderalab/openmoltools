@@ -84,9 +84,11 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     Parameters
     ----------
     pdb_filenames_or_trajectories : list({str, Trajectory})
-        List of pdb filenames or trajectories for each component of mixture.  If this is
-        a list of trajectories, the trajectories will be saved to as
-        temporary files to be run in packmol.
+        List of pdb filenames or trajectories for each component of mixture.
+        If this is a list of trajectories, the trajectories will be saved to
+        as temporary files to be run in packmol. Water molecules must have
+        MDTraj-standard residue name (HOH) and atom names (O, H1, H2), otherwise
+        MDtraj won't be able to perceive the bonds.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
     tolerance : float, optional, default=2.0
@@ -103,11 +105,20 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     Notes
     -----
+    Water molecules must have MDTraj-standard residue name (HOH) and atom
+    names (O, H1, H2), otherwise MDTraj won't be able to perceive the bonds
+    and the Topology of the returned Trajectory will be incorrect.
     Be aware that MDTraj uses nanometers internally, but packmol uses angstrom
-    units.  The present function takes `tolerance` and `box_size` in 
-    angstrom units, but the output trajectory will have data in nm.  
+    units. The present function takes `tolerance` and `box_size` in angstrom
+    units, but the output trajectory will have data in nm.
     Also note that OpenMM is pretty picky about the format of unit cell input, 
     so use the example in tests/test_packmol.py to ensure that you do the right thing.
+
+    See Also
+    --------
+    standardize_water
+        Standardize residue and atom names of a water molecule.
+
     """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
     
