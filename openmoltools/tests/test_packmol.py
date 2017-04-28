@@ -46,9 +46,6 @@ def test_standardize_water():
     assert packmol.standardize_water(water_traj) is True
     assert water_traj.topology.n_bonds == 2
 
-    # The second time, the Trajectory object is not modified.
-    assert packmol.standardize_water(water_traj) is False
-
     # Remove temporary file.
     os.remove(water_pdb_filepath)
 
