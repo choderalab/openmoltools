@@ -87,8 +87,8 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
         List of pdb filenames or trajectories for each component of mixture.
         If this is a list of trajectories, the trajectories will be saved to
         as temporary files to be run in packmol. Water molecules must have
-        MDTraj-standard residue name (HOH) and atom names (O, H1, H2), otherwise
-        MDtraj won't be able to perceive the bonds.
+        MDTraj-standard residue and atom names as defined in
+        mdtraj/formats/pdb/data/pdbNames.xml.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
     tolerance : float, optional, default=2.0
@@ -105,9 +105,9 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     Notes
     -----
-    Water molecules must have MDTraj-standard residue name (HOH) and atom
-    names (O, H1, H2), otherwise MDTraj won't be able to perceive the bonds
-    and the Topology of the returned Trajectory will be incorrect.
+    Water molecules must have MDTraj-standard residue and atom names as defined
+    in mdtraj/formats/pdb/data/pdbNames.xml, otherwise MDTraj won't be able to
+    perceive the bonds and the Topology of the returned Trajectory will be incorrect.
     Be aware that MDTraj uses nanometers internally, but packmol uses angstrom
     units. The present function takes `tolerance` and `box_size` in angstrom
     units, but the output trajectory will have data in nm.
