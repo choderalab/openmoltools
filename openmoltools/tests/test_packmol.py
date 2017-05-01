@@ -1,9 +1,8 @@
+import os
 import tempfile
-import numpy as np
 import mdtraj as md
 from unittest import skipIf
 import logging
-from mdtraj.testing import eq
 from openmoltools import utils, packmol
 import simtk.unit as u
 from simtk.openmm import app
@@ -17,6 +16,40 @@ try:
     from rdkit.Chem import AllChem
 except ImportError:
     HAVE_RDKIT = False
+
+
+def test_standardize_water():
+    """Test utility function standardize_water.
+
+    The water bonds must be recognized even when residue names do not
+    match the standard definition in mdtraj.formats.pdb.data.residues.xml.
+
+    """
+    water_filepath = utils.get_data_filename("chemicals/water/water.mol2")
+    water_traj = md.load(water_filepath)
+
+    # Store in pdb format and lose CONECT records.
+    water_pdb_filepath = tempfile.mktemp(suffix='.pdb')
+    water_traj.save_pdb(water_pdb_filepath)
+    with open(water_pdb_filepath, 'r') as f:
+        pdb_lines = f.readlines()
+    with open(water_pdb_filepath, 'w') as f:
+        for line in pdb_lines:
+            if line[:6] != 'CONECT':
+                f.write(line)
+
+    # Test pre-condition: MDTraj cannot detect water bonds automatically.
+    water_traj = md.load(water_pdb_filepath)
+    assert water_traj.topology.n_bonds == 0
+
+    # The function modifies the Trajectory and bonds are now recognized.
+    assert packmol.standardize_water(water_traj) is True
+    assert water_traj.topology.n_bonds == 2
+
+    # Remove temporary file.
+    os.remove(water_pdb_filepath)
+
+
 @skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
 @skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary():

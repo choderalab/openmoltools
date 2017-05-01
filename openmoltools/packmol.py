@@ -27,15 +27,68 @@ structure %s
 end structure
 """
 
+
+def standardize_water(mol_traj):
+    """Ensure that a water molecule has the correct MDTraj Topology.
+
+    The PDB format doesn't require CONECT records for a water molecule,
+    but MDTraj correctly recognize water molecules bonds only if they
+    adopt specific residue and atom names. This function standardize
+    the names to ensure the Topology is correctly connected.
+
+    Parameters
+    ----------
+    mol_traj : mdtraj.Trajectory
+        A trajectory object describing a single water molecule. If the
+        trajectory doesn't describe a water molecule, nothing happens.
+        The residue name and atom names are modified to adhere to MDTraj
+        standard definition, if this is a water molecule.
+
+    Returns
+    -------
+    bool
+        True if this was a water molecule, False otherwise.
+
+    """
+    if mol_traj.topology.n_atoms != 3 or mol_traj.topology.n_residues != 1:
+        # This is not a water molecule.
+        return False
+
+    # Count oxygen and hydrogens in molecule and save their indices.
+    atom_element_ids = {'O': [], 'H': []}
+    for atom_index, atom in enumerate(mol_traj.topology.atoms):
+        try:
+            atom_element_ids[atom.element.symbol].append(atom_index)
+        except KeyError:
+            # There's an element different than oxygen or hydrogen.
+            return False
+
+    # This is water if there are two hydrogens and an oxygen.
+    if not (len(atom_element_ids['O']) == 1 and len(atom_element_ids['H']) == 2):
+        return False
+
+    # Rename residue and atoms.
+    mol_traj.topology.residue(0).name = 'HOH'
+    [o_index], [h1_index, h2_index] = atom_element_ids['O'], atom_element_ids['H']
+    for index, std_name in zip([o_index, h1_index, h2_index], ['O', 'H1', 'H2']):
+        mol_traj.topology.atom(index).name = std_name
+
+    # Update bonds now that water residue is standard.
+    mol_traj.topology.create_standard_bonds()
+    return True
+
+
 def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box_size=None):
     """Run packmol to generate a box containing a mixture of molecules.
 
     Parameters
     ----------
     pdb_filenames_or_trajectories : list({str, Trajectory})
-        List of pdb filenames or trajectories for each component of mixture.  If this is
-        a list of trajectories, the trajectories will be saved to as
-        temporary files to be run in packmol.
+        List of pdb filenames or trajectories for each component of mixture.
+        If this is a list of trajectories, the trajectories will be saved to
+        as temporary files to be run in packmol. Water molecules must have
+        MDTraj-standard residue and atom names as defined in
+        mdtraj/formats/pdb/data/pdbNames.xml.
     n_molecules_list : list(int)
         The number of molecules of each mixture component.
     tolerance : float, optional, default=2.0
@@ -52,11 +105,20 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     Notes
     -----
+    Water molecules must have MDTraj-standard residue and atom names as defined
+    in mdtraj/formats/pdb/data/pdbNames.xml, otherwise MDTraj won't be able to
+    perceive the bonds and the Topology of the returned Trajectory will be incorrect.
     Be aware that MDTraj uses nanometers internally, but packmol uses angstrom
-    units.  The present function takes `tolerance` and `box_size` in 
-    angstrom units, but the output trajectory will have data in nm.  
+    units. The present function takes `tolerance` and `box_size` in angstrom
+    units, but the output trajectory will have data in nm.
     Also note that OpenMM is pretty picky about the format of unit cell input, 
     so use the example in tests/test_packmol.py to ensure that you do the right thing.
+
+    See Also
+    --------
+    standardize_water
+        Standardize residue and atom names of a water molecule.
+
     """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
     
@@ -124,6 +186,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
     
     return trj
+
 
 def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
     """Approximate the appropriate box size based on the number and types of atoms present.
