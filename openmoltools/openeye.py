@@ -71,9 +71,6 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
 
     #Determine conformations to return
     if keep_confs == None:
-        logger.warning(
-            "keep_confs was set to None. Returned molecules will not be charged.")
-
         #If returning original conformation
         original = molecule.GetCoords()
         #Delete conformers over 1
@@ -83,7 +80,7 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         #Copy coordinates to single conformer
         charged_copy.SetCoords( original )
     elif keep_confs > 0:
-        logger.warning("keep_confs was set to %s. Molecule positions will be reset." % keep_confs)
+        logger.debug("keep_confs was set to %s. Molecule positions will be reset." % keep_confs)
 
         #Otherwise if a number is provided, return this many confs if available
         for k, conf in enumerate( charged_copy.GetConfs() ):

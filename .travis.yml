@@ -45,11 +45,11 @@ script:
   - conda install --yes --use-local ${PACKAGENAME}-dev
   # Install testing dependencies
   - conda install --yes --quiet nose nose-timer
-  - conda install --yes --quiet openmmtools  
+  - conda install --yes --quiet openmmtools
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
   # Test the package
-  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
+  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=3 --with-timer -a '!slow' && cd ..
 
 env:
   matrix:
