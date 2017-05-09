@@ -63,7 +63,8 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
 
     # 2017.2.1 OEToolkits new charging function
-    status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+    #status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+    status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
 
     if not status:
         # OEAssignCharges returns False if failure.
