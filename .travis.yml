@@ -49,7 +49,7 @@ script:
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
   # Test the package
-  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
+  - cd devtools && travis_wait nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
 
 env:
   matrix:
