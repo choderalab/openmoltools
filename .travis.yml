@@ -25,7 +25,7 @@ before_install:
   - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_751d8ffa39c6_key -iv $encrypted_751d8ffa39c6_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
   - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
 
-install:
+install: travis_wait 30
 
 script:
   # Create a test environment
@@ -49,7 +49,7 @@ script:
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
   # Test the package
-  - cd devtools && travis_wait nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
+  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
 
 env:
   matrix:
