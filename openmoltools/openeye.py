@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
-def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep_confs=None):
+def get_charges(molecule, max_confs=800, strictStereo=True,
+                normalize=True, keep_confs=None, legacy=True):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
@@ -34,6 +35,9 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         Otherwise, keep_confs = N will return an OEMol with up to N
         generated conformations.  Multiple conformations are still used to
         *determine* the charges.
+    legacy : bool, default=True
+        If False, uses the new OpenEye charging engine.
+        See https://docs.eyesopen.com/toolkits/python/quacpactk/OEProtonFunctions/OEAssignCharges.html#
 
     Returns
     -------
@@ -62,8 +66,12 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
 
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
 
-    # 2017.2.1 OEToolkits new charging function
-    status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+    if legacy:
+        # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+        status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
+    else:
+        # 2017.2.1 OEToolkits new charging function
+        status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
 
     if not status:
         # OEAssignCharges returns False if failure.
