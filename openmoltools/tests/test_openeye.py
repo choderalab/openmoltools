@@ -50,7 +50,7 @@ def test_butanol_unnormalized():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m0.SetTitle("MyCustomTitle")
     m1 = openmoltools.openeye.get_charges(m0, normalize=False, keep_confs=1)
-    eq(m0.NumAtoms(), m1.NumAtoms()) 
+    eq(m0.NumAtoms(), m1.NumAtoms())
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
     assert m0.GetTitle() == m1.GetTitle(), "The title of the molecule should not be changed by normalization."
@@ -91,19 +91,19 @@ def test_butanol():
     eq(m0.NumAtoms(), m1.NumAtoms())
     assert m1.NumConfs() >= 2, "Butanol should have multiple conformers."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
-    
+
     all_data = {}
     for k, molecule in enumerate(m1.GetConfs()):
         names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(molecule)
         all_data[k] = names_to_charges
         eq(sum(names_to_charges.values()), 0.0, decimal=7)  # Net charge should be zero
-    
+
     # Build a table of charges indexed by conformer number and atom name
     all_data = pd.DataFrame(all_data)
-    
+
     # The standard deviation along the conformer axis should be zero if all conformers have same charges
     eq(all_data.std(1).values, np.zeros(m1.NumAtoms()), decimal=7)
-    
+
     with utils.enter_temp_directory():
         # Try saving to disk as mol2
         openmoltools.openeye.molecule_to_mol2(m1, "out.mol2")
@@ -128,10 +128,10 @@ def test_benzene():
     print(m1.NumConfs())
     assert m1.NumConfs() == 1, "Benezene should have 1 conformer"
     assert m1.NumAtoms() == 12, "Benezene should have 12 atoms"
-    
+
     names_to_charges, str_repr = openmoltools.openeye.get_names_to_charges(m1)
     eq(sum(names_to_charges.values()), 0.0, decimal=7)  # Net charge should be zero
-    
+
     with utils.enter_temp_directory():
         # Try saving to disk as mol2
         openmoltools.openeye.molecule_to_mol2(m1, "out.mol2")
@@ -149,7 +149,7 @@ def test_benzene():
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-def test_link_in_utils():    
+def test_link_in_utils():
     m0 = openmoltools.openeye.iupac_to_oemol("benzene")
     m1 = openmoltools.openeye.get_charges(m0)
     with utils.enter_temp_directory():
@@ -170,7 +170,7 @@ def test_smiles():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml():
-    with utils.enter_temp_directory():    
+    with utils.enter_temp_directory():
         m0 = openmoltools.openeye.smiles_to_oemol("CCCCO")
         charged0 = openmoltools.openeye.get_charges(m0)
         m1 = openmoltools.openeye.smiles_to_oemol("ClC(Cl)(Cl)Cl")
@@ -182,7 +182,7 @@ def test_ffxml():
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_ffxml_simulation():
     """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
-    with utils.enter_temp_directory():    
+    with utils.enter_temp_directory():
         m0 = openmoltools.openeye.smiles_to_oemol("Cc1ccccc1")
         charged0 = openmoltools.openeye.get_charges(m0)
         m1 = openmoltools.openeye.smiles_to_oemol("c1ccccc1")
@@ -208,11 +208,11 @@ def test_ffxml_simulation():
         for k, ligand in enumerate(ligands):
             ligand_traj = trajectories[k]
             ligand_traj.center_coordinates()
-        
+
             eq(ligand_traj.n_atoms, n_atoms[k])
             eq(ligand_traj.n_frames, 1)
 
-            #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
+            #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.
             min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((protein_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + 0.3
             ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
@@ -252,7 +252,7 @@ def test_charge_fail2():
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
-    with utils.enter_temp_directory():    
+    with utils.enter_temp_directory():
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
 
 
@@ -261,6 +261,18 @@ def test_charge_success2():
     m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = openmoltools.openeye.get_charges(m, strictStereo=False)
 
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@raises(RuntimeError)
+def test_oeassigncharges_fail():
+    # Fail test for OEToolkits (2017.2.1) new charging function
+    m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+    m = openmoltools.openeye.get_charges(m,  strictStereo=False, legacy=False)
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_oeassigncharges_success():
+    # Success test for OEToolkits (2017.2.1) new charging function
+    m = openmoltools.openeye.iupac_to_oemol("butanol")
+    m = openmoltools.openeye.get_charges(m, legacy=False)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 @skipIf(not HAVE_PARMED, "Cannot test without Parmed Chemistry.")
