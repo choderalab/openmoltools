@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
-def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep_confs=None):
+def get_charges(molecule, max_confs=800, strictStereo=True,
+                normalize=True, keep_confs=None, legacy=True):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
@@ -34,6 +35,9 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         Otherwise, keep_confs = N will return an OEMol with up to N
         generated conformations.  Multiple conformations are still used to
         *determine* the charges.
+    legacy : bool, default=True
+        If False, uses the new OpenEye charging engine.
+        See https://docs.eyesopen.com/toolkits/python/quacpactk/OEProtonFunctions/OEAssignCharges.html#
 
     Returns
     -------
@@ -62,10 +66,16 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
 
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
 
-    status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)  # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+    if not legacy:
+        # 2017.2.1 OEToolkits new charging function
+        status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+        if not status: raise(RuntimeError("OEAssignCharges failed."))
+    else:
+        # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+        status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
+        if not status: raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
 
-    if not status:
-        raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
+
 
     #Determine conformations to return
     if keep_confs == None:
@@ -78,6 +88,8 @@ def get_charges(molecule, max_confs=800, strictStereo=True, normalize=True, keep
         #Copy coordinates to single conformer
         charged_copy.SetCoords( original )
     elif keep_confs > 0:
+        logger.debug("keep_confs was set to %s. Molecule positions will be reset." % keep_confs)
+
         #Otherwise if a number is provided, return this many confs if available
         for k, conf in enumerate( charged_copy.GetConfs() ):
             if k > keep_confs - 1:
