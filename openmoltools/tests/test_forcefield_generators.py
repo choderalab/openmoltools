@@ -142,6 +142,41 @@ def test_generate_ffxml_from_molecules():
         positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
 
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_generate_gaff2_ffxml_from_molecules():
+    """
+    Test generation of single ffxml file from a list of molecules, using the gaff2 option.
+    """
+    # Create a test set of molecules.
+    molecules = [ createOEMolFromIUPAC(name) for name in IUPAC_molecule_names ]
+    # Create an ffxml file.
+    from openmoltools.forcefield_generators import generateForceFieldFromMolecules
+    ffxml = generateForceFieldFromMolecules(molecules, gaff_version='gaff2')
+    # Create a ForceField.
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff2.xml")
+    forcefield = ForceField(gaff_xml_filename)
+    try:
+        forcefield.loadFile(StringIO(ffxml))
+    except Exception as e:
+        msg  = str(e)
+        msg += "ffxml contents:\n"
+        for (index, line) in enumerate(ffxml.split('\n')):
+            msg += 'line %8d : %s\n' % (index, line)
+        raise Exception(msg)
+
+    # Parameterize the molecules.
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol
+    for molecule in molecules:
+        # Create topology from molecule.
+        topology = generateTopologyFromOEMol(molecule)
+        # Create system with forcefield.
+        system = forcefield.createSystem(topology)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(molecule)
+        check_potential_is_finite(system, positions)
+
+
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_topology_molecules_round_trip():
     """
@@ -247,6 +282,57 @@ def test_generateResidueTemplate():
         # Check potential is finite.
         positions = extractPositionsFromOEMOL(mol)
         check_potential_is_finite(system, positions)
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_generateResidueTemplate_gaff2():
+    """
+    Test GAFF2 residue template generation from OEMol molecules.
+    """
+    from openeye import oechem, oeiupac
+
+    from pkg_resources import resource_filename
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff2.xml")
+
+    # Test independent ForceField instances.
+    for molecule_name in IUPAC_molecule_names:
+        mol = createOEMolFromIUPAC(molecule_name)
+        # Generate an ffxml residue template.
+        from openmoltools.forcefield_generators import generateResidueTemplate
+        [template, ffxml] = generateResidueTemplate(mol,gaff_version='gaff2')
+        # Create a ForceField object.
+        forcefield = ForceField(gaff_xml_filename)
+        # Add the additional parameters and template to the forcefield.
+        forcefield.registerResidueTemplate(template)
+        forcefield.loadFile(StringIO(ffxml))
+        # Create a Topology from the molecule.
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        topology = generateTopologyFromOEMol(mol)
+        # Parameterize system.
+        system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(mol)
+        check_potential_is_finite(system, positions)
+
+    # Test adding multiple molecules to a single ForceField instance.
+    forcefield = ForceField(gaff_xml_filename)
+    for molecule_name in IUPAC_molecule_names:
+        mol = createOEMolFromIUPAC(molecule_name)
+        # Generate an ffxml residue template.
+        from openmoltools.forcefield_generators import generateResidueTemplate
+        [template, ffxml] = generateResidueTemplate(mol, gaff_version='gaff2')
+        # Add the additional parameters and template to the forcefield.
+        forcefield.registerResidueTemplate(template)
+        forcefield.loadFile(StringIO(ffxml))
+        # Create a Topology from the molecule.
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        topology = generateTopologyFromOEMol(mol)
+        # Parameterize system.
+        system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(mol)
+        check_potential_is_finite(system, positions)
+
 
 def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX_ALLOWED_DEVIATION=5.0):
     """

@@ -223,7 +223,7 @@ def _writeMolecule(molecule, output_filename, standardize=True):
     #oechem.OEWriteMolecule(ofs, molecule)
     #ofs.close()
 
-def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
+def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_version='gaff'):
     """
     Generate an residue template for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -241,12 +241,14 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     normalize : bool, optional, default=True
         If True, normalize the molecule by checking aromaticity, adding
         explicit hydrogens, and renaming by IUPAC name.
+    gaff_version : str, default = 'gaff'
+        One of ['gaff', 'gaff2']; selects which atom types to use.
         
 
     Returns
     -------
     template : simtk.openmm.app.forcefield._TemplateData
-        Residue template for ForceField using atom types and parameters from `gaff.xml`.
+        Residue template for ForceField using atom types and parameters from `gaff.xml` or `gaff2.xml`.
     additional_parameters_ffxml : str
         Contents of ForceField `ffxml` file defining additional parameters from parmchk(2).
 
@@ -285,7 +287,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
     # Parameterize the molecule with antechamber.
-    run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename)
+    run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version)
 
     # Read the resulting GAFF mol2 file as a ParmEd structure.
     from openeye import oechem
@@ -341,7 +343,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True):
     return template, ffxml.getvalue()
 
 
-def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True, gaff_version = 'gaff'):
+def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True, gaff_version='gaff'):
     """
     Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
