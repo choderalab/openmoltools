@@ -123,11 +123,16 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
 
+    if PACKMOL_PATH is None:
+        raise(IOError("Packmol not found, cannot run pack_box()"))
+
     pdb_filenames = []
 
     # We save all the temporary files in a temporary directory
     # that is deleted at the end of the function.
     with temporary_directory() as tmp_dir:
+
+        # Convert all mdtraj.Trajectory objects to PDB files.
         for obj in pdb_filenames_or_trajectories:
             try:  # See if MDTraj Trajectory
                 tmp_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
@@ -136,12 +141,15 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
             except AttributeError:  # Not an MDTraj Trajectory, assume filename
                 pdb_filenames.append(obj)
 
-        if PACKMOL_PATH is None:
-            raise(IOError("Packmol not found, cannot run pack_box()"))
-
-        # approximating volume to initialize  box
+        # Approximating volume to initialize box.
         if box_size is None:
             box_size = approximate_volume(pdb_filenames, n_molecules_list)
+
+        # Adjust box_size for periodic box. Packmol does not explicitly
+        # support periodic boundary conditions and the suggestion on
+        # theri docs is to pack in a box 2 angstroms smaller. See
+        # http://www.ime.unicamp.br/~martinez/packmol/userguide.shtml#pbc
+        packmol_box_size = box_size - 2  # angstroms
 
         # The path to packmol's output PDB file.
         output_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
@@ -151,7 +159,8 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
         for k in range(len(pdb_filenames)):
             filename = pdb_filenames[k]
             n_molecules = n_molecules_list[k]
-            header = header + BOX_TEMPLATE % (filename, n_molecules, box_size, box_size, box_size)
+            header += BOX_TEMPLATE % (filename, n_molecules, packmol_box_size,
+                                      packmol_box_size, packmol_box_size)
 
         print(header)
 
@@ -183,6 +192,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     bonds = np.array(bonds)
     trj.top = md.Topology.from_dataframe(top, bonds)
 
+    # Set the requested box size.
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
 
     return trj
