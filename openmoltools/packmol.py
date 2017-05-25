@@ -1,12 +1,13 @@
 import numpy as np
-import shutil
 import os
 import mdtraj as md
-from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import tempfile
 from distutils.spawn import find_executable
 import simtk.unit as units
+
+from .utils import temporary_directory
+
 
 PACKMOL_PATH = find_executable("packmol")
 
@@ -121,52 +122,51 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
-    
+
     pdb_filenames = []
-    for obj in pdb_filenames_or_trajectories:
-        try:  # See if MDTraj Trajectory
-            tmp_filename = tempfile.mktemp(suffix=".pdb")
-            obj.save_pdb(tmp_filename)
-            pdb_filenames.append(tmp_filename)
-        except AttributeError:  # Not an MDTraj Trajectory, assume filename
-            pdb_filenames.append(obj)
-    
-    if PACKMOL_PATH is None:
-        raise(IOError("Packmol not found, cannot run pack_box()"))
-    
-    output_filename = tempfile.mktemp(suffix=".pdb")
 
-    # approximating volume to initialize  box
-    if box_size is None:
-        box_size = approximate_volume(pdb_filenames, n_molecules_list)    
+    # We save all the temporary files in a temporary directory
+    # that is deleted at the end of the function.
+    with temporary_directory() as tmp_dir:
+        for obj in pdb_filenames_or_trajectories:
+            try:  # See if MDTraj Trajectory
+                tmp_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
+                obj.save_pdb(tmp_filename)
+                pdb_filenames.append(tmp_filename)
+            except AttributeError:  # Not an MDTraj Trajectory, assume filename
+                pdb_filenames.append(obj)
 
-    header = HEADER_TEMPLATE % (tolerance, output_filename)
-    for k in range(len(pdb_filenames)):
-        filename = pdb_filenames[k]
-        n_molecules = n_molecules_list[k]
-        header = header + BOX_TEMPLATE % (filename, n_molecules, box_size, box_size, box_size)
-    
-    pwd = os.getcwd()
-    
-    print(header)
-    
-    packmol_filename = "packmol_input.txt"
-    packmol_filename = tempfile.mktemp(suffix=".txt")
-    
-    file_handle = open(packmol_filename, 'w')
-    file_handle.write(header)
-    file_handle.close()
-    
-    print(header)
+        if PACKMOL_PATH is None:
+            raise(IOError("Packmol not found, cannot run pack_box()"))
 
-    os.system("%s < %s" % (PACKMOL_PATH, packmol_filename)) 
+        # approximating volume to initialize  box
+        if box_size is None:
+            box_size = approximate_volume(pdb_filenames, n_molecules_list)
 
-    trj = md.load(output_filename)
+        # The path to packmol's output PDB file.
+        output_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
+
+        # Create input file for packmol.
+        header = HEADER_TEMPLATE % (tolerance, output_filename)
+        for k in range(len(pdb_filenames)):
+            filename = pdb_filenames[k]
+            n_molecules = n_molecules_list[k]
+            header = header + BOX_TEMPLATE % (filename, n_molecules, box_size, box_size, box_size)
+
+        print(header)
+
+        packmol_filename = tempfile.mktemp(suffix='.txt', dir=tmp_dir)
+        with open(packmol_filename, 'w') as file_handle:
+            file_handle.write(header)
+
+        # Run packmol and load output PDB file.
+        os.system("%s < %s" % (PACKMOL_PATH, file_handle.name))
+        trj = md.load(output_filename)
 
     assert trj.topology.n_chains == sum(n_molecules_list), "Packmol error: molecules missing from output"
-    
+
     #Begin hack to introduce bonds for the MISSING CONECT ENTRIES THAT PACKMOL FAILS TO WRITE
-    
+
     top, bonds = trj.top.to_dataframe()
 
     trj_i = [md.load(filename) for filename in pdb_filenames]
@@ -182,9 +182,9 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     bonds = np.array(bonds)
     trj.top = md.Topology.from_dataframe(top, bonds)
-    
+
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
-    
+
     return trj
 
 
