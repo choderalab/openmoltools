@@ -237,7 +237,8 @@ def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
     return box_size
 
 
-def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1.0, box_scaleup_factor = 1.1):
+def approximate_volume_by_density(smiles_strings, n_molecules_list, density=1.0,
+                                  box_scaleup_factor=1.1, box_buffer=2.0):
     """Generate an approximate box size based on the number and molecular weight of molecules present, and a target density for the final solvated mixture. If no density is specified, the target density is assumed to be 1 g/ml.
 
     Parameters
@@ -250,6 +251,11 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
         Factor by which the estimated box size is increased
     density : float, optional, default 1.0
         Target density for final system in g/ml
+    box_buffer : float [ANGSTROMS], optional, default 2.0.
+        This quantity is added to the final estimated box size
+        (after scale-up). With periodic boundary conditions,
+        packmol docs suggests to leave an extra 2 Angstroms
+        buffer during packing.
 
     Returns
     -------
@@ -281,7 +287,7 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
     edge = vol**(1./3.)
 
     #Compute final box size
-    box_size = edge*box_scaleup_factor/units.angstroms
+    box_size = edge*box_scaleup_factor/units.angstroms# + box_buffer
 
     return box_size
 
