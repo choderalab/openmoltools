@@ -127,19 +127,24 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
         raise(IOError("Packmol not found, cannot run pack_box()"))
 
     pdb_filenames = []
+    trj_i = []
 
     # We save all the temporary files in a temporary directory
     # that is deleted at the end of the function.
     with temporary_directory() as tmp_dir:
 
-        # Convert all mdtraj.Trajectory objects to PDB files.
+        # We need all molecules as both pdb files (as packmol input)
+        # and mdtraj.Trajectory for restoring bonds later.
         for obj in pdb_filenames_or_trajectories:
             try:  # See if MDTraj Trajectory
                 tmp_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
                 obj.save_pdb(tmp_filename)
-                pdb_filenames.append(tmp_filename)
             except AttributeError:  # Not an MDTraj Trajectory, assume filename
                 pdb_filenames.append(obj)
+                trj_i.append(md.load(obj))
+            else:
+                pdb_filenames.append(tmp_filename)
+                trj_i.append(obj)
 
         # Approximating volume to initialize box.
         if box_size is None:
@@ -147,7 +152,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
         # Adjust box_size for periodic box. Packmol does not explicitly
         # support periodic boundary conditions and the suggestion on
-        # theri docs is to pack in a box 2 angstroms smaller. See
+        # their docs is to pack in a box 2 angstroms smaller. See
         # http://www.ime.unicamp.br/~martinez/packmol/userguide.shtml#pbc
         packmol_box_size = box_size - 2  # angstroms
 
@@ -177,13 +182,11 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     #Begin hack to introduce bonds for the MISSING CONECT ENTRIES THAT PACKMOL FAILS TO WRITE
 
     top, bonds = trj.top.to_dataframe()
-
-    trj_i = [md.load(filename) for filename in pdb_filenames]
     bonds_i = [t.top.to_dataframe()[1] for t in trj_i]
 
     offset = 0
     bonds = []
-    for i in range(len(pdb_filenames)):
+    for i in range(len(trj_i)):
         n_atoms = trj_i[i].n_atoms
         for j in range(n_molecules_list[i]):        
             bonds.extend(bonds_i[i] + offset)
