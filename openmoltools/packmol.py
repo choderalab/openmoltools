@@ -1,12 +1,13 @@
 import numpy as np
-import shutil
 import os
 import mdtraj as md
-from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
 import tempfile
 from distutils.spawn import find_executable
 import simtk.unit as units
+
+from .utils import temporary_directory
+
 
 PACKMOL_PATH = find_executable("packmol")
 
@@ -121,60 +122,71 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     """
     assert len(pdb_filenames_or_trajectories) == len(n_molecules_list), "Must input same number of pdb filenames as num molecules"
-    
-    pdb_filenames = []
-    for obj in pdb_filenames_or_trajectories:
-        try:  # See if MDTraj Trajectory
-            tmp_filename = tempfile.mktemp(suffix=".pdb")
-            obj.save_pdb(tmp_filename)
-            pdb_filenames.append(tmp_filename)
-        except AttributeError:  # Not an MDTraj Trajectory, assume filename
-            pdb_filenames.append(obj)
-    
+
     if PACKMOL_PATH is None:
         raise(IOError("Packmol not found, cannot run pack_box()"))
-    
-    output_filename = tempfile.mktemp(suffix=".pdb")
 
-    # approximating volume to initialize  box
-    if box_size is None:
-        box_size = approximate_volume(pdb_filenames, n_molecules_list)    
+    pdb_filenames = []
+    trj_i = []
 
-    header = HEADER_TEMPLATE % (tolerance, output_filename)
-    for k in range(len(pdb_filenames)):
-        filename = pdb_filenames[k]
-        n_molecules = n_molecules_list[k]
-        header = header + BOX_TEMPLATE % (filename, n_molecules, box_size, box_size, box_size)
-    
-    pwd = os.getcwd()
-    
-    print(header)
-    
-    packmol_filename = "packmol_input.txt"
-    packmol_filename = tempfile.mktemp(suffix=".txt")
-    
-    file_handle = open(packmol_filename, 'w')
-    file_handle.write(header)
-    file_handle.close()
-    
-    print(header)
+    # We save all the temporary files in a temporary directory
+    # that is deleted at the end of the function.
+    with temporary_directory() as tmp_dir:
 
-    os.system("%s < %s" % (PACKMOL_PATH, packmol_filename)) 
+        # We need all molecules as both pdb files (as packmol input)
+        # and mdtraj.Trajectory for restoring bonds later.
+        for obj in pdb_filenames_or_trajectories:
+            try:  # See if MDTraj Trajectory
+                tmp_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
+                obj.save_pdb(tmp_filename)
+            except AttributeError:  # Not an MDTraj Trajectory, assume filename
+                pdb_filenames.append(obj)
+                trj_i.append(md.load(obj))
+            else:
+                pdb_filenames.append(tmp_filename)
+                trj_i.append(obj)
 
-    trj = md.load(output_filename)
+        # Approximating volume to initialize box.
+        if box_size is None:
+            box_size = approximate_volume(pdb_filenames, n_molecules_list)
+
+        # Adjust box_size for periodic box. Packmol does not explicitly
+        # support periodic boundary conditions and the suggestion on
+        # their docs is to pack in a box 2 angstroms smaller. See
+        # http://www.ime.unicamp.br/~martinez/packmol/userguide.shtml#pbc
+        packmol_box_size = box_size - 2  # angstroms
+
+        # The path to packmol's output PDB file.
+        output_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
+
+        # Create input file for packmol.
+        header = HEADER_TEMPLATE % (tolerance, output_filename)
+        for k in range(len(pdb_filenames)):
+            filename = pdb_filenames[k]
+            n_molecules = n_molecules_list[k]
+            header += BOX_TEMPLATE % (filename, n_molecules, packmol_box_size,
+                                      packmol_box_size, packmol_box_size)
+
+        print(header)
+
+        packmol_filename = tempfile.mktemp(suffix='.txt', dir=tmp_dir)
+        with open(packmol_filename, 'w') as file_handle:
+            file_handle.write(header)
+
+        # Run packmol and load output PDB file.
+        os.system("%s < %s" % (PACKMOL_PATH, file_handle.name))
+        trj = md.load(output_filename)
 
     assert trj.topology.n_chains == sum(n_molecules_list), "Packmol error: molecules missing from output"
-    
-    #Begin hack to introduce bonds for the MISSING CONECT ENTRIES THAT PACKMOL FAILS TO WRITE
-    
-    top, bonds = trj.top.to_dataframe()
 
-    trj_i = [md.load(filename) for filename in pdb_filenames]
+    #Begin hack to introduce bonds for the MISSING CONECT ENTRIES THAT PACKMOL FAILS TO WRITE
+
+    top, bonds = trj.top.to_dataframe()
     bonds_i = [t.top.to_dataframe()[1] for t in trj_i]
 
     offset = 0
     bonds = []
-    for i in range(len(pdb_filenames)):
+    for i in range(len(trj_i)):
         n_atoms = trj_i[i].n_atoms
         for j in range(n_molecules_list[i]):        
             bonds.extend(bonds_i[i] + offset)
@@ -182,9 +194,10 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
 
     bonds = np.array(bonds)
     trj.top = md.Topology.from_dataframe(top, bonds)
-    
+
+    # Set the requested box size.
     trj.unitcell_vectors = np.array([np.eye(3)]) * box_size / 10.
-    
+
     return trj
 
 
@@ -224,7 +237,8 @@ def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
     return box_size
 
 
-def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1.0, box_scaleup_factor = 1.1):
+def approximate_volume_by_density(smiles_strings, n_molecules_list, density=1.0,
+                                  box_scaleup_factor=1.1, box_buffer=2.0):
     """Generate an approximate box size based on the number and molecular weight of molecules present, and a target density for the final solvated mixture. If no density is specified, the target density is assumed to be 1 g/ml.
 
     Parameters
@@ -237,6 +251,11 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
         Factor by which the estimated box size is increased
     density : float, optional, default 1.0
         Target density for final system in g/ml
+    box_buffer : float [ANGSTROMS], optional, default 2.0.
+        This quantity is added to the final estimated box size
+        (after scale-up). With periodic boundary conditions,
+        packmol docs suggests to leave an extra 2 Angstroms
+        buffer during packing.
 
     Returns
     -------
@@ -268,7 +287,7 @@ def approximate_volume_by_density( smiles_strings, n_molecules_list, density = 1
     edge = vol**(1./3.)
 
     #Compute final box size
-    box_size = edge*box_scaleup_factor/units.angstroms
+    box_size = edge*box_scaleup_factor/units.angstroms# + box_buffer
 
     return box_size
 

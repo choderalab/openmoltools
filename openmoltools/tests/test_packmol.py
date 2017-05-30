@@ -100,6 +100,9 @@ def test_packmol_simulation_ternary_bydensity():
     size = packmol.approximate_volume_by_density( smiles_list, [12, 22, 46] )
     trj = packmol.pack_box(pdb_filenames, [12, 22, 46], box_size = size)
 
+    # The box size should be set as expected (in nanometers).
+    assert all(trj.unitcell_lengths[0] == [size/10.0, size/10.0, size/10.0])
+
     xyz = trj.openmm_positions(0)
     top = trj.top.to_openmm()
     top.setUnitCellDimensions(mm.Vec3(*trj.unitcell_lengths[0])*u.nanometer)
