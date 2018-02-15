@@ -21,11 +21,9 @@ except ImportError:
     setup_kwargs = {}
     cython_extension = 'c'
 
-
-
 ##########################
-VERSION = "0.8.2dev0"
-ISRELEASED = False
+VERSION = "0.8.2"
+ISRELEASED = True
 __version__ = VERSION
 ##########################
 

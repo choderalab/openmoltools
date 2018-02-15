@@ -105,7 +105,9 @@ def get_charges(molecule, max_confs=800, strictStereo=True,
 
 
 def normalize_molecule(molecule):
-    """Normalize a copy of the molecule by checking aromaticity, adding explicit hydrogens, and renaming by IUPAC name.
+    """
+    Normalize a copy of the molecule by checking aromaticity, adding explicit hydrogens, and
+    (if possible) renaming by IUPAC name.
 
     Parameters
     ----------
@@ -119,9 +121,10 @@ def normalize_molecule(molecule):
 
     """
     oechem = import_("openeye.oechem")
-    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
+    if not oechem.OEChemIsLicensed():
+        raise(ImportError("Need License for OEChem!"))
     oeiupac = import_("openeye.oeiupac")
-    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
+    has_iupac = oeiupac.OEIUPACIsLicensed()
 
     molcopy = oechem.OEMol(molecule)
 
@@ -132,14 +135,16 @@ def normalize_molecule(molecule):
     oechem.OEAddExplicitHydrogens(molcopy)
 
     # Set title to IUPAC name.
-    name = oeiupac.OECreateIUPACName(molcopy)
-    molcopy.SetTitle(name)
+    if has_iupac:
+        name = oeiupac.OECreateIUPACName(molcopy)
+        molcopy.SetTitle(name)
 
     # Check for any missing atom names, if found reassign all of them.
     if any([atom.GetName() == '' for atom in molcopy.GetAtoms()]):
         oechem.OETriposAtomNames(molcopy)
 
     return molcopy
+
 
 def iupac_to_oemol(iupac_name):
     """Create a OEMolBuilder from a iupac name.
@@ -156,9 +161,11 @@ def iupac_to_oemol(iupac_name):
 
     """
     oechem = import_("openeye.oechem")
-    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
+    if not oechem.OEChemIsLicensed():
+        raise(ImportError("Need License for OEChem!"))
     oeiupac = import_("openeye.oeiupac")
-    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
+    if not oeiupac.OEIUPACIsLicensed():
+        raise(ImportError("Need License for OEIupac!"))
 
     # Create an OEMol molecule from IUPAC name.
     molecule = oechem.OEMol()  # create a molecule
@@ -170,6 +177,7 @@ def iupac_to_oemol(iupac_name):
     molecule = normalize_molecule(molecule)
 
     return molecule
+
 
 def smiles_to_oemol(smiles):
     """Create a OEMolBuilder from a smiles string.
