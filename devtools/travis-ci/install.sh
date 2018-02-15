@@ -9,5 +9,5 @@ bash $MINICONDA -b -p $HOME/miniconda
 PIP_ARGS="-U"
 
 export PATH=$HOME/miniconda/bin:$PATH
-
-conda install --yes conda-build=2.1.5 jinja2 anaconda-client pip
+conda update --yes conda
+conda install --yes conda-build=2.1.7 jinja2 anaconda-client pip
