@@ -11,7 +11,7 @@ import os
 import openmoltools.openeye
 import pandas as pd
 import mdtraj as md
-from mdtraj.testing import raises
+from numpy.testing import assert_raises
 
 smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(=C=[N-])C=[NH+]3"
 
@@ -237,17 +237,17 @@ def test_ffxml_simulation():
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-@raises(RuntimeError)
 def test_charge_fail1():
-    with utils.enter_temp_directory():
-        openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
+    with assert_raises(RuntimeError):
+        with utils.enter_temp_directory():
+            openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-@raises(RuntimeError)
 def test_charge_fail2():
-    m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
-    m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
+    with assert_raises(RuntimeError):
+        m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+        m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
@@ -262,11 +262,11 @@ def test_charge_success2():
     m = openmoltools.openeye.get_charges(m, strictStereo=False)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-@raises(RuntimeError)
 def test_oeassigncharges_fail():
-    # Fail test for OEToolkits (2017.2.1) new charging function
-    m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
-    m = openmoltools.openeye.get_charges(m,  strictStereo=False, legacy=False)
+    with assert_raises(RuntimeError):
+        # Fail test for OEToolkits (2017.2.1) new charging function
+        m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
+        m = openmoltools.openeye.get_charges(m,  strictStereo=False, legacy=False)
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_oeassigncharges_success():
