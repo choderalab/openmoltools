@@ -334,7 +334,7 @@ def molecule_to_mol2(molecule, tripos_mol2_filename=None, conformer=0, residue_n
     ofs = oechem.oemolostream(tripos_mol2_filename)
     ofs.SetFormat(oechem.OEFormat_MOL2H)
     for k, mol in enumerate(molecule.GetConfs()):
-        if k == conformer or not conformer:
+        if k == conformer or conformer is None:
             # Standardize will override molecular properties(atom names etc.)
             if standardize:
                 oechem.OEWriteMolecule(ofs, mol)
