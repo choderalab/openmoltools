@@ -37,7 +37,6 @@ requirements:
     - ambermini
     - pytables
     - parmed
-    - libgfortran ==1.0 # [linux]
     - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
