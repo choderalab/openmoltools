@@ -22,8 +22,8 @@ except ImportError:
     cython_extension = 'c'
 
 ##########################
-VERSION = "0.8.3dev0"
-ISRELEASED = False
+VERSION = "0.8.3"
+ISRELEASED = True
 __version__ = VERSION
 ##########################
 
