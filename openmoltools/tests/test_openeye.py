@@ -91,7 +91,7 @@ def test_output_mol2_multiple_confs():
     openmoltools.openeye.molecule_to_mol2(multiple_conformers, tripos_mol2_filename="testing mol2 multiple conformers.tripos.mol2", conformer=None)
     with open("testing mol2 multiple conformers.tripos.mol2", "r") as outfile:
         text = outfile.read()
-    # This should not find the text we added, to make sure the molecule is standardized.
+    # This should find more than one conformation
     assert text.count("@<TRIPOS>MOLECULE") > 1
 
 
