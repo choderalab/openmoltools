@@ -92,7 +92,7 @@ def test_output_mol2_multiple_confs():
     with open("testing mol2 multiple conformers.tripos.mol2", "r") as outfile:
         text = outfile.read()
     # This should not find the text we added, to make sure the molecule is standardized.
-    assert text.count("MOLECULE") is 2
+    assert text.count("@<TRIPOS>MOLECULE") > 1
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
