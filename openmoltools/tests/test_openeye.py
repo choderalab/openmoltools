@@ -85,6 +85,17 @@ def test_output_mol2_no_standardize():
 
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+def test_output_mol2_multiple_confs():
+    molecule = openmoltools.openeye.iupac_to_oemol("butanol")
+    multiple_conformers = openmoltools.openeye.generate_conformers(molecule)
+    openmoltools.openeye.molecule_to_mol2(multiple_conformers, tripos_mol2_filename="testing mol2 multiple conformers.tripos.mol2", conformer=None)
+    with open("testing mol2 multiple conformers.tripos.mol2", "r") as outfile:
+        text = outfile.read()
+    # This should not find the text we added, to make sure the molecule is standardized.
+    assert text.count("MOLECULE") is 2
+
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
 def test_butanol():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m1 = openmoltools.openeye.get_charges(m0, keep_confs=-1)
