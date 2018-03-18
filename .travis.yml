@@ -54,6 +54,10 @@ script:
   # Test the package
   - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
 
+os:
+  - linux
+  - osx
+
 env:
   matrix:
     # OpenEye production
