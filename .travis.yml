@@ -1,85 +1,71 @@
-language: c
+language: python
+
+# Run jobs on container-based infrastructure, can be overridden per job
 sudo: false
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-      - g++
-      - gfortran
-      - valgrind
-      - csh
-      - g++-multilib
-      - gcc-multilib
+
+# Will only test on Linux be default, special includes are needed for OSX
+python:
+    - 2.7
+    - 3.5
+    - 3.6
+
+matrix:
+  include:
+    # Extra includes for OSX since python language is not available by default on OSX
+    - os: osx
+      language: generic
+      env: PYTHON_VER=2.7
+    - os: osx
+      language: generic
+      env: PYTHON_VER=3.5
+    - os: osx
+      language: generic
+      env: PYTHON_VER=3.6
+
+env:
+  global:
+    # Location of decrypted OpenEye license file
+    - OE_LICENSE="$HOME/oe_license.txt"
+    # encrypted BINSTAR_TOKEN for push of dev package to binstar
+    - secure: "S9I5imZ0CJdwfhHzy+Beh8NTFm2ZYpMFCLgvBYT/UsifIKlGynUK2xGi7bDnHLpslT45FUMmjzdpf2QNrfbivVJgiSDTQJc1GCIqGFFKFqerJEEYUkXlBxvWNO+poSOMIzkJqd7xsTodt4CYhGJM1dT6ocaSM7UJgAErrcRJfLo="
 
 branches:
   only:
     - master
 
 before_install:
-  # Configure environment.
+  # Additional info about the build
+  - uname -a
+  - df -h
+  - ulimit -a
+  # Install Conda and dependencies
   - source devtools/travis-ci/install.sh
-  - export PYTHONUNBUFFERED=true
-  - echo $TRAVIS_SECURE_ENV_VARS
+  - python -V
   # Unpack encrypted OpenEye license file
   - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_751d8ffa39c6_key -iv $encrypted_751d8ffa39c6_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
   - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
 
 install:
-
-script:
-  # Create a test environment
-  - conda create --yes -n test python=$python
-  # Activate the test environment
+  # Create test environment for package
+  - conda create --yes -n test python=$PYTHON_VER pip pytest pytest-cov
   - source activate test
-  # Add org channel
-  - conda config --add channels ${ORGNAME}
-  # Add omnia dev channels
-  - conda config --add channels https://conda.anaconda.org/omnia/label/dev
-  # Add the conda-forge channel
-  - conda config --add channels conda-forge
-  # Update everything
-  - conda update --quiet --yes --all
-  # Install OpenEye toolkit
-  - conda install --yes $OPENEYE_CHANNEL openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
-  # Build the recipe
-  - conda build devtools/conda-recipe
-  # Install the package
-  - conda install --yes --use-local ${PACKAGENAME}-dev
-  # Install testing dependencies
+  - conda install --yes codecov  # Only available in conda-forge channel or pip
+  # Install the OpenEye toolkit
+  - conda install --yes -c openeye openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
+  # Install other testing dependencies
   - conda install --yes --quiet nose nose-timer
   - conda install --yes --quiet openmmtools
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
-  # Test the package
-  - cd devtools && nosetests $PACKAGENAME --nocapture --verbosity=2 --with-timer -a '!slow' && cd ..
+  # Build the conda package
+  - conda build --python=$PYTHON_VER devtools/conda-recipe
+  - conda install --yes --use-local openmoltools-dev
 
-os:
-  - linux
-  - osx
-
-env:
-  matrix:
-    # OpenEye production
-    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="-c openeye"
-    - CONDA_PY=36 python=3.6 OPENEYE_CHANNEL="-c openeye"
-    # OpenEye beta
-    - CONDA_PY=35 python=3.5 OPENEYE_CHANNEL="-c openeye/label/dev"
-    - CONDA_PY=36 python=3.6 OPENEYE_CHANNEL="-c openeye/label/dev"
-
-  global:
-    - ORGNAME="omnia"
-    - PACKAGENAME="openmoltools"
-    # Location of decrypted OpenEye license file
-    - OE_LICENSE="$HOME/oe_license.txt"
-    # The architecture to download for the OpenEye toolkits
-    - OE_ARCH="linux-x64"
-    # encrypted BINSTAR_TOKEN for push of dev package to binstar
-    - secure: "S9I5imZ0CJdwfhHzy+Beh8NTFm2ZYpMFCLgvBYT/UsifIKlGynUK2xGi7bDnHLpslT45FUMmjzdpf2QNrfbivVJgiSDTQJc1GCIqGFFKFqerJEEYUkXlBxvWNO+poSOMIzkJqd7xsTodt4CYhGJM1dT6ocaSM7UJgAErrcRJfLo="
-
-after_success:
-  - echo "after_success"
-  - source devtools/travis-ci/after_success.sh
+script:
+  - pytest -v --cov={{cookiecutter.repo_name}} --cov-config setup.cfg {{cookiecutter.repo_name}}/tests/
 
 notifications:
   email: false
+
+after_success:
+  - codecov
