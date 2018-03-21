@@ -58,7 +58,7 @@ install:
   - conda install --yes --use-local openmoltools-dev
 
 script:
-  - pytest -v --cov={{cookiecutter.repo_name}} --cov-config setup.cfg {{cookiecutter.repo_name}}/tests/
+  - pytest -v --cov=openmoltools --cov-config setup.cfg openmoltools/tests/
 
 notifications:
   email: false
