@@ -343,7 +343,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     return template, ffxml.getvalue()
 
 
-def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True, gaff_version='gaff'):
+def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True, gaff_version='gaff', log_debug_output=False):
     """
     Generate ffxml file containing additional parameters and residue templates for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
 
@@ -366,6 +366,8 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         explicit hydrogens, and renaming by IUPAC name.
     gaff_version : str, default = 'gaff'
         One of ['gaff', 'gaff2']; selects which atom types to use.
+    log_debug_output : bool, optional, default=False
+        If true, will send output of tleap to logger.
 
     Returns
     -------
@@ -434,7 +436,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
         # Parameterize the molecule with antechamber.
-        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version)
+        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version, log_debug_output=log_debug_output)
 
         # Append to leaprc input for parmed.
         leaprc += '%s = loadmol2 %s\n' % (prefix, gaff_mol2_filename)
