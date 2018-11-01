@@ -136,9 +136,9 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         order = bond.order
         if order is None:
             is_bond_order_present = False
-            break
-        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], 1)
-
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
+        else:
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
 
     if not is_bond_order_present:
         # Write out a mol2 file without altering molecule.
@@ -174,10 +174,10 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         os.unlink(ac_output_filename)
         os.rmdir(tmpdir)
 
-    oechem.OEClearAromaticFlags(molecule)
-    oechem.OEFindRingAtomsAndBonds(molecule)
+    # oechem.OEClearAromaticFlags(molecule)
+    # oechem.OEFindRingAtomsAndBonds(molecule)
     oechem.OEAssignFormalCharges(molecule)
-    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
+    # oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     mol2_input_filename = 'molecule-after.mol2'
     ofs = oechem.oemolostream(mol2_input_filename)
@@ -360,7 +360,6 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
     ffxml = StringIO()
     params.write(ffxml)
-
     return template, ffxml.getvalue()
 
 
