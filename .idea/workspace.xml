@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4f622a2e-f425-4472-8842-e525e395d2ed" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/openmoltools/forcefield_generators.py" beforeDir="false" afterPath="$PROJECT_DIR$/openmoltools/forcefield_generators.py" afterDir="false" />
-    </list>
+    <list default="true" id="4f622a2e-f425-4472-8842-e525e395d2ed" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,8 +44,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/openmoltools/forcefield_generators.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="495">
-              <caret line="362" selection-start-line="362" selection-end-line="362" />
+            <state relative-caret-position="621">
+              <caret line="150" column="1" selection-start-line="150" selection-start-column="1" selection-end-line="150" selection-end-column="1" />
               <folding>
                 <element signature="e#79#117#0" expanded="true" />
               </folding>
@@ -83,11 +81,10 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="1632" />
-    <option name="y" value="-1284" />
-    <option name="width" value="1668" />
-    <option name="height" value="1193" />
+  <component name="ProjectFrameBounds" extendedState="1">
+    <option name="y" value="23" />
+    <option name="width" value="1440" />
+    <option name="height" value="806" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -142,11 +139,11 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1632" y="-1284" width="1668" height="1193" extended-state="0" />
+    <frame x="0" y="23" width="1440" height="806" extended-state="1" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" side_tool="true" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21463715" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24964234" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Version Control" />
       <window_info anchor="bottom" id="Python Console" />
@@ -181,8 +178,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/openmoltools/forcefield_generators.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="495">
-          <caret line="362" selection-start-line="362" selection-end-line="362" />
+        <state relative-caret-position="621">
+          <caret line="150" column="1" selection-start-line="150" selection-start-column="1" selection-end-line="150" selection-end-column="1" />
           <folding>
             <element signature="e#79#117#0" expanded="true" />
           </folding>

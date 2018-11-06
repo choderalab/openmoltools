@@ -50,7 +50,15 @@ def generateTopologyFromOEMol(molecule):
     for atom in molecule.GetAtoms():
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
-        atom = topology.addAtom(name, element, residue)
+        new_atom = topology.addAtom(name, element, residue)
+        # Add stereochemistry (handedness: 2 is right-handed and 3 is left handed) property to chiral atoms
+        if atom.IsChiral():
+            nbrs = {}
+            for nbr in atom.GetAtoms():
+                nbrs[nbr.GetAtomicNum()] = nbr
+            nbrs_sorted = [nbrs[key] for key in sorted(nbrs.keys())]
+            new_atom.stereo = atom.GetStereo(nbrs_sorted, oechem.OEAtomStereo_Tetra)
+            print("topology from oemol stereo: ", new_atom.stereo) ## IVY delete
 
     # Create bonds.
     atoms = {atom.name: atom for atom in topology.atoms()}
@@ -123,9 +131,10 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         try:
             oeatom.AddData("topology_index", atom.topology_index)
         except AttributeError:
-            pass
+            oeatom.AddData("topology_index", atom.index)  # For small molecules (and the cap atoms in proteins)
         try:
             oeatom.AddData("stereo", atom.stereo)
+            print("got stereo! ", atom.stereo)
         except AttributeError:
             pass
     oeatoms = {oeatom.GetName(): oeatom for oeatom in molecule.GetAtoms()}
@@ -174,10 +183,11 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         os.unlink(ac_output_filename)
         os.rmdir(tmpdir)
 
-    # oechem.OEClearAromaticFlags(molecule)
-    # oechem.OEFindRingAtomsAndBonds(molecule)
+        oechem.OEClearAromaticFlags(molecule)
+        oechem.OEFindRingAtomsAndBonds(molecule)
+        oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
+
     oechem.OEAssignFormalCharges(molecule)
-    # oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     mol2_input_filename = 'molecule-after.mol2'
     ofs = oechem.oemolostream(mol2_input_filename)
