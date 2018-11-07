@@ -52,18 +52,24 @@ def generateTopologyFromOEMol(molecule):
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
         new_atom = topology.addAtom(name, element, residue)
-        # Add stereochemistry (handedness: 2 is right-handed and 3 is left handed) property to chiral atoms
-        if atom.IsChiral():
-            stereo = oechem.OEPerceiveCIPStereo(molecule, atom)
-            new_atom.stereo = stereo
-        else:
-            new_atom.stereo = 0
+        # Add stereochemistry (handedness: 2 is right-handed and 3 is left handed) property to chiral atoms ## IVY Delete
+        # if atom.IsChiral():
+        #     stereo = oechem.OEPerceiveCIPStereo(molecule, atom)
+        #     new_atom.stereo = stereo
+        # else:
+        #     new_atom.stereo = 0
     # Create bonds.
     atoms = {atom.name: atom for atom in topology.atoms()}
     for bond in molecule.GetBonds():
         order = bond.GetOrder()
         topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()], order=order)
-
+        # topology_bonds = [tb for tb in topology.bonds()] # IVY delete
+        # new_bond = topology_bonds[-1]
+        # if bond.GetOrder() == 2:
+        #     stereo = oechem.OEPerceiveCIPStereo(molecule, bond)
+        #     new_bond.stereo = stereo
+        # else:
+        #     new_bond.stereo = 0
     return topology
 
 def _ensureUniqueAtomNames(molecule):
@@ -114,7 +120,6 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     will be converted back into OEMol bond type assignments.
 
     """
-    print("in generateOEMolFromTopology") ## IVY
     # Raise an Exception if this residue has external bonds.
     if len(list(residue.external_bonds())) > 0:
         raise Exception("Cannot generate an OEMol from residue '%s' because it has external bonds." % residue.name)
@@ -129,10 +134,10 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
             oeatom.AddData("topology_index", atom.topology_index)
         except AttributeError:
             oeatom.AddData("topology_index", atom.index)  # For small molecules (and the cap atoms in proteins)
-        try:
-            oeatom.AddData("stereo", atom.stereo)
-        except:
-            pass
+        # try: ## IVY delete
+        #     oeatom.AddData("stereo", atom.stereo)
+        # except:
+        #     pass
 
     oeatoms = {oeatom.GetName(): oeatom for oeatom in molecule.GetAtoms()}
     is_bond_order_present = True
@@ -142,9 +147,13 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         order = bond.order
         if order is None:
             is_bond_order_present = False
-            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
+            new_bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
         else:
-            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
+            new_bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
+        # try: ## IVY delete
+        #     new_bond.AddData("stereo", bond.stereo)
+        # except:
+        #     print("unable to get bond stereo")
 
     if not is_bond_order_present:
         # Write out a mol2 file without altering molecule.
@@ -186,15 +195,15 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
 
     oechem.OEAssignFormalCharges(molecule)
 
-    # Add stereochemistry
-    oechem.OEPerceiveChiral(molecule)  ## IVY
-    for atom in molecule.GetAtoms():
-        if atom.IsChiral():
-            try:
-                stereo = atom.GetData("stereo")
-                oechem.OESetCIPStereo(molecule, atom, stereo)
-            except:
-                pass
+    # # Add stereochemistry ## IVY delete
+    # oechem.OEPerceiveChiral(molecule)
+    # for atom in molecule.GetAtoms():
+    #     if atom.IsChiral():
+    #         try:
+    #             stereo = atom.GetData("stereo")
+    #             oechem.OESetCIPStereo(molecule, atom, stereo)
+    #         except:
+    #             pass
 
     mol2_input_filename = 'molecule-after.mol2'
     ofs = oechem.oemolostream(mol2_input_filename)
