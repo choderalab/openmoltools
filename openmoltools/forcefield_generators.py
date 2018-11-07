@@ -47,19 +47,17 @@ def generateTopologyFromOEMol(molecule):
     residue = topology.addResidue(resname, chain)
 
     # Create atoms in the residue.
+    oechem.OEPerceiveChiral(molecule)
     for atom in molecule.GetAtoms():
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
         new_atom = topology.addAtom(name, element, residue)
         # Add stereochemistry (handedness: 2 is right-handed and 3 is left handed) property to chiral atoms
         if atom.IsChiral():
-            nbrs = {}
-            for nbr in atom.GetAtoms():
-                nbrs[nbr.GetAtomicNum()] = nbr
-            nbrs_sorted = [nbrs[key] for key in sorted(nbrs.keys())]
-            new_atom.stereo = atom.GetStereo(nbrs_sorted, oechem.OEAtomStereo_Tetra)
-            print("topology from oemol stereo: ", new_atom.stereo) ## IVY delete
-
+            stereo = oechem.OEPerceiveCIPStereo(molecule, atom)
+            new_atom.stereo = stereo
+        else:
+            new_atom.stereo = 0
     # Create bonds.
     atoms = {atom.name: atom for atom in topology.atoms()}
     for bond in molecule.GetBonds():
@@ -111,13 +109,12 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         The OEMol molecule corresponding to the topology.
         Atom order will be preserved and bond orders assigned.
 
-    The Antechamber `bondtype` program will be used to assign bond orders, and these
+    In the absence of bond orders specified in the topology,
+    the Antechamber `bondtype` program will be used to assign bond orders, and these
     will be converted back into OEMol bond type assignments.
 
-    Note that there is no way to preserve stereochemistry since `Residue` does
-    not note stereochemistry in any way.
-
     """
+    print("in generateOEMolFromTopology") ## IVY
     # Raise an Exception if this residue has external bonds.
     if len(list(residue.external_bonds())) > 0:
         raise Exception("Cannot generate an OEMol from residue '%s' because it has external bonds." % residue.name)
@@ -134,9 +131,9 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
             oeatom.AddData("topology_index", atom.index)  # For small molecules (and the cap atoms in proteins)
         try:
             oeatom.AddData("stereo", atom.stereo)
-            print("got stereo! ", atom.stereo)
-        except AttributeError:
+        except:
             pass
+
     oeatoms = {oeatom.GetName(): oeatom for oeatom in molecule.GetAtoms()}
     is_bond_order_present = True
     for bond in residue.bonds():
@@ -188,6 +185,16 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
 
     oechem.OEAssignFormalCharges(molecule)
+
+    # Add stereochemistry
+    oechem.OEPerceiveChiral(molecule)  ## IVY
+    for atom in molecule.GetAtoms():
+        if atom.IsChiral():
+            try:
+                stereo = atom.GetData("stereo")
+                oechem.OESetCIPStereo(molecule, atom, stereo)
+            except:
+                pass
 
     mol2_input_filename = 'molecule-after.mol2'
     ofs = oechem.oemolostream(mol2_input_filename)
