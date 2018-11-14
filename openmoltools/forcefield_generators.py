@@ -51,25 +51,13 @@ def generateTopologyFromOEMol(molecule):
     for atom in molecule.GetAtoms():
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
-        new_atom = topology.addAtom(name, element, residue)
-        # Add stereochemistry (handedness: 2 is right-handed and 3 is left handed) property to chiral atoms ## IVY Delete
-        # if atom.IsChiral():
-        #     stereo = oechem.OEPerceiveCIPStereo(molecule, atom)
-        #     new_atom.stereo = stereo
-        # else:
-        #     new_atom.stereo = 0
+        topology.addAtom(name, element, residue)
+
     # Create bonds.
     atoms = {atom.name: atom for atom in topology.atoms()}
     for bond in molecule.GetBonds():
         order = bond.GetOrder()
         topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()], order=order)
-        # topology_bonds = [tb for tb in topology.bonds()] # IVY delete
-        # new_bond = topology_bonds[-1]
-        # if bond.GetOrder() == 2:
-        #     stereo = oechem.OEPerceiveCIPStereo(molecule, bond)
-        #     new_bond.stereo = stereo
-        # else:
-        #     new_bond.stereo = 0
     return topology
 
 def _ensureUniqueAtomNames(molecule):
@@ -134,10 +122,6 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
             oeatom.AddData("topology_index", atom.topology_index)
         except AttributeError:
             oeatom.AddData("topology_index", atom.index)  # For small molecules (and the cap atoms in proteins)
-        # try: ## IVY delete
-        #     oeatom.AddData("stereo", atom.stereo)
-        # except:
-        #     pass
 
     oeatoms = {oeatom.GetName(): oeatom for oeatom in molecule.GetAtoms()}
     is_bond_order_present = True
@@ -147,13 +131,9 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         order = bond.order
         if order is None:
             is_bond_order_present = False
-            new_bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
         else:
-            new_bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
-        # try: ## IVY delete
-        #     new_bond.AddData("stereo", bond.stereo)
-        # except:
-        #     print("unable to get bond stereo")
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
 
     if not is_bond_order_present:
         # Write out a mol2 file without altering molecule.
@@ -161,9 +141,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         mol2_input_filename = os.path.join(tmpdir, 'molecule-before-bond-perception.mol2')
         ac_output_filename = os.path.join(tmpdir, 'molecule-after-bond-perception.ac')
         ofs = oechem.oemolostream(mol2_input_filename)
-        m2h = True
-        substruct = False
-        oechem.OEWriteMol2File(ofs, molecule, m2h, substruct)
+        oechem.OEWriteMol2File(ofs, molecule)
         ofs.close()
         # Run bondtype
         command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
@@ -189,27 +167,10 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         os.unlink(ac_output_filename)
         os.rmdir(tmpdir)
 
-        oechem.OEClearAromaticFlags(molecule)
-        oechem.OEFindRingAtomsAndBonds(molecule)
-        oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
-
+    oechem.OEFindRingAtomsAndBonds(molecule)
+    oechem.OEAssignAromaticFlags(molecule)
     oechem.OEAssignFormalCharges(molecule)
-
-    # # Add stereochemistry ## IVY delete
-    # oechem.OEPerceiveChiral(molecule)
-    # for atom in molecule.GetAtoms():
-    #     if atom.IsChiral():
-    #         try:
-    #             stereo = atom.GetData("stereo")
-    #             oechem.OESetCIPStereo(molecule, atom, stereo)
-    #         except:
-    #             pass
-
-    mol2_input_filename = 'molecule-after.mol2'
-    ofs = oechem.oemolostream(mol2_input_filename)
-    m2h = True
-    substruct = False
-    oechem.OEWriteMol2File(ofs, molecule, m2h, substruct)
+    oechem.OEPerceiveChiral(molecule)
 
     # Generate Tripos atom names if requested.
     if tripos_atom_names:
@@ -224,7 +185,6 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         omega(molecule)
 
     return molecule
-
 
 def _computeNetCharge(molecule):
     """
@@ -265,10 +225,10 @@ def _writeMolecule(molecule, output_filename, standardize=True):
     """
     from openmoltools.openeye import molecule_to_mol2
     molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle(), standardize=standardize)
-    #from openeye import oechem
-    #ofs = oechem.oemolostream(output_filename)
-    #oechem.OEWriteMolecule(ofs, molecule)
-    #ofs.close()
+    # from openeye import oechem
+    # ofs = oechem.oemoloxstream(output_filename)
+    # oechem.OEWriteMolecule(ofs, molecule)
+    # ofs.close()
 
 def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_version='gaff'):
     """
@@ -432,6 +392,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         template_names = set()
         for molecule in molecules:
             template_name = molecule.GetTitle()
+            print("template name: ", template_name) ## IVY
             if template_name == '<0>':
                 raise Exception("Molecule '%s' has invalid name" % template_name)
             if template_name in template_names:
@@ -446,6 +407,12 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     leaprc = ""
     failed_molecule_list = []
     for (molecule_index, molecule) in enumerate(molecules):
+        print("smiles: ", oechem.OEMolToSmiles(molecule))
+        # Create a unique prefix.
+        # prefix = 'molecule%010d' % molecule_index
+        prefix = molecule.GetTitle()
+        print("prefix: ", prefix)  ## IVY
+
         # Set the template name based on the molecule title.
         if generateUniqueNames:
             from uuid import uuid4
@@ -468,9 +435,6 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
             except:
                 failed_molecule_list.append(molecule)
 
-        # Create a unique prefix.
-        prefix = 'molecule%010d' % molecule_index
-
         # Create temporary directory for running antechamber.
         input_mol2_filename = prefix + '.tripos.mol2'
         gaff_mol2_filename  = prefix + '.gaff.mol2'
@@ -480,7 +444,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
         # Parameterize the molecule with antechamber.
-        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version)
+        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version, resname=True)
 
         # Append to leaprc input for parmed.
         leaprc += '%s = loadmol2 %s\n' % (prefix, gaff_mol2_filename)
@@ -489,7 +453,8 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO(leaprc)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
+
     ffxml = StringIO()
     params.write(ffxml)
 
