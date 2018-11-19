@@ -392,7 +392,6 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         template_names = set()
         for molecule in molecules:
             template_name = molecule.GetTitle()
-            print("template name: ", template_name) ## IVY
             if template_name == '<0>':
                 raise Exception("Molecule '%s' has invalid name" % template_name)
             if template_name in template_names:
@@ -407,11 +406,9 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     leaprc = ""
     failed_molecule_list = []
     for (molecule_index, molecule) in enumerate(molecules):
-        print("smiles: ", oechem.OEMolToSmiles(molecule))
         # Create a unique prefix.
         # prefix = 'molecule%010d' % molecule_index
         prefix = molecule.GetTitle()
-        print("prefix: ", prefix)  ## IVY
 
         # Set the template name based on the molecule title.
         if generateUniqueNames:
