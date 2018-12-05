@@ -343,7 +343,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
     params.write(ffxml)
     return template, ffxml.getvalue()
