@@ -13,6 +13,10 @@ from openmoltools.amber import run_antechamber
 from openmoltools.openeye import get_charges
 from simtk.openmm.app.element import Element
 import parmed
+from openeye import oechem
+from openeye import oeomega
+import tempfile
+
 if sys.version_info >= (3, 0):
     from io import StringIO
     from subprocess import getstatusoutput
@@ -43,16 +47,17 @@ def generateTopologyFromOEMol(molecule):
     residue = topology.addResidue(resname, chain)
 
     # Create atoms in the residue.
+    oechem.OEPerceiveChiral(molecule)
     for atom in molecule.GetAtoms():
         name = atom.GetName()
         element = Element.getByAtomicNumber(atom.GetAtomicNum())
-        atom = topology.addAtom(name, element, residue)
+        topology.addAtom(name, element, residue)
 
     # Create bonds.
-    atoms = { atom.name : atom for atom in topology.atoms() }
+    atoms = {atom.name: atom for atom in topology.atoms()}
     for bond in molecule.GetBonds():
-        topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()])
-
+        order = bond.GetOrder()
+        topology.addBond(atoms[bond.GetBgn().GetName()], atoms[bond.GetEnd().GetName()], order=order)
     return topology
 
 def _ensureUniqueAtomNames(molecule):
@@ -98,70 +103,74 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         The OEMol molecule corresponding to the topology.
         Atom order will be preserved and bond orders assigned.
 
-    The Antechamber `bondtype` program will be used to assign bond orders, and these
+    In the absence of bond orders specified in the topology,
+    the Antechamber `bondtype` program will be used to assign bond orders, and these
     will be converted back into OEMol bond type assignments.
-
-    Note that there is no way to preserve stereochemistry since `Residue` does
-    not note stereochemistry in any way.
 
     """
     # Raise an Exception if this residue has external bonds.
     if len(list(residue.external_bonds())) > 0:
         raise Exception("Cannot generate an OEMol from residue '%s' because it has external bonds." % residue.name)
 
-    from openeye import oechem
     # Create OEMol where all atoms have bond order 1.
     molecule = oechem.OEMol()
     molecule.SetTitle(residue.name) # name molecule after first residue
     for atom in residue.atoms():
         oeatom = molecule.NewAtom(atom.element.atomic_number)
         oeatom.SetName(atom.name)
-        oeatom.AddData("topology_index", atom.index)
-    oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
-    for (atom1, atom2) in residue.bonds():
-        order = 1
-        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        try:
+            oeatom.AddData("topology_index", atom.topology_index)
+        except AttributeError:
+            oeatom.AddData("topology_index", atom.index)  # For small molecules (and the cap atoms in proteins)
 
-    # Write out a mol2 file without altering molecule.
-    import tempfile
-    tmpdir = tempfile.mkdtemp()
-    mol2_input_filename = os.path.join(tmpdir,'molecule-before-bond-perception.mol2')
-    ac_output_filename = os.path.join(tmpdir,'molecule-after-bond-perception.ac')
-    ofs = oechem.oemolostream(mol2_input_filename)
-    m2h = True
-    substruct = False
-    oechem.OEWriteMol2File(ofs, molecule, m2h, substruct)
-    ofs.close()
-    # Run Antechamber bondtype
-    import subprocess
-    #command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
-    command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
-    [status, output] = getstatusoutput(command)
+    oeatoms = {oeatom.GetName(): oeatom for oeatom in molecule.GetAtoms()}
+    is_bond_order_present = True
+    for bond in residue.bonds():
+        atom1 = bond[0]
+        atom2 = bond[1]
+        order = bond.order
+        if order is None:
+            is_bond_order_present = False
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=1)
+        else:
+            molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order=order)
 
-    # Define mapping from GAFF bond orders to OpenEye bond orders.
-    order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8 : 2, 9 : 5, 10 : 5 }
-    # Read bonds.
-    infile = open(ac_output_filename)
-    lines = infile.readlines()
-    infile.close()
-    antechamber_bond_types = list()
-    for line in lines:
-        elements = line.split()
-        if elements[0] == 'BOND':
-            antechamber_bond_types.append(int(elements[4]))
-    oechem.OEClearAromaticFlags(molecule)
-    for (bond, antechamber_bond_type) in zip(molecule.GetBonds(), antechamber_bond_types):
-        #bond.SetOrder(order_map[antechamber_bond_type])
-        bond.SetIntType(order_map[antechamber_bond_type])
+    if not is_bond_order_present:
+        # Write out a mol2 file without altering molecule.
+        tmpdir = tempfile.mkdtemp()
+        mol2_input_filename = os.path.join(tmpdir, 'molecule-before-bond-perception.mol2')
+        ac_output_filename = os.path.join(tmpdir, 'molecule-after-bond-perception.ac')
+        ofs = oechem.oemolostream(mol2_input_filename)
+        oechem.OEWriteMol2File(ofs, molecule)
+        ofs.close()
+        # Run bondtype
+        command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
+        ## Run Antechamber bondtype
+        # command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
+        [status, output] = getstatusoutput(command)
+
+        # Define mapping from GAFF bond orders to OpenEye bond orders.
+        order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8 : 2, 9 : 5, 10 : 5 }
+        # Read bonds.
+        infile = open(ac_output_filename)
+        lines = infile.readlines()
+        infile.close()
+        antechamber_bond_types = list()
+        for line in lines:
+            elements = line.split()
+            if elements[0] == 'BOND':
+                antechamber_bond_types.append(int(elements[4]))
+        for (bond, antechamber_bond_type) in zip(molecule.GetBonds(), antechamber_bond_types):
+            bond.SetOrder(order_map[antechamber_bond_type])
+        # Clean up.
+        os.unlink(mol2_input_filename)
+        os.unlink(ac_output_filename)
+        os.rmdir(tmpdir)
+
     oechem.OEFindRingAtomsAndBonds(molecule)
-    oechem.OEKekulize(molecule)
+    oechem.OEAssignAromaticFlags(molecule)
     oechem.OEAssignFormalCharges(molecule)
-    oechem.OEAssignAromaticFlags(molecule, oechem.OEAroModelOpenEye)
-
-    # Clean up.
-    os.unlink(mol2_input_filename)
-    os.unlink(ac_output_filename)
-    os.rmdir(tmpdir)
+    oechem.OEPerceiveChiral(molecule)
 
     # Generate Tripos atom names if requested.
     if tripos_atom_names:
@@ -169,7 +178,6 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
 
     # Assign geometry
     if geometry:
-        from openeye import oeomega
         omega = oeomega.OEOmega()
         omega.SetMaxConfs(1)
         omega.SetIncludeInput(False)
@@ -177,7 +185,6 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
         omega(molecule)
 
     return molecule
-
 
 def _computeNetCharge(molecule):
     """
@@ -218,10 +225,10 @@ def _writeMolecule(molecule, output_filename, standardize=True):
     """
     from openmoltools.openeye import molecule_to_mol2
     molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle(), standardize=standardize)
-    #from openeye import oechem
-    #ofs = oechem.oemolostream(output_filename)
-    #oechem.OEWriteMolecule(ofs, molecule)
-    #ofs.close()
+    # from openeye import oechem
+    # ofs = oechem.oemoloxstream(output_filename)
+    # oechem.OEWriteMolecule(ofs, molecule)
+    # ofs.close()
 
 def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_version='gaff'):
     """
@@ -336,10 +343,9 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
     params.write(ffxml)
-
     return template, ffxml.getvalue()
 
 
@@ -400,6 +406,10 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     leaprc = ""
     failed_molecule_list = []
     for (molecule_index, molecule) in enumerate(molecules):
+        # Create a unique prefix.
+        # prefix = 'molecule%010d' % molecule_index
+        prefix = molecule.GetTitle()
+
         # Set the template name based on the molecule title.
         if generateUniqueNames:
             from uuid import uuid4
@@ -422,9 +432,6 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
             except:
                 failed_molecule_list.append(molecule)
 
-        # Create a unique prefix.
-        prefix = 'molecule%010d' % molecule_index
-
         # Create temporary directory for running antechamber.
         input_mol2_filename = prefix + '.tripos.mol2'
         gaff_mol2_filename  = prefix + '.gaff.mol2'
@@ -434,7 +441,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         _writeMolecule(molecule, input_mol2_filename, standardize=normalize)
 
         # Parameterize the molecule with antechamber.
-        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version)
+        run_antechamber(prefix, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version, resname=True)
 
         # Append to leaprc input for parmed.
         leaprc += '%s = loadmol2 %s\n' % (prefix, gaff_mol2_filename)
@@ -443,7 +450,8 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO(leaprc)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
+
     ffxml = StringIO()
     params.write(ffxml)
 
