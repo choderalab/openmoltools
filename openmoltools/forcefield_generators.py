@@ -15,10 +15,14 @@ from simtk.openmm.app.element import Element
 import parmed
 if sys.version_info >= (3, 0):
     from io import StringIO
-    from subprocess import getstatusoutput
+    from subprocess import getstatusoutput, call
+    def run_command(command):
+        call(command.split())
 else:
     from cStringIO import StringIO
     from commands import getstatusoutput
+    def run_command(command):
+        getstatusoutput(command)
 
 def generateTopologyFromOEMol(molecule):
     """
@@ -136,7 +140,7 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     import subprocess
     #command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
     command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
-    [status, output] = getstatusoutput(command)
+    run_command(command)
 
     # Define mapping from GAFF bond orders to OpenEye bond orders.
     order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8 : 2, 9 : 5, 10 : 5 }
@@ -243,7 +247,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
         explicit hydrogens, and renaming by IUPAC name.
     gaff_version : str, default = 'gaff'
         One of ['gaff', 'gaff2']; selects which atom types to use.
-        
+
 
     Returns
     -------
@@ -363,7 +367,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         If True, will generate globally unique names for templates.
     normalize : bool, optional, default=True
         If True, normalize the molecule by checking aromaticity, adding
-        explicit hydrogens, and renaming by IUPAC name.        
+        explicit hydrogens, and renaming by IUPAC name.
     gaff_version : str, default = 'gaff'
         One of ['gaff', 'gaff2']; selects which atom types to use.
 
