@@ -46,7 +46,7 @@ install:
   - source activate test
 
   # Use beta version for partial bond orders
-  - if [[ "$OPENEYE" == true ]]; then conda install --yes -c openeye/label/Orion openeye-toolkits oeommtools && python -c "import openeye; print(openeye.__version__)"; fi
+  - if [[ "$OPENEYE" == true ]]; then conda install --yes -c openeye/label/beta openeye-toolkits oeommtools && python -c "import openeye; print(openeye.__version__)"; fi
 
   # Install RDKit
   - if [[ "$RDKIT" == true ]]; then conda install --yes -c rdkit rdkit; fi
