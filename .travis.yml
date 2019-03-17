@@ -42,7 +42,7 @@ before_install:
 
 install:
   # Create test environment for package
-  - conda create -n test python=$PYTHON_VER pip pytest pytest-cov
+  - conda create --yes -n test python=$PYTHON_VER pip pytest pytest-cov
   - source activate test
 
   # Use beta version for partial bond orders
@@ -58,7 +58,7 @@ install:
 
   # Build and install package
   - conda build --python=$PYTHON_VER devtools/conda-recipe
-  - conda install --use-local openmoltools
+  - conda install --yes --use-local openmoltools
 
 script:
   - pytest -v -s --cov=openmoltools openmoltools/tests/
