@@ -58,7 +58,9 @@ install:
   - conda install --yes --use-local openmoltools-dev
 
 script:
-  - pytest -v --cov=openmoltools --cov-config setup.cfg openmoltools/tests/
+  #- pytest -v --cov=openmoltools --cov-config setup.cfg openmoltools/tests/
+  # Use nosetests to get some idea of what is failing
+  - nosetests -vv --nocapture openmoltools/tests
 
 notifications:
   email: false
