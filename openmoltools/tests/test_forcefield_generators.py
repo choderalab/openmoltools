@@ -1,6 +1,5 @@
-from nose.plugins.attrib import attr
 import unittest
-from unittest import skipIf
+import pytest
 import tempfile
 import os, sys
 import numpy as np
@@ -11,6 +10,8 @@ if sys.version_info >= (3, 0):
     from io import StringIO
 else:
     from cStringIO import StringIO
+
+ISTRAVIS = os.environ.get('TRAVIS', None) == 'true'
 
 ################################################################################
 # Suppress matplotlib logging
@@ -125,7 +126,7 @@ Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A. "Development 
     params.write(outfile, provenance=provenance)
     outfile.close()
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generate_ffxml_from_molecules():
     """
     Test generation of single ffxml file from a list of molecules
@@ -158,7 +159,7 @@ def test_generate_ffxml_from_molecules():
         positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generate_gaff2_ffxml_from_molecules():
     """
     Test generation of single ffxml file from a list of molecules, using the gaff2 option.
@@ -191,8 +192,7 @@ def test_generate_gaff2_ffxml_from_molecules():
         positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
 
-
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_topology_molecules_round_trip():
     """
     Test round-trips between OEMol and Topology
@@ -216,7 +216,7 @@ def test_topology_molecules_round_trip():
         molecule4 = generateOEMolFromTopologyResidue(residues2[0], tripos_atom_names=True)
 
 class TestForceFieldGenerators(unittest.TestCase):
-    @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+    @pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
     def test_generate_Topology_and_OEMol(self):
         """
         Test round-trip from OEMol >> Topology >> OEMol
@@ -249,7 +249,7 @@ class TestForceFieldGenerators(unittest.TestCase):
                 self.assertEqual(bond1.GetBgn().GetName(), bond2.GetBgn().GetName())
                 self.assertEqual(bond1.GetEnd().GetName(), bond2.GetEnd().GetName())
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generateResidueTemplate():
     """
     Test GAFF residue template generation from OEMol molecules.
@@ -299,7 +299,7 @@ def test_generateResidueTemplate():
         check_potential_is_finite(system, positions)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generateResidueTemplate_gaff2():
     """
     Test GAFF2 residue template generation from OEMol molecules.
@@ -374,7 +374,7 @@ def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX
         #raise Exception(msg) # TODO: Re-enable when we have force tag merging sorted out in simtk.openmm.app.ForceField
         print(msg) # DEBUG
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_gaffResidueTemplateGenerator():
     """
     Test the GAFF residue template generator.
@@ -423,7 +423,7 @@ def test_gaffResidueTemplateGenerator():
     # Check potential is finite.
     check_potential_is_finite(system, pdb.positions)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_atom_topology_index():
     """
     Make sure that generateOEMolFromTopologyResidue adds the topology_index data
@@ -439,7 +439,7 @@ def test_atom_topology_index():
             oeatom = regenerated_mol.GetAtom(oechem.OEHasAtomIdx(top_atom.index))
             assert oeatom.GetData("topology_index")==top_atom.index
 
-
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test without OpenEye tools")
 def check_system_generator(ffxmls, forcefield_kwargs, system_name, **kwargs):
     """
     Check SystemGenerator on a specific topology.
@@ -450,15 +450,11 @@ def check_system_generator(ffxmls, forcefield_kwargs, system_name, **kwargs):
         testsystem = constructor()
         topology = testsystem.topology
     except AttributeError:
-        if not HAVE_OE:
-            from nose.plugins.skip import SkipTest
-            raise SkipTest('Cannot test openeye module without OpenEye tools.\n')
         molecule = createOEMolFromIUPAC(system_name)
         topology = forcefield_generators.generateTopologyFromOEMol(molecule)
     system_generator = forcefield_generators.SystemGenerator(ffxmls,
                                                      forcefield_kwargs=forcefield_kwargs, **kwargs)
     system_generator.createSystem(topology)
-
 
 def test_system_generator():
     """
@@ -531,6 +527,7 @@ class Timer(object):
         self.end = time.time()
         self.interval = self.end - self.start
 
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test without OpenEye tools")
 class TestOEGAFFTemplateGenerator(unittest.TestCase):
     def setUp(self):
         from openeye import oechem
@@ -672,7 +669,7 @@ class TestOEGAFFTemplateGenerator(unittest.TestCase):
                 from openeye import oechem
                 forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generate_ffxml_from_molecules():
     """
     Test generation of single ffxml file from a list of molecules

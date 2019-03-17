@@ -27,6 +27,7 @@ requirements:
     - scipy
     - openmm
     - pytables
+    - lxml
     - ambermini # revisit whether we want ambertools or ambermini
     - parmed    # want latest parmed installed separately from ambertools/ambermini
     - tinydb   # for caching antechamber-generated force fields for small molecules
@@ -36,13 +37,8 @@ requirements:
     - rdkit    # optional dependency, but easy to include
 
 test:
-  requires:
-    - nose
-    - openmmtools
   imports:
     - openmoltools
-  #commands:
-  #  - nosetests openmoltools -v -a '!slow'
 
 about:
   home: https://github.com/choderalab/openmoltools

@@ -1,17 +1,18 @@
-from nose.plugins.attrib import attr
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
 import numpy as np
 import re
 from mdtraj.testing import eq
-from unittest import skipIf
 from openmoltools import utils, packmol
 import os
 import openmoltools.openeye
 import pandas as pd
 import mdtraj as md
 from numpy.testing import assert_raises
+import pytest
+
+ISTRAVIS = os.environ.get('TRAVIS', None) == 'true'
 
 smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(=C=[N-])C=[NH+]3"
 
@@ -37,7 +38,7 @@ except ImportError:
     HAVE_PARMED = False
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_butanol_keepconfs():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m1 = openmoltools.openeye.get_charges(m0, keep_confs=1)
@@ -45,7 +46,7 @@ def test_butanol_keepconfs():
     assert m1.NumConfs() == 1, "This OEMol was created to have a single conformation."
     assert m1.NumAtoms() == 15, "Butanol should have 15 atoms"
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_butanol_unnormalized():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m0.SetTitle("MyCustomTitle")
@@ -56,13 +57,13 @@ def test_butanol_unnormalized():
     assert m0.GetTitle() == m1.GetTitle(), "The title of the molecule should not be changed by normalization."
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_output_mol2():
     molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
     openmoltools.openeye.molecule_to_mol2(molecule, tripos_mol2_filename="testing mol2 output.tripos.mol2")
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_output_mol2_standardize():
     molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
     list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
@@ -73,7 +74,7 @@ def test_output_mol2_standardize():
     assert re.search("MyNameIsAtom", text) is None
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_output_mol2_no_standardize():
     molecule = openmoltools.openeye.iupac_to_oemol("cyclopentane")
     list(molecule.GetAtoms())[0].SetName("MyNameIsAtom")
@@ -84,7 +85,7 @@ def test_output_mol2_no_standardize():
     assert re.search("MyNameIsAtom", text) is not None
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_output_mol2_multiple_confs():
     molecule = openmoltools.openeye.iupac_to_oemol("butanol")
     multiple_conformers = openmoltools.openeye.generate_conformers(molecule)
@@ -95,7 +96,7 @@ def test_output_mol2_multiple_confs():
     assert text.count("@<TRIPOS>MOLECULE") > 1
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_butanol():
     m0 = openmoltools.openeye.iupac_to_oemol("butanol")
     m1 = openmoltools.openeye.get_charges(m0, keep_confs=-1)
@@ -131,7 +132,7 @@ def test_butanol():
         eq(delta.values, np.zeros_like(delta.values), decimal=4)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_benzene():
     m0 = openmoltools.openeye.iupac_to_oemol("benzene")
     m1 = openmoltools.openeye.get_charges(m0)
@@ -159,7 +160,7 @@ def test_benzene():
         eq(delta.values, np.zeros_like(delta.values), decimal=4)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_link_in_utils():
     m0 = openmoltools.openeye.iupac_to_oemol("benzene")
     m1 = openmoltools.openeye.get_charges(m0)
@@ -168,7 +169,7 @@ def test_link_in_utils():
         utils.molecule_to_mol2(m1, "out.mol2")
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_smiles():
     m0 = openmoltools.openeye.smiles_to_oemol("CCCCO")
     charged0 = openmoltools.openeye.get_charges(m0)
@@ -179,7 +180,7 @@ def test_smiles():
     eq(charged0.NumAtoms(), charged1.NumAtoms())
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_ffxml():
     with utils.enter_temp_directory():
         m0 = openmoltools.openeye.smiles_to_oemol("CCCCO")
@@ -190,7 +191,7 @@ def test_ffxml():
         trajectories, ffxml = openmoltools.openeye.oemols_to_ffxml([charged0, charged1])
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_ffxml_simulation():
     """Test converting toluene and benzene smiles to oemol to ffxml to openmm simulation."""
     with utils.enter_temp_directory():
@@ -247,48 +248,47 @@ def test_ffxml_simulation():
             simulation.step(1)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_charge_fail1():
     with assert_raises(RuntimeError):
         with utils.enter_temp_directory():
             openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=True)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_charge_fail2():
     with assert_raises(RuntimeError):
         m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
         m = openmoltools.openeye.get_charges(m, strictStereo=True, keep_confs=1)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_charge_success1():
     with utils.enter_temp_directory():
         openmoltools.openeye.smiles_to_antechamber(smiles_fails_with_strictStereo, "test.mol2",  "test.frcmod", strictStereo=False)
 
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_charge_success2():
     m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
     m = openmoltools.openeye.get_charges(m, strictStereo=False)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_oeassigncharges_fail():
     with assert_raises(RuntimeError):
         # Fail test for OEToolkits (2017.2.1) new charging function
         m = openmoltools.openeye.smiles_to_oemol(smiles_fails_with_strictStereo)
         m = openmoltools.openeye.get_charges(m,  strictStereo=False, legacy=False)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 def test_oeassigncharges_success():
     # Success test for OEToolkits (2017.2.1) new charging function
     m = openmoltools.openeye.iupac_to_oemol("butanol")
     m = openmoltools.openeye.get_charges(m, legacy=False)
 
-@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.")
-@skipIf(not HAVE_PARMED, "Cannot test without Parmed Chemistry.")
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
-@attr("parmed")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_PARMED, reason="Cannot test without Parmed Chemistry.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
 def test_binary_mixture_rename():
     smiles_string0 = "CCCCCC"
     smiles_string1 = "CCCCCCCCC"

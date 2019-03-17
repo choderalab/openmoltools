@@ -2,12 +2,10 @@
 
 """Test functions in openmoltools.schrodinger."""
 
-import unittest
-
 from openmoltools.schrodinger import *
+import pytest
 
-
-@unittest.skipIf(not is_schrodinger_suite_installed(), "This test requires Schrodinger's suite")
+@pytest.mark.skipif(not is_schrodinger_suite_installed(), reason="This test requires Schrodinger's suite")
 def test_structconvert():
     """Test run_structconvert() function."""
     benzene_path = utils.get_data_filename("chemicals/benzene/benzene.pdb")
@@ -36,7 +34,7 @@ def test_structconvert():
     assert original_lines == new_lines
 
 
-@unittest.skipIf(not is_schrodinger_suite_installed(), "This test requires Schrodinger's suite")
+@pytest.mark.skipif(not is_schrodinger_suite_installed(), reason="This test requires Schrodinger's suite")
 def test_proplister():
     """Test run_proplister() function."""
     benzene_path = utils.get_data_filename("chemicals/benzene/benzene.sdf")
@@ -57,7 +55,7 @@ def test_proplister():
     assert set(expected.items()) < set(properties[0].items())
 
 
-@unittest.skipIf(not is_schrodinger_suite_installed(), "This test requires Schrodinger's suite")
+@pytest.mark.skipif(not is_schrodinger_suite_installed(), reason="This test requires Schrodinger's suite")
 def test_epik_maesubset_autoconvert():
     """Test run_epik and run_maesubset functions and autoconvert_maestro decorator."""
     imatinib_path = utils.get_data_filename("chemicals/imatinib/imatinib.sdf")

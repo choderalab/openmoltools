@@ -1,7 +1,7 @@
 import os
 import tempfile
 import mdtraj as md
-from unittest import skipIf
+import pytest
 import logging
 from openmoltools import utils, packmol
 import simtk.unit as u
@@ -50,8 +50,8 @@ def test_standardize_water():
     os.remove(water_pdb_filepath)
 
 
-@skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(not HAVE_RDKIT, reason="Skipping testing of packmol conversion because rdkit not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary():
     smiles_list = ["Cc1ccccc1", "c1ccccc1", "CC"]
     pdb_filenames = []
@@ -84,8 +84,8 @@ def test_packmol_simulation_ternary():
     simulation.minimizeEnergy()
     simulation.step(25)
 
-@skipIf(not HAVE_RDKIT, "Skipping testing of packmol conversion because rdkit not found.")
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(not HAVE_RDKIT, reason="Skipping testing of packmol conversion because rdkit not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_packmol_simulation_ternary_bydensity():
     smiles_list = ["Cc1ccccc1", "c1ccccc1", "CC"]
     pdb_filenames = []

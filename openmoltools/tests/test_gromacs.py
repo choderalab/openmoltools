@@ -1,7 +1,9 @@
-from unittest import skipIf
 from openmoltools import utils, amber, packmol, gromacs
 from distutils.spawn import find_executable
 import os
+import pytest
+
+ISTRAVIS = os.environ.get('TRAVIS', None) == 'true'
 
 def test_gromacs_merge():
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh.mol2")
@@ -36,7 +38,7 @@ def test_gromacs_merge():
         #Test editing of molecule numbers in topology file
         gromacs.change_molecules_section( './combined.top', './edited.top', ['etoh', 'benzene'], [10, 20] )
 
-@skipIf(gromacs.GROMACS_PATH is None, "Skipping testing of GROMACS solvation because GROMACS not found.")
+@pytest.mark.skipif(gromacs.GROMACS_PATH is None, reason="Skipping testing of GROMACS solvation because GROMACS not found.")
 def test_gromacs_solvate():
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh.mol2")
     with utils.enter_temp_directory(): #Prevents creating lots of tleap/antechamber files everywhere
@@ -49,4 +51,3 @@ def test_gromacs_solvate():
         utils.amber_to_gromacs( 'etoh', 'etoh.prmtop', 'etoh.crd', 'etoh.top', 'etoh.gro' )
         #Solvate
         gromacs.do_solvate( 'etoh.top', 'etoh.gro', 'etoh_solvated.top', 'etoh_solvated.gro', 1.2, 'dodecahedron', 'spc216', 'tip3p.itp' )
- 

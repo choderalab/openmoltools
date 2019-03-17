@@ -1,8 +1,9 @@
-from nose.plugins.attrib import attr
-from unittest import skipIf
 import tempfile
 import os
 from openmoltools import utils
+import pytest
+
+ISTRAVIS = os.environ.get('TRAVIS', None) == 'true'
 
 def _drug_tester(n_molecules=3404, charge_method="bcc"):
     """Helper function for running various versions of the drug parameterization benchmark."""
@@ -26,7 +27,7 @@ def _drug_tester(n_molecules=3404, charge_method="bcc"):
 
 # This version is too slow to run during the conda-build post-test, on jenkins, or on travis.
 # In fact, Travis is actually too slow to do even a single AM1-BCC calculation
-@attr('slow')
+@pytest.mark.skipif(ISTRAVIS, reason='Test is too slow for travis')
 def test_drugs_all():
     _drug_tester()
 

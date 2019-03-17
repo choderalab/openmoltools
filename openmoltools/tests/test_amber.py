@@ -1,14 +1,14 @@
 import numpy as np
 import mdtraj as md
-from unittest import skipIf
 import logging
-from openmoltools import utils, amber,packmol
+from openmoltools import utils, amber, packmol
 from distutils.spawn import find_executable
 import shutil
+import pytest
 
 logging.basicConfig(level=logging.DEBUG, format="LOG: %(message)s")
 
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_amber_box():
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh-tripos.mol2")
     trj_list = [md.load(etoh_filename)]
@@ -31,7 +31,7 @@ def test_amber_box():
         print(tleap_cmd)
 
 
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_amber_binary_mixture():
     water_filename = utils.get_data_filename("chemicals/water/water-tripos.mol2")
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh-tripos.mol2")
@@ -63,7 +63,7 @@ def test_amber_binary_mixture():
         tleap_cmd = amber.build_mixture_prmtop(mol2_filenames, frcmod_filenames, box_filename, prmtop_filename, inpcrd_filename)
         print(tleap_cmd)
 
-@skipIf(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_amber_water_mixture():
     water_filename = utils.get_data_filename("chemicals/water/water-tripos.mol2")
     etoh_filename = utils.get_data_filename("chemicals/etoh/etoh-tripos.mol2")

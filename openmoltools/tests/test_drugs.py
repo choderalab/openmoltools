@@ -1,7 +1,8 @@
-from nose.plugins.attrib import attr
-from unittest import skipIf
+import pytest
 from openmoltools import utils
 import os
+
+ISTRAVIS = os.environ.get('TRAVIS', None) == 'true'
 
 try:
     oechem = utils.import_("openeye.oechem")
@@ -9,16 +10,16 @@ try:
     oequacpac = utils.import_("openeye.oequacpac")
     if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
     oeiupac = utils.import_("openeye.oeiupac")
-    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))        
+    if not oeiupac.OEIUPACIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     oeomega = utils.import_("openeye.oeomega")
-    if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))    
+    if not oeomega.OEOmegaIsLicensed(): raise(ImportError("Need License for OEOmega!"))
     HAVE_OE = True
 except:
     HAVE_OE = False
 
 
-@skipIf(not HAVE_OE, "Cannot run test_drugs() module without OpenEye tools.")
-@attr('slow')
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot run test_drugs() module without OpenEye tools.")
+@pytest.mark.skipif(ISTRAVIS, reason="Test is too slow for travis")
 def test_drugs():
     import openeye.oechem
     database_filename = utils.get_data_filename("chemicals/drugs/Zdd.mol2.gz")
@@ -28,8 +29,8 @@ def test_drugs():
             molecule_name, tripos_mol2_filename = utils.molecule_to_mol2(molecule)
             yield utils.tag_description(lambda : utils.test_molecule(molecule_name, tripos_mol2_filename), "Testing drugs %s" % molecule_name)
 
-@skipIf(not HAVE_OE, "Cannot test test_drug() without OpenEye tools.")
-@attr('slow')
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot test test_drug() without OpenEye tools.")
+@pytest.mark.skipif(ISTRAVIS, reason='Test is too slow for travis')
 def test_drug():
     import openeye.oechem
     database_filename = utils.get_data_filename("chemicals/drugs/Zdd.mol2.gz")

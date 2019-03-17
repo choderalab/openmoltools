@@ -4,10 +4,9 @@ Test some common molecules using OpenEye tools.
 """
 
 import openmoltools.openeye
-from nose.plugins.attrib import attr
-from unittest import skipIf
 from openmoltools import utils
 import os
+import pytest
 
 try:
     oechem = utils.import_("openeye.oechem")
@@ -30,7 +29,7 @@ molecules = [
     'aspirin',
     ]
 
-@skipIf(not HAVE_OE, "Cannot run test_common_molecules() module without OpenEye tools.")
+@pytest.mark.skipif(not HAVE_OE, reason="Cannot run test_common_molecules() module without OpenEye tools.")
 def test_common_molecules():
     import openeye.oechem
     for molecule_name in molecules:
