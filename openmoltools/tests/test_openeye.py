@@ -288,7 +288,7 @@ def test_oeassigncharges_success():
 
 @pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.")
 @pytest.mark.skipif(not HAVE_PARMED, reason="Cannot test without Parmed Chemistry.")
-@pytest.mark.skipif(packmol.PACKMOL_PATH is None, "Skipping testing of packmol conversion because packmol not found.")
+@pytest.mark.skipif(packmol.PACKMOL_PATH is None, reason="Skipping testing of packmol conversion because packmol not found.")
 def test_binary_mixture_rename():
     smiles_string0 = "CCCCCC"
     smiles_string1 = "CCCCCCCCC"

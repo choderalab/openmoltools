@@ -60,6 +60,9 @@ install:
   - conda build --python=$PYTHON_VER devtools/conda-recipe
   - conda install --yes --use-local openmoltools
 
+  # Report on environment
+  - conda list
+
 script:
   - pytest -v -s --cov=openmoltools openmoltools/tests/
 

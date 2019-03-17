@@ -1,5 +1,5 @@
 package:
-  name: openmoltools-dev
+  name: openmoltools
   version: 0.0.0
 
 source:
@@ -28,7 +28,7 @@ requirements:
     - openmm
     - pytables
     - lxml
-    - ambermini # revisit whether we want ambertools or ambermini
+    - ambertools # revisit whether we want ambertools or ambermini
     - parmed    # want latest parmed installed separately from ambertools/ambermini
     - tinydb   # for caching antechamber-generated force fields for small molecules
     - networkx # for matching OEMols with residues
