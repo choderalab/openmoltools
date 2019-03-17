@@ -494,6 +494,7 @@ def build_peptide_tleap(amino_acids):
     source oldff/leaprc.ff99SBildn
     system = sequence {{ {amino_acid} }}
     saveamberparm system {filename}.prmtop {filename}.inpcrd
+    quit
     """.format(amino_acid=aa_str, filename=filename)
     cwd = os.getcwd()
     temp_dir = tempfile.mkdtemp()
