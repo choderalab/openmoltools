@@ -45,8 +45,8 @@ install:
   - conda create --yes -n test python=$PYTHON_VER pip pytest pytest-cov
   - source activate test
 
-  # Use beta version for partial bond orders
-  - if [[ "$OPENEYE" == true ]]; then conda install --yes -c openeye/label/beta openeye-toolkits oeommtools && python -c "import openeye; print(openeye.__version__)"; fi
+  # Use OpenEye toolkits beta version for partial bond orders
+  - if [[ "$OPENEYE" == true ]]; then conda install --yes -c openeye/label/beta openeye-toolkits && python -c "import openeye; print(openeye.__version__)"; fi
 
   # Install RDKit
   - if [[ "$RDKIT" == true ]]; then conda install --yes -c rdkit rdkit; fi
