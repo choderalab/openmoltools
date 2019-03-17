@@ -13,17 +13,9 @@ requirements:
   build:
     - python
     - setuptools
-    - pandas
     - six
-    - mdtraj
     - numpy
-    - numpydoc
-    - scipy
-    - openmm
-    - ambermini
-    - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - cython
   run:
     - python
     - setuptools
@@ -34,12 +26,14 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambermini
     - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - ambermini # revisit whether we want ambertools or ambermini
+    - parmed    # want latest parmed installed separately from ambertools/ambermini
     - tinydb   # for caching antechamber-generated force fields for small molecules
     - networkx # for matching OEMols with residues
+    - packmol   # optional dependency, but easy to include
+    - openmmtools # optional dependency, but easy to include
+    - rdkit    # optional dependency, but easy to include
 
 test:
   requires:
