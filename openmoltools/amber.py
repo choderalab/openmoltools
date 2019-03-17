@@ -348,7 +348,9 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         shutil.copy( input_filename, local_input_filename )
 
         # Run antechamber.
-        cmd = "antechamber -i %(local_input_filename)s -fi %(input_format)s -o out.mol2 -fo mol2 -s 2 -at %(gaff_version)s" % vars()
+        #verbosity = 2 # verbose
+        verbosity = 0 # brief
+        cmd = "antechamber -i %(local_input_filename)s -fi %(input_format)s -o out.mol2 -fo mol2 -s %(verbosity) -at %(gaff_version)s" % vars()
         if charge_method is not None:
             cmd += ' -c %s' % charge_method
         if net_charge is not None:
