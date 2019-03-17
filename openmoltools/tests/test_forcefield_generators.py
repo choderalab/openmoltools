@@ -12,6 +12,18 @@ if sys.version_info >= (3, 0):
 else:
     from cStringIO import StringIO
 
+################################################################################
+# Suppress matplotlib logging
+################################################################################
+
+import logging
+mpl_logger = logging.getLogger('matplotlib')
+mpl_logger.setLevel(logging.WARNING)
+
+################################################################################
+# OpenEye imports
+################################################################################
+
 try:
     oechem = utils.import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
@@ -26,6 +38,10 @@ try:
 except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
+
+################################################################################
+# Utility methods
+################################################################################
 
 IUPAC_molecule_names = ['naproxen', 'aspirin', 'imatinib', 'bosutinib', 'dibenzyl ketone']
 def createOEMolFromIUPAC(iupac_name='bosutinib'):
@@ -141,7 +157,6 @@ def test_generate_ffxml_from_molecules():
         # Check potential is finite.
         positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
-
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generate_gaff2_ffxml_from_molecules():
@@ -504,6 +519,192 @@ def imatinib_timing():
     elapsed_time = final_time / initial_time
     time_per_step = elapsed_time / float(nsteps)
     print('time per force evaluation is %.3f us' % (time_per_step*1e6))
+
+class Timer(object):
+    def __enter__(self):
+        import time
+        self.start = time.time()
+        return self
+
+    def __exit__(self, *args):
+        import time
+        self.end = time.time()
+        self.interval = self.end - self.start
+
+class TestOEGAFFTemplateGenerator(unittest.TestCase):
+    def setUp(self):
+        from openeye import oechem
+        nmolecules = 5 # number of molecules to read
+        ifs = oechem.oemolistream(utils.get_data_filename("chemicals/minidrugbank/MiniDrugBank_tripos.mol2"))
+        self.oemols = list() # list of molecules to use
+        for index in range(nmolecules):
+            oemol = oechem.OEMol()
+            oechem.OEReadMolecule(ifs, oemol)
+            self.oemols.append(oemol)
+        ifs.close()
+
+        # Suppress DEBUG logging from various packages
+        import logging
+        for name in ['parmed', 'matplotlib']:
+            logging.getLogger(name).setLevel(logging.WARNING)
+
+    def test_create(self):
+        """Test creation of an OEGAFFTemplateGenerator"""
+        from openmoltools.forcefield_generators import OEGAFFTemplateGenerator
+        # Create an empty generator
+        generator = OEGAFFTemplateGenerator()
+        # Create a generator that knows about a few molecules
+        generator = OEGAFFTemplateGenerator(oemols=self.oemols)
+        # Create a generator that also has a database cache
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cache = os.path.join(tmpdirname, 'db.json')
+            # Create a new database file
+            generator = OEGAFFTemplateGenerator(oemols=self.oemols, cache=cache)
+            del generator
+            # Reopen it (with cache still empty)
+            generator = OEGAFFTemplateGenerator(oemols=self.oemols, cache=cache)
+            del generator
+
+    def test_parameterize(self):
+        """Test parameterizing molecules with OEGAFFTemplateGenerator"""
+        from openmoltools.forcefield_generators import OEGAFFTemplateGenerator
+        for gaff_version in ['gaff', 'gaff2']:
+            # Create a generator that knows about a few molecules
+            generator = OEGAFFTemplateGenerator(oemols=self.oemols)
+            # Create a ForceField
+            from simtk.openmm.app import ForceField
+            gaff_xml_filename = utils.get_data_filename("parameters/{}.xml".format(gaff_version))
+            forcefield = ForceField(gaff_xml_filename)
+            # Register the template generator
+            forcefield.registerTemplateGenerator(generator.generator)
+            # Parameterize some molecules
+            from simtk.openmm.app import NoCutoff
+            from openmoltools.forcefield_generators import generateTopologyFromOEMol
+            for oemol in self.oemols:
+                topology = generateTopologyFromOEMol(oemol)
+                with Timer() as t1:
+                    system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+                assert system.getNumParticles() == sum([1 for atom in oemol.GetAtoms()])
+                # Molecule should now be cached
+                with Timer() as t2:
+                    system = forcefield.createSystem(topology, nonbondedMethod=NoCutoff)
+                assert system.getNumParticles() == sum([1 for atom in oemol.GetAtoms()])
+                assert (t2.interval < t1.interval)
+
+    def test_add_oemols(self):
+        """Test that OEMols can be added to OEGAFFTemplateGenerator later"""
+        from openmoltools.forcefield_generators import OEGAFFTemplateGenerator
+        gaff_version = 'gaff'
+        # Create a generator that does not know about any molecules
+        generator = OEGAFFTemplateGenerator()
+        # Create a ForceField
+        from simtk.openmm.app import ForceField
+        gaff_xml_filename = utils.get_data_filename("parameters/{}.xml".format(gaff_version))
+        forcefield = ForceField(gaff_xml_filename)
+        # Register the template generator
+        forcefield.registerTemplateGenerator(generator.generator)
+
+        # Check that parameterizing a molecule fails
+        oemol = self.oemols[0]
+        from simtk.openmm.app import NoCutoff
+        from openmoltools.forcefield_generators import generateTopologyFromOEMol
+        try:
+            # This should fail with an exception
+            system = forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
+        except ValueError as e:
+            # Exception 'No template found...' is expected
+            assert str(e).startswith('No template found')
+
+        # Now add the molecule to the generator and ensure parameterization passes
+        generator.add_oemols(oemol)
+        system = forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
+        assert system.getNumParticles() == sum([1 for atom in oemol.GetAtoms()])
+
+        # Add multiple molecules, including repeats
+        generator.add_oemols(self.oemols)
+
+        # Ensure all molecules can be parameterized
+        for oemol in self.oemols:
+            system = forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
+            assert system.getNumParticles() == sum([1 for atom in oemol.GetAtoms()])
+
+    def test_cache(self):
+        """Test cache capability of OEGAFFTemplateGenerator"""
+        from openmoltools.forcefield_generators import OEGAFFTemplateGenerator, generateTopologyFromOEMol
+        from simtk.openmm.app import ForceField, NoCutoff
+        gaff_version = 'gaff'
+        gaff_xml_filename = utils.get_data_filename("parameters/{}.xml".format(gaff_version))
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # Create a generator that also has a database cache
+            cache = os.path.join(tmpdirname, 'db.json')
+            generator = OEGAFFTemplateGenerator(oemols=self.oemols, cache=cache)
+            # Create a ForceField
+            forcefield = ForceField(gaff_xml_filename)
+            # Register the template generator
+            forcefield.registerTemplateGenerator(generator.generator)
+            # Parameterize the molecules
+            for oemol in self.oemols:
+                forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
+
+            # Check database contents
+            def check_database(generator):
+                db_entries = generator._db.all()
+                nentries = len(db_entries)
+                nmolecules = len(self.oemols)
+                assert (nmolecules == nentries), \
+                    "Expected {} entries but database only has {}\n db contents: {}".format(nmolecules, nentries, db_entries)
+
+            check_database(generator)
+            # Clean up, forcing closure of database
+            del forcefield, generator
+
+            # Create a generator that also uses the database cache but has no molecules
+            print('Creating new generator with just cache...')
+            generator = OEGAFFTemplateGenerator(cache=cache)
+            # Check database contents
+            check_database(generator)
+            # Create a ForceField
+            forcefield = ForceField(gaff_xml_filename)
+            # Register the template generator
+            forcefield.registerTemplateGenerator(generator.generator)
+            # Parameterize the molecules; this should succeed
+            for oemol in self.oemols:
+                from openeye import oechem
+                forcefield.createSystem(generateTopologyFromOEMol(oemol), nonbondedMethod=NoCutoff)
+
+@skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
+def test_generate_ffxml_from_molecules():
+    """
+    Test generation of single ffxml file from a list of molecules
+    """
+    # Create a test set of molecules.
+    molecules = [ createOEMolFromIUPAC(name) for name in IUPAC_molecule_names ]
+    # Create an ffxml file.
+    from openmoltools.forcefield_generators import generateForceFieldFromMolecules
+    ffxml = generateForceFieldFromMolecules(molecules)
+    # Create a ForceField.
+    gaff_xml_filename = utils.get_data_filename("parameters/gaff.xml")
+    forcefield = ForceField(gaff_xml_filename)
+    try:
+        forcefield.loadFile(StringIO(ffxml))
+    except Exception as e:
+        msg  = str(e)
+        msg += "ffxml contents:\n"
+        for (index, line) in enumerate(ffxml.split('\n')):
+            msg += 'line %8d : %s\n' % (index, line)
+        raise Exception(msg)
+
+    # Parameterize the molecules.
+    from openmoltools.forcefield_generators import generateTopologyFromOEMol
+    for molecule in molecules:
+        # Create topology from molecule.
+        topology = generateTopologyFromOEMol(molecule)
+        # Create system with forcefield.
+        system = forcefield.createSystem(topology)
+        # Check potential is finite.
+        positions = extractPositionsFromOEMOL(molecule)
+        check_potential_is_finite(system, positions)
+
 
 if __name__ == '__main__':
     imatinib_timing()

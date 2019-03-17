@@ -103,6 +103,99 @@ def get_charges(molecule, max_confs=800, strictStereo=True,
 
     return charged_copy
 
+def get_charges(molecule, max_confs=800, strictStereo=True,
+                normalize=True, keep_confs=None, legacy=True):
+    """Generate charges for an OpenEye OEMol molecule.
+
+    Parameters
+    ----------
+    molecule : OEMol
+        Molecule for which to generate conformers.
+        Omega will be used to generate max_confs conformations.
+    max_confs : int, optional, default=800
+        Max number of conformers to generate
+    strictStereo : bool, optional, default=True
+        If False, permits smiles strings with unspecified stereochemistry.
+        See https://docs.eyesopen.com/omega/usage.html
+    normalize : bool, optional, default=True
+        If True, normalize the molecule by checking aromaticity, adding
+        explicit hydrogens, and renaming by IUPAC name.
+    keep_confs : int, optional, default=None
+        If None, apply the charges to the provided conformation and return
+        this conformation, unless no conformation is present.
+        Otherwise, return some or all of the generated
+        conformations. If -1, all generated conformations are returned.
+        Otherwise, keep_confs = N will return an OEMol with up to N
+        generated conformations.  Multiple conformations are still used to
+        *determine* the charges.
+    legacy : bool, default=True
+        If False, uses the new OpenEye charging engine.
+        See https://docs.eyesopen.com/toolkits/python/quacpactk/OEProtonFunctions/OEAssignCharges.html#
+
+    Returns
+    -------
+    charged_copy : OEMol
+        A molecule with OpenEye's recommended AM1BCC charge selection scheme.
+
+    Notes
+    -----
+    Roughly follows
+    http://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
+    """
+
+    # If there is no geometry, return at least one conformation.
+    if molecule.GetConfs() == 0:
+        keep_confs = 1
+
+    oechem = import_("openeye.oechem")
+    if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for OEChem!"))
+    oequacpac = import_("openeye.oequacpac")
+    if not oequacpac.OEQuacPacIsLicensed(): raise(ImportError("Need License for oequacpac!"))
+
+    if normalize:
+        molecule = normalize_molecule(molecule)
+    else:
+        molecule = oechem.OEMol(molecule)
+
+    charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
+
+    if not legacy:
+        # 2017.2.1 OEToolkits new charging function
+        status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+        if not status: raise(RuntimeError("OEAssignCharges failed."))
+    else:
+        # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
+        status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
+        if not status: raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
+
+
+
+    #Determine conformations to return
+    if keep_confs == None:
+        #If returning original conformation
+        original = molecule.GetCoords()
+        #Delete conformers over 1
+        for k, conf in enumerate( charged_copy.GetConfs() ):
+            if k > 0:
+                charged_copy.DeleteConf(conf)
+        #Copy coordinates to single conformer
+        charged_copy.SetCoords( original )
+    elif keep_confs > 0:
+        logger.debug("keep_confs was set to %s. Molecule positions will be reset." % keep_confs)
+
+        #Otherwise if a number is provided, return this many confs if available
+        for k, conf in enumerate( charged_copy.GetConfs() ):
+            if k > keep_confs - 1:
+                charged_copy.DeleteConf(conf)
+    elif keep_confs == -1:
+        #If we want all conformations, continue
+        pass
+    else:
+        #Not a valid option to keep_confs
+        raise(ValueError('Not a valid option to keep_confs in get_charges.'))
+
+    return charged_copy
+
 
 def normalize_molecule(molecule):
     """

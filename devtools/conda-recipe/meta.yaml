@@ -38,6 +38,8 @@ requirements:
     - pytables
     - parmed
     - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - tinydb   # for caching antechamber-generated force fields for small molecules
+    - networkx # for matching OEMols with residues
 
 test:
   requires:

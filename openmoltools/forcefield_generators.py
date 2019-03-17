@@ -12,6 +12,7 @@ from simtk.openmm.app import ForceField
 from openmoltools.amber import run_antechamber
 from openmoltools.openeye import get_charges
 from simtk.openmm.app.element import Element
+import json
 import parmed
 if sys.version_info >= (3, 0):
     from io import StringIO
@@ -222,14 +223,10 @@ def _writeMolecule(molecule, output_filename, standardize=True):
     """
     from openmoltools.openeye import molecule_to_mol2
     molecule_to_mol2(molecule, tripos_mol2_filename=output_filename, conformer=0, residue_name=molecule.GetTitle(), standardize=standardize)
-    #from openeye import oechem
-    #ofs = oechem.oemolostream(output_filename)
-    #oechem.OEWriteMolecule(ofs, molecule)
-    #ofs.close()
 
 def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_version='gaff'):
     """
-    Generate an residue template for simtk.openmm.app.ForceField using GAFF/AM1-BCC.
+    Generate an residue template for simtk.openmm.app.ForceField using GAFF and AM1-BCC ELF10 charges.
 
     This requires the OpenEye toolkit.
 
@@ -263,6 +260,9 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     Atom names in molecules will be assigned Tripos atom names if any are blank or not unique.
 
     """
+    # Make a copy of the molecule so we don't modify the original
+    molecule = molecule.CreateCopy()
+
     # Set the template name based on the molecule title plus a globally unique UUID.
     from uuid import uuid4
     template_name = molecule.GetTitle() + '-' + str(uuid4())
@@ -273,10 +273,11 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Compute net formal charge.
     net_charge = _computeNetCharge(molecule)
 
-    # Generate canonical AM1-BCC charges and a reference conformation.
-    molecule = get_charges(molecule, strictStereo=False, keep_confs=1, normalize=normalize)
+    # Generate canonical AM1-BCC ELF10 charges
+    from openeye import oequacpac
+    oequacpac.OEAssignCharges(molecule, oequacpac.OEAM1BCCELF10Charges())
 
-    # DEBUG: This may be necessary.
+    # Set title to something that antechamber can handle
     molecule.SetTitle('MOL')
 
     # Create temporary directory for running antechamber.
@@ -293,7 +294,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Parameterize the molecule with antechamber.
     run_antechamber(template_name, input_mol2_filename, charge_method=None, net_charge=net_charge, gaff_mol2_filename=gaff_mol2_filename, frcmod_filename=frcmod_filename, gaff_version=gaff_version)
 
-    # Read the resulting GAFF mol2 file as a ParmEd structure.
+    # Read the resulting GAFF mol2 file as a ParmEd structure
     from openeye import oechem
     ifs = oechem.oemolistream(gaff_mol2_filename)
     ifs.SetFlavor(oechem.OEFormat_MOL2, oechem.OEIFlavor_MOL2_DEFAULT | oechem.OEIFlavor_MOL2_M2H | oechem.OEIFlavor_MOL2_Forcefield)
@@ -337,15 +338,23 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
         elif (bond.GetBgn() not in residue_atoms) and (bond.GetEnd() in residue_atoms):
             template.addExternalBondByName(bond.GetEnd().GetName())
 
-    # Generate ffxml file contents for parmchk-generated frcmod output.
+    # Generate additional parameters, if needed
+    # TODO: Do we have to make sure that we don't duplicate existing parameters already loaded in the forcefield?
+    from inspect import signature # use introspection to support multiple parmed versions
     leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    kwargs = {}
+    if 'remediate_residues' in signature(parmed.openmm.OpenMMParameterSet.from_parameterset).parameters:
+        kwargs['remediate_residues'] = False
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, **kwargs)
     ffxml = StringIO()
-    params.write(ffxml)
+    kwargs = {}
+    if 'write_unused' in signature(params.write).parameters:
+        kwargs['write_unused'] = True
+    params.write(ffxml, **kwargs)
+    additional_parameters_ffxml = ffxml.getvalue()
 
-    return template, ffxml.getvalue()
-
+    return template, additional_parameters_ffxml
 
 def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUniqueNames=False, normalize=True, gaff_version='gaff'):
     """
@@ -518,6 +527,296 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
 
     # Signal that we have successfully parameterized the residue.
     return True
+
+class OEGAFFTemplateGenerator(object):
+    """
+    OpenMM ForceField residue template generator for GAFF/AM1-BCC using pre-cached OpenEye toolkit OEMols.
+
+    Examples
+    --------
+
+    Create a template generator for GAFF for a single OEMol and register it with ForceField:
+
+    >>> from openmoltools.forcefield_generators import OEGAFFTemplateGenerator
+    >>> template_generator = OEGAFFTemplateGenerator(oemols=oemol)
+    >>> from simtk.openmm.app import ForceField
+    >>> forcefield = ForceField('gaff.xml', 'amber14-all.xml', 'tip3p.xml')
+    >>> forcefield.registerTemplateGenerator(template_generator.generator)
+
+    Create a template generator for GAFF2 for multiple OEMols:
+
+    >>> template_generator = OEGAFFTemplateGenerator(oemols=[oemol1, oemol2], gaff_version='gaff2')
+
+    You can also some OEMols later on after the generator has been registered:
+
+    >>> forcefield.add_oemols(oemol)
+    >>> forcefield.add_oemols([oemol1, oemol2])
+
+    You can optionally create or use a tiny database cache of pre-parameterized molecules:
+
+    >>> template_generator = OEGAFFTemplateGenerator(cache='gaff-molecules.json')
+
+    Newly parameterized molecules will be written to the cache, saving time next time!
+
+    """
+    def __init__(self, oemols=None, cache=None, gaff_version='gaff'):
+        """
+        Create an OEGAFFTemplateGenerator with some OpenEye toolkit OEMols
+
+        Requies the OpenEye Toolkit.
+
+        Parameters
+        ----------
+        oemols : OEMol or list of OEMol, optional, default=None
+            If specified, these molecules will be recognized and parameterized with antechamber as needed.
+            The parameters will be cached in case they are encountered again the future.
+        cache : str or TinyDB instance, optional, default=None
+            Filename or TinyDB instance for global caching of parameters.
+            If specified, parameterized molecules will be stored in a TinyDB instance.
+            Note that no checking is done to determine this cache was created with the same GAFF version.
+        gaff_version : str, default = 'gaff'
+            One of ['gaff', 'gaff2']; selects which GAFF major version to use.
+
+        .. todo :: Should we support SMILES instead of OEMols?
+
+        Examples
+        --------
+
+        Create a template generator for GAFF for a single OEMol and register it with ForceField:
+
+        >>> from openmoltools.forcefield_generators import OEGAFFTemplateGenerator
+        >>> template_generator = OEGAFFTemplateGenerator(oemols=oemol)
+
+        Create a template generator for GAFF2 for multiple OEMols:
+
+        >>> template_generator = OEGAFFTemplateGenerator(oemols=[oemol1, oemol2], gaff_version='gaff2')
+
+        You can optionally create or use a tiny database cache of pre-parameterized molecules:
+
+        >>> template_generator = OEGAFFTemplateGenerator(cache='gaff-molecules.json')
+
+        """
+        from openeye import oechem
+
+        self._gaff_version = gaff_version
+
+        # Add oemols to the dictionary
+        self._oemols = dict()
+        self.add_oemols(oemols)
+
+        # Open TinyDB instance
+        from tinydb import TinyDB
+        if isinstance(cache, TinyDB):
+            self._db = cache
+        elif isinstance(cache, str):
+            # Open the database instance
+            self._db = TinyDB(cache)
+        else:
+            self._db = None
+
+        self._smiles_added_to_db = set() # set of SMILES added to the database this session
+
+    # TODO: Replace this encoder/decoder logic when openmm objects are properly serializable
+    class _JSONEncoder(json.JSONEncoder):
+        def default(self, o):
+            from simtk.openmm.app import ForceField, Element
+            if isinstance(o, ForceField._TemplateData):
+                s = {'_type' : '_TemplateData'}
+                s.update(o.__dict__)
+                return s
+            elif isinstance(o, ForceField._TemplateAtomData):
+                s = {'_type' : '_TemplateAtomData'}
+                s.update(o.__dict__)
+                return s
+            elif isinstance(o, Element):
+                return {'_type' : 'Element', 'atomic_number' : o.atomic_number}
+            else:
+                return super(OEGAFFTemplateGenerator._JSONEncoder, self).default(o)
+
+    class _JSONDecoder(json.JSONDecoder):
+        def __init__(self, *args, **kwargs):
+            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+
+        def object_hook(self, obj):
+            from simtk.openmm.app import ForceField, Element
+            if '_type' not in obj:
+                return obj
+            type = obj['_type']
+            if type == '_TemplateData':
+                template = ForceField._TemplateData.__new__(ForceField._TemplateData)
+                del obj['_type']
+                template.__dict__ = obj
+                return template
+            if type == '_TemplateAtomData':
+                atom = ForceField._TemplateAtomData.__new__(ForceField._TemplateAtomData)
+                del obj['_type']
+                atom.__dict__ = obj
+                return atom
+            elif type == 'Element':
+                return Element.getByAtomicNumber(obj['atomic_number'])
+            return obj
+
+    def add_oemols(self, oemols=None):
+        """
+        Add specified list of OEMol objects to cached molecules that will be recognized.
+
+        Parameters
+        ----------
+        oemols : OEMol or list of OEMol, optional, default=None
+            If specified, these molecules will be recognized and parameterized with antechamber as needed.
+            The parameters will be cached in case they are encountered again the future.
+
+        Examples
+        --------
+        Add some OEMols later on after the generator has been registered:
+
+        >>> forcefield.add_oemols(oemol)
+        >>> forcefield.add_oemols([oemol1, oemol2])
+
+        """
+        # Return if empty
+        if not oemols:
+            return
+
+        # Ensure oemols is iterable
+        try:
+            iterator = iter(oemols)
+        except TypeError as te:
+            oemols = [ oemols ]
+
+        # Create copies
+        oemols = [ oemol.CreateCopy() for oemol in oemols ]
+
+        # Cache OEMols
+        from openeye import oechem
+        self._oemols.update( { oechem.OEMolToSmiles(oemol) : oemol for oemol in oemols } )
+
+    @staticmethod
+    def _match_residue(residue, oemol_template):
+        """Determine whether a residue matches an OEMol template and return a list of corresponding atoms.
+
+        This implementation uses NetworkX for graph isomorphism determination.
+
+        Parameters
+        ----------
+        residue : simtk.openmm.app.topology.Residue
+            The residue to check
+        oemol_template : openeye.oechem.OEMol
+            The OEMol template to compare it to
+
+        Returns
+        -------
+        matches : dict of int : int
+            matches[residue_atom_index] is the corresponding OEMol template atom index
+            or None if it does not match the template
+
+        """
+        import networkx as nx
+        from openeye import oechem
+
+        # Make a copy of the template
+        oemol_template = oemol_template.CreateCopy()
+
+        # Ensure atom names are unique
+        oechem.OETriposAtomNames(oemol_template)
+
+        # Build list of external bonds for residue
+        number_of_external_bonds = { atom : 0 for atom in residue.atoms() }
+        for bond in residue.external_bonds():
+            if bond[0] in number_of_external_bonds: number_of_external_bonds[bond[0]] += 1
+            if bond[1] in number_of_external_bonds: number_of_external_bonds[bond[1]] += 1
+
+        # Residue graph
+        residue_graph = nx.Graph()
+        for atom in residue.atoms():
+            residue_graph.add_node(atom, element=atom.element.atomic_number, number_of_external_bonds=number_of_external_bonds[atom])
+        for bond in residue.internal_bonds():
+            residue_graph.add_edge(bond[0], bond[1])
+
+        # Template graph
+        # TODO: We can support templates with "external" bonds or atoms using attached string data in future
+        # See https://docs.eyesopen.com/toolkits/python/oechemtk/OEChemClasses/OEAtomBase.html
+        template_graph = nx.Graph()
+        for oeatom in oemol_template.GetAtoms():
+            template_graph.add_node(oeatom.GetName(), element=oeatom.GetAtomicNum(), number_of_external_bonds=0)
+        for oebond in oemol_template.GetBonds():
+            template_graph.add_edge(oebond.GetBgn().GetName(), oebond.GetEnd().GetName())
+
+        # Determine graph isomorphism
+        from networkx.algorithms import isomorphism
+        graph_matcher = isomorphism.GraphMatcher(residue_graph, template_graph)
+        if graph_matcher.is_isomorphic() == False:
+            return None
+
+        # Translate to local residue atom indices
+        atom_index_within_residue = { atom : index for (index, atom) in enumerate(residue.atoms()) }
+        atom_index_within_template = { oeatom.GetName() : index for (index, oeatom) in enumerate(oemol_template.GetAtoms()) }
+        matches = { atom_index_within_residue[residue_atom] : atom_index_within_template[template_atom] for (residue_atom, template_atom) in graph_matcher.mapping.items() }
+
+        return matches
+
+    def generator(self, forcefield, residue, structure=None):
+        """
+        Residue template generator method to register with simtk.openmm.app.ForceField
+
+        Parameters
+        ----------
+        forcefield : simtk.openmm.app.ForceField
+            The ForceField object to which residue templates and/or parameters are to be added.
+        residue : simtk.openmm.app.Topology.Residue
+            The residue topology for which a template is to be generated.
+
+        Returns
+        -------
+        success : bool
+            If the generator is able to successfully parameterize the residue, `True` is returned.
+            If the generator cannot parameterize the residue, it should return `False` and not modify `forcefield`.
+
+        """
+        from openeye import oechem
+
+        # If a database is specified, check against molecules in the database
+        if self._db is not None:
+            for entry in self._db:
+                # Skip any molecules we've added to the database this session
+                if entry['smiles'] in self._smiles_added_to_db:
+                    continue
+
+                # See if the template matches
+                oemol_template = oechem.OEMol()
+                oechem.OESmilesToMol(oemol_template, entry['smiles'])
+                oechem.OEAddExplicitHydrogens(oemol_template)
+                if self._match_residue(residue, oemol_template):
+                    # Register the template
+                    template = self._JSONDecoder().decode(entry['template'])
+                    forcefield.registerResidueTemplate(template)
+                    # Add the parameters
+                    # TODO: Do we have to worry about parameter collisions?
+                    forcefield.loadFile(StringIO(entry['ffxml']))
+                    # Signal success
+                    return True
+
+        # Check against the molecules we know about
+        for smiles, oemol_template in self._oemols.items():
+            # See if the template matches
+            if self._match_residue(residue, oemol_template):
+                # Generate template and parameters.
+                [template, ffxml] = generateResidueTemplate(oemol_template, gaff_version=self._gaff_version)
+                # Register the template
+                forcefield.registerResidueTemplate(template)
+                # Add the parameters
+                # TODO: Do we have to worry about parameter collisions?
+                forcefield.loadFile(StringIO(ffxml))
+                # Add it to the database, if we have one defined
+                if self._db is not None:
+                    self._db.insert({'smiles' : smiles, 'template' : self._JSONEncoder().encode(template), 'ffxml' : ffxml})
+                    self._smiles_added_to_db.add(smiles)
+
+                # Signal success
+                return True
+
+        # Report that we have failed to parameterize the residue
+        return False
 
 class SystemGenerator(object):
     """
