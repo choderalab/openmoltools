@@ -374,6 +374,7 @@ def check_energy_components_vs_prmtop(prmtop=None, inpcrd=None, system=None, MAX
         #raise Exception(msg) # TODO: Re-enable when we have force tag merging sorted out in simtk.openmm.app.ForceField
         print(msg) # DEBUG
 
+@pytest.mark.skipif(True, reason="gaffTemplateGenerator is deprecated")
 @pytest.mark.skipif(not HAVE_OE, reason="Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_gaffResidueTemplateGenerator():
     """
@@ -486,6 +487,7 @@ def test_system_generator():
         f.description = 'Testing SystemGenerator on %s' % name
         yield f
 
+@pytest.mark.skipif(True, reason="gaffTemplateGenerator is deprecated")
 def imatinib_timing():
     print("Loading imatinib...")
     # Load the PDB file.

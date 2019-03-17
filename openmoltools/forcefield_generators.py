@@ -6,6 +6,7 @@ OpenMM ForceField residue template generators.
 
 from __future__ import absolute_import
 
+import warnings
 import numpy as np
 import os, os.path, sys
 from simtk.openmm.app import ForceField
@@ -507,6 +508,8 @@ def gaffTemplateGenerator(forcefield, residue, structure=None):
     Charge fitting is therefore performed on an indeterminate stereo form.
 
     """
+    warnings.warn("gaffTemplateGenerator has been deprecated; see OEGAFFTemplateGenerator", DeprecationWarning)
+
     # Get a list of external bonds.
     external_bonds = [ bond for bond in residue.external_bonds() ]
     if len(external_bonds) > 0:
