@@ -28,8 +28,8 @@ requirements:
     - openmm
     - pytables
     - lxml
-    - ambertools # revisit whether we want ambertools or ambermini
-    - parmed    # want latest parmed installed separately from ambertools/ambermini
+    - ambermini
+    - parmed   
     - tinydb   # for caching antechamber-generated force fields for small molecules
     - networkx # for matching OEMols with residues
     - packmol   # optional dependency, but easy to include
