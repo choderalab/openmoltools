@@ -32,7 +32,7 @@ def getoutput(cmd):
     """Compatibility function to substitute deprecated commands.getoutput in Python2.7"""
     try:
         out = subprocess.getoutput(cmd)
-    except AttributeError:
+    except (AttributeError, UnicodeDecodeError):
         out = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
                                stdout=subprocess.PIPE).communicate()[0]
     try:
