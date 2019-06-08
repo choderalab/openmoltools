@@ -179,7 +179,7 @@ def iupac_to_oemol(iupac_name):
     return molecule
 
 
-def smiles_to_oemol(smiles):
+def smiles_to_oemol(smiles,title='MOL'):
     """Create a OEMolBuilder from a smiles string.
 
     Parameters
@@ -201,6 +201,9 @@ def smiles_to_oemol(smiles):
         raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
 
     molecule = normalize_molecule(molecule)
+
+    # Set title.
+    molecule.SetTitle(title)
 
     return molecule
 
