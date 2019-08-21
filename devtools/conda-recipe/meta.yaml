@@ -30,6 +30,8 @@ requirements:
     - pandas
     - six
     - mdtraj
+    - lxml
+    - pymbar
     - numpy
     - numpydoc
     - scipy
