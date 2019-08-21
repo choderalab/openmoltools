@@ -13,10 +13,16 @@ matrix:
     # Extra includes for OSX since python language is not available by default on OSX
     - os: osx
       language: generic
-      env: PYTHON_VER=3.6
+      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.3
     - os: osx
       language: generic
-      env: PYTHON_VER=3.7
+      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.3
+    - os: osx
+      language: generic
+      env: PYTHON_VER=3.6 OPENMM_CHANNEL="omnia/label/beta" OPENMM_VERSION=7.4
+    - os: osx
+      language: generic
+      env: PYTHON_VER=3.7 OPENMM_CHANNEL="omnia/label/beta" OPENMM_VERSION=7.4
 
 env:
   global:
@@ -50,6 +56,7 @@ install:
   - conda install --yes -c openeye openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
   # Install other testing dependencies
   - conda install --yes --quiet nose nose-timer
+  - conda install --yes --quiet -c $OPENMM_CHANNEL openmm==$OPENMM_VERSION
   - conda install --yes --quiet openmmtools
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
