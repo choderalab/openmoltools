@@ -328,12 +328,13 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
         charge = atom.GetPartialCharge()
         parameters = { 'charge' : charge }
         atom_template = ForceField._TemplateAtomData(atomname, typename, element, parameters)
-        template.atoms.append(atom_template)
         if hasattr(template, 'atomIndices'):
-            template.atomIndices[atom_template.name] = len(template.atoms)-1
-        # with openmm 7.4 this can be written as
-        # template.addAtom(atom_template)
-        # but this isn't compatible with openmm 7.3
+            # OpenMM 7.4 and later
+            template.addAtom(atom_template)
+        else:
+            # OpenMM 7.3 and earlier
+            template.atoms.append(atom_template)
+
     for bond in molecule.GetBonds():
         if (bond.GetBgn() in residue_atoms) and (bond.GetEnd() in residue_atoms):
             template.addBondByName(bond.GetBgn().GetName(), bond.GetEnd().GetName())
