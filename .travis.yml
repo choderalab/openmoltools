@@ -5,18 +5,18 @@ sudo: false
 
 # Will only test on Linux be default, special includes are needed for OSX
 python:
-    - 3.5
     - 3.6
+    - 3.7
 
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
     - os: osx
       language: generic
-      env: PYTHON_VER=3.5
+      env: PYTHON_VER=3.6
     - os: osx
       language: generic
-      env: PYTHON_VER=3.6
+      env: PYTHON_VER=3.7
 
 env:
   global:
