@@ -65,6 +65,7 @@ install:
   - conda install --yes --use-local openmoltools-dev
 
 script:
+  - nosetests --nocapture openmoltools/tests/test_forcefield_generators.py
   - pytest -v --cov=openmoltools --cov-config setup.cfg openmoltools/tests/
 
 notifications:
