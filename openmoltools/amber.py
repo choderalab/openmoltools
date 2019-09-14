@@ -7,6 +7,7 @@ from distutils.spawn import find_executable
 from mdtraj.utils.delay_import import import_
 import mdtraj.utils
 import simtk.openmm.app as app
+import re
 
 from openmoltools.utils import getoutput
 
@@ -234,7 +235,8 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
     error_lines = []
     for line in lines:
         if 'ERROR' in line.upper():
-            error_lines.append( line )
+            if not bool(re.match('Exiting LEaP: Errors = \d+; Warnings = \d+; Notes = \d+.', line)):
+                error_lines.append( line )
         if not other_errors == None:
             for err in other_errors:
                 if err.upper() in line.upper():
