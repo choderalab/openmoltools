@@ -335,6 +335,7 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
     gaff_mol2_filename = os.path.abspath( gaff_mol2_filename )
     frcmod_filename = os.path.abspath( frcmod_filename )
     input_filename = os.path.abspath( input_filename )
+    ff_filename = f'{os.environ["AMBERHOME"]}/dat/leap/parm/{gaff_version}.dat'
 
     def read_file_contents(filename):
         infile = open(filename, 'r')
@@ -373,7 +374,8 @@ def run_antechamber(molecule_name, input_filename, charge_method="bcc", net_char
         if log_debug_output: logger.debug(output)
 
         # Run parmchk.
-        cmd = "parmchk2 -i out.mol2 -f mol2 -o out.frcmod -s %s" % gaff_version
+        
+        cmd = f"parmchk2 -i out.mol2 -f mol2 -o out.frcmod -s {gaff_version} -p {ff_filename}" 
         if log_debug_output: logger.debug(cmd)
         output = getoutput(cmd)
         if not os.path.exists('out.frcmod'):
