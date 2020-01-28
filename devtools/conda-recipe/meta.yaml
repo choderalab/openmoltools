@@ -20,9 +20,8 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambermini
     - pytables
-    - parmed
+    - ambertools
     - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
@@ -36,9 +35,8 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambermini
     - pytables
-    - parmed
+    - ambertools
     - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
 
 test:
