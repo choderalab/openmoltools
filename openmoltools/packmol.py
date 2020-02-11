@@ -191,6 +191,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
         n_atoms = trj_i[i].n_atoms
         for j in range(n_molecules_list[i]):
             # Offset atom numbers for the bonds by the current atom number; don't offset bond orders
+            # bonds_i[i] contains information: (atom1, atom2, type1, order)
             thesebonds = copy.deepcopy(bonds_i[i])
             thesebonds[:,0:2] += offset
             # Store
