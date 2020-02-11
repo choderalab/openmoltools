@@ -5,6 +5,7 @@ from mdtraj.utils.delay_import import import_
 import tempfile
 from distutils.spawn import find_executable
 import simtk.unit as units
+import copy
 
 from .utils import temporary_directory
 
@@ -12,7 +13,7 @@ from .utils import temporary_directory
 PACKMOL_PATH = find_executable("packmol")
 
 HEADER_TEMPLATE = """
-# Mixture 
+# Mixture
 
 tolerance %f
 filetype pdb
@@ -23,7 +24,7 @@ add_amber_ter
 
 BOX_TEMPLATE = """
 structure %s
-  number %d 
+  number %d
   inside box 0. 0. 0. %f %f %f
 end structure
 """
@@ -112,7 +113,7 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     Be aware that MDTraj uses nanometers internally, but packmol uses angstrom
     units. The present function takes `tolerance` and `box_size` in angstrom
     units, but the output trajectory will have data in nm.
-    Also note that OpenMM is pretty picky about the format of unit cell input, 
+    Also note that OpenMM is pretty picky about the format of unit cell input,
     so use the example in tests/test_packmol.py to ensure that you do the right thing.
 
     See Also
@@ -188,10 +189,13 @@ def pack_box(pdb_filenames_or_trajectories, n_molecules_list, tolerance=2.0, box
     bonds = []
     for i in range(len(trj_i)):
         n_atoms = trj_i[i].n_atoms
-        for j in range(n_molecules_list[i]):        
-            bonds.extend(bonds_i[i] + offset)
+        for j in range(n_molecules_list[i]):
+            # Offset atom numbers for the bonds by the current atom number; don't offset bond orders
+            thesebonds = copy.deepcopy(bonds_i[i])
+            thesebonds[:,0:2] += offset
+            # Store
+            bonds.extend(thesebonds)
             offset += n_atoms
-
     bonds = np.array(bonds)
     trj.top = md.Topology.from_dataframe(top, bonds)
 
@@ -220,7 +224,7 @@ def approximate_volume(pdb_filenames, n_molecules_list, box_scaleup_factor=2.0):
 
     Notes
     -----
-    By default, boxes are very large for increased stability, and therefore may 
+    By default, boxes are very large for increased stability, and therefore may
     require extra time for energy minimization and equilibration.
     """
     volume = 0.0 # in cubic angstroms
@@ -242,7 +246,7 @@ def approximate_volume_by_density(smiles_strings, n_molecules_list, density=1.0,
     """Generate an approximate box size based on the number and molecular weight of molecules present, and a target density for the final solvated mixture. If no density is specified, the target density is assumed to be 1 g/ml.
 
     Parameters
-    ---------- 
+    ----------
     smiles_strings : list(str)
         List of smiles strings for each component of mixture.
     n_molecules_list : list(int)
@@ -308,7 +312,7 @@ def rename_water_atoms( pdb_filename, O_name = 'O', H1_name = 'H1', H2_name = 'H
 
     Returns
     -------
-    
+
     Notes
     -------
     Uses ParmEd to makes edits. Identifies waters by reading residues from target PDB file and identifying any residue containing three atoms with names O or O#, H or H#, and H or H# (where # is a digit or sequence of digits) as water molecules.
@@ -317,7 +321,7 @@ def rename_water_atoms( pdb_filename, O_name = 'O', H1_name = 'H1', H2_name = 'H
     parmed = import_("parmed")
 
     pdb = parmed.load_file( pdb_filename )
-    
+
     #Find waters and rename
     for residue in pdb.residues:
         if len(residue)==3:
@@ -340,7 +344,6 @@ def rename_water_atoms( pdb_filename, O_name = 'O', H1_name = 'H1', H2_name = 'H
                         else:
                             atom.name = H2_name
                         hct+=1
-            
+
     #Write file
     pdb.write_pdb( pdb_filename )
-
