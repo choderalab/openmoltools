@@ -138,8 +138,12 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     ofs.close()
     # Run Antechamber bondtype
     import subprocess
-    #command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
-    command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
+    # HBM reverting back to bondtype, antechamber seems to complain about valency
+    # see https://github.com/choderalab/perses/pull/626
+    # and https://github.com/choderalab/openmoltools/issues/295
+    # and https://github.com/choderalab/openmoltools/issues/279
+    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
+    #command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
     run_command(command)
 
     # Define mapping from GAFF bond orders to OpenEye bond orders.
