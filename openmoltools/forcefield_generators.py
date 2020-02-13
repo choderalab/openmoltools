@@ -124,7 +124,8 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
     for (atom1, atom2) in residue.bonds():
         order = 1
-        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond.SetType('1')
 
     # Write out a mol2 file without altering molecule.
     import tempfile
