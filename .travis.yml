@@ -8,21 +8,28 @@ python:
     - 3.6
     - 3.7
 
+
 matrix:
   include:
     # Extra includes for OSX since python language is not available by default on OSX
+    - os: linux
+      language: generic
+      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.4.1
+    - os: linux
+      language: generic
+      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.4.1
     - os: osx
       language: generic
-      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.3
+      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.4.1
     - os: osx
       language: generic
-      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.3
-    - os: osx
+      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia OPENMM_VERSION=7.4.1
+    - os: linux
       language: generic
-      env: PYTHON_VER=3.6 OPENMM_CHANNEL="omnia/label/beta" OPENMM_VERSION=7.4
-    - os: osx
+      env: PYTHON_VER=3.6 OPENMM_CHANNEL="omnia-dev" OPENMM_VERSION=7.5
+    - os: linux
       language: generic
-      env: PYTHON_VER=3.7 OPENMM_CHANNEL="omnia/label/beta" OPENMM_VERSION=7.4
+      env: PYTHON_VER=3.7 OPENMM_CHANNEL="omnia-dev" OPENMM_VERSION=7.5
 
 env:
   global:
