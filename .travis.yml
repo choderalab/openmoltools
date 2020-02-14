@@ -21,7 +21,7 @@ env:
     - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia
     - PYTHON_VER=3.6 OPENMM_CHANNEL=omnia-dev
     - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia-dev
-    
+
   global:
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
@@ -46,15 +46,13 @@ before_install:
 
 install:
   # Create test environment for package
-  - conda create --yes -n test python=$PYTHON_VER pip pytest pytest-cov
-  - source activate test
-  - conda install --yes codecov  # Only available in conda-forge channel or pip
+  - conda create --yes -n test python=$PYTHON_VER pip codecov pytest pytest-cov conda-build jinja2 anaconda-client
+  - conda activate test
   # Install the OpenEye toolkit
   - conda install --yes -c openeye openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
   # Install other testing dependencies
   - conda install --yes --quiet nose nose-timer
-  - echo conda install --yes -c $OPENMM_CHANNEL openmm
-  - conda install --yes -c $OPENMM_CHANNEL openmm
+  - conda install --yes --quiet -c $OPENMM_CHANNEL openmm
   - conda install --yes --quiet openmmtools
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
