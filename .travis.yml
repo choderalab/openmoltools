@@ -1,31 +1,27 @@
-# Run jobs on container-based infrastructure, can be overridden per job
-sudo: false
+language: c
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+      - g++
+      - gfortran
+      - valgrind
+      - csh
+      - g++-multilib
+      - gcc-multilib
 
-language: generic
-
-jobs:
-  include:
-    # Extra includes for OSX since python language is not available by default on OSX
-    - os: linux
-      language: generic
-      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia
-    - os: linux
-      language: generic
-      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia
-    - os: osx
-      language: generic
-      env: PYTHON_VER=3.6 OPENMM_CHANNEL=omnia
-    - os: osx
-      language: generic
-      env: PYTHON_VER=3.7 OPENMM_CHANNEL=omnia
-    - os: linux
-      language: generic
-      env: PYTHON_VER=3.6 OPENMM_CHANNEL="omnia-dev"
-    - os: linux
-      language: generic
-      env: PYTHON_VER=3.7 OPENMM_CHANNEL="omnia-dev"
+branches:
+  only:
+    - master
 
 env:
+  matrix:
+    - PYTHON_VER=3.6 OPENMM_CHANNEL=omnia
+    - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia
+    - PYTHON_VER=3.6 OPENMM_CHANNEL=omnia-dev
+    - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia-dev
+    
   global:
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
