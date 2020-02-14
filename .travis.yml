@@ -1,7 +1,7 @@
 # Run jobs on container-based infrastructure, can be overridden per job
 sudo: false
 
-language: python
+language: generic
 
 jobs:
   include:
