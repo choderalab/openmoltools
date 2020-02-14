@@ -1,13 +1,7 @@
-language: python
-
 # Run jobs on container-based infrastructure, can be overridden per job
 sudo: false
 
-# Will only test on Linux be default, special includes are needed for OSX
-python:
-    - 3.6
-    - 3.7
-
+language: python
 
 jobs:
   include:
@@ -63,7 +57,8 @@ install:
   - conda install --yes -c openeye openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
   # Install other testing dependencies
   - conda install --yes --quiet nose nose-timer
-  - conda install --yes --quiet -c $OPENMM_CHANNEL openmm
+  - echo conda install --yes -c $OPENMM_CHANNEL openmm
+  - conda install --yes -c $OPENMM_CHANNEL openmm
   - conda install --yes --quiet openmmtools
   - conda install --yes --quiet packmol
   - conda install --yes --quiet rdkit
