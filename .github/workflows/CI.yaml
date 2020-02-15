@@ -1,7 +1,6 @@
 name: CI
 
 on:
-  push:
   pull_request:
   schedule:
     # nightly tests
@@ -102,7 +101,7 @@ jobs:
         pushd .
         nosetests ${PACKAGENAME} --nocapture --verbosity=3 --with-timer -a '!advanced'
         popd
-        
+
     - name: Deploy
       shell: bash
       if: false
