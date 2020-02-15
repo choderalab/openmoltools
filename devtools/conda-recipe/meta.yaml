@@ -13,17 +13,7 @@ requirements:
   build:
     - python
     - setuptools
-    - pandas
     - six
-    - mdtraj
-    - numpy
-    - numpydoc
-    - scipy
-    - openmm
-    - ambermini
-    - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
   run:
     - python
     - setuptools
@@ -36,10 +26,11 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambermini
+    - ambertools
     - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - packmol
+    - rdkit    # optional dependency
+    - openeye-toolkit  # optional dependency
 
 test:
   requires:
