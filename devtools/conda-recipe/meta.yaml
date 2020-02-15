@@ -22,7 +22,7 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambertools
+    - ambertools >=19
     - pytables
     - openmmtools
     - packmol
@@ -40,7 +40,7 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambertools
+    - ambertools >=19
     - pytables
     - openmmtools
     - packmol
