@@ -56,20 +56,26 @@ jobs:
       run: |
         echo "${ENC_OE_LICENSE}" > $HOME/oe_license.txt
 
-    - name: Build recipe
+    - name: Create environment for package
       shell: bash
       run: |
         . devtools/github-actions/initialize_conda.sh
         conda activate
         conda info
-        #conda build --quiet --python=${{ matrix.cfg.python-version }} devtools/conda-recipe
-        conda build --python=${{ matrix.cfg.python-version }} devtools/conda-recipe
+        python devtools/scripts/create_conda_env.py -n=test -p=$PYVER devtools/conda-envs/test_env.yaml
+
+    - name: Install package
+      shell: bash
+      run: |
+        . devtools/github-actions/initialize_conda.sh
+        conda activate test
+        python -m pip install . --no-deps
+        conda list --show-channel-urls
+
     - name: Prepare test environment
       shell: bash
       run: |
         . devtools/github-actions/initialize_conda.sh
-        conda activate
-        conda create --quiet -n test -c local ${PACKAGENAME}-dev nose nose-timer
         conda activate test
         case ${{ matrix.cfg.openmm }} in
           latest)
@@ -85,6 +91,7 @@ jobs:
             echo "Using OpenMM conda-forge testing build."
             conda install --quiet -c conda-forge/label/testing openmm;;
         esac
+
     - name: Test the package
       shell: bash
       run: |
@@ -95,6 +102,7 @@ jobs:
         pushd .
         nosetests ${PACKAGENAME} --nocapture --verbosity=3 --with-timer -a '!advanced'
         popd
+        
     - name: Deploy
       shell: bash
       if: false
