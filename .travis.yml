@@ -69,7 +69,7 @@ script:
 env:
   global:
     - ORGNAME="omnia"
-    - PACKAGENAME="perses"
+    - PACKAGENAME="openmoltools"
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
