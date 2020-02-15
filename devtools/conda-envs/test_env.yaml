@@ -1,8 +1,8 @@
 name: test
 channels:
-  - openeye
-  - omnia
   - conda-forge
+  - omnia
+  - openeye
 dependencies:
     # Base depends
   - python
@@ -17,7 +17,7 @@ dependencies:
   - numpydoc
   - scipy
   - openmm
-  - ambertools
+  - ambertools >=19.0
   - pytables
   - openmmtools
   - packmol
