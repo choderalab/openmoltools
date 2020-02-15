@@ -28,6 +28,7 @@ requirements:
     - openmm
     - ambertools
     - pytables
+    - openmmtools
     - packmol
     - rdkit    # optional dependency
     - openeye-toolkit  # optional dependency
@@ -35,7 +36,6 @@ requirements:
 test:
   requires:
     - nose
-    - openmmtools
   imports:
     - openmoltools
   #commands:
