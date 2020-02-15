@@ -24,9 +24,8 @@ jobs:
 
     env:
       ORGNAME: omnia
-      PACKAGENAME: perses
+      PACKAGENAME: openmoltools
       OE_LICENSE: $HOME/oe_license.txt
-      OPENEYE_CHANNEL: -i https://pypi.anaconda.org/OpenEye/simple
       CI_OS: ${{ matrix.os }}
 
     steps:
