@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/choderalab/openmoltools.svg?branch=master)](https://travis-ci.org/choderalab/openmoltools)
 [![GH Actions Status](https://github.com/choderalab/perses/workflows/CI/badge.svg)](https://github.com/choderalab/perses/actions?query=branch%3Amaster)
 
 ## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
