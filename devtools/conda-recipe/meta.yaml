@@ -13,7 +13,21 @@ requirements:
   build:
     - python
     - setuptools
+    - pandas
     - six
+    - mdtraj
+    - lxml
+    - pymbar
+    - numpy
+    - numpydoc
+    - scipy
+    - openmm
+    - ambertools
+    - pytables
+    - openmmtools
+    - packmol
+    - rdkit    # optional dependency
+    - openeye-toolkits  # optional dependency
   run:
     - python
     - setuptools
