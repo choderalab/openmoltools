@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #, macOS-latest]
+        os: [macOS-latest, ubuntu-latest] #, macOS-latest]
         cfg:
           - {python-version: 3.6, openmm: "latest"}
           - {python-version: 3.7, openmm: "latest"}
@@ -39,7 +39,7 @@ jobs:
     - name: Configure conda
       shell: bash
       run: |
-        . devtools/scripts/initialize_conda.sh
+        . devtools/github-actions/initialize_conda.sh
         conda activate
         conda config --set always_yes True
         conda config --add channels omnia --add channels conda-forge --add channels openeye
@@ -57,13 +57,14 @@ jobs:
     - name: Build recipe
       shell: bash
       run: |
-        . devtools/scripts/initialize_conda.sh
+        . devtools/github-actions/initialize_conda.sh
         conda activate
+        conda info
         conda build --quiet --python=${{ matrix.cfg.python-version }} devtools/conda-recipe
     - name: Prepare test environment
       shell: bash
       run: |
-        . devtools/scripts/initialize_conda.sh
+        . devtools/github-actions/initialize_conda.sh
         conda activate
         conda create --quiet -n test -c local ${PACKAGENAME}-dev nose nose-timer
         conda activate test
@@ -84,7 +85,7 @@ jobs:
     - name: Test the package
       shell: bash
       run: |
-        . devtools/scripts/initialize_conda.sh
+        . devtools/github-actions/initialize_conda.sh
         conda activate test
         export OE_LICENSE="$HOME/oe_license.txt"
         export TRAVIS=true
