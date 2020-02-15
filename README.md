@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/choderalab/openmoltools.svg?branch=master)](https://travis-ci.org/choderalab/openmoltools)
+[![GH Actions Status](https://github.com/choderalab/perses/workflows/CI/badge.svg)](https://github.com/choderalab/perses/actions?query=branch%3Amaster)
 
 ## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
@@ -40,8 +41,7 @@ nosetests openmoltools -v --exe
 ## Python 2.7 builds are deprecated
 
 Version 0.8.3 will be the last version of this package to build with Python 2.7.
-With the OpenEye toolkits no longer being depolyed on Python 2.7 as of 2018.2.1, 
-we have decided to deprecate support for that Python version as well. 
-Version 0.8.3 was tested against the 2017.10.1 version of the OpenEye Toolkits for 
+With the OpenEye toolkits no longer being depolyed on Python 2.7 as of 2018.2.1,
+we have decided to deprecate support for that Python version as well.
+Version 0.8.3 was tested against the 2017.10.1 version of the OpenEye Toolkits for
 compatibility.
-

@@ -124,7 +124,8 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
     for (atom1, atom2) in residue.bonds():
         order = 1
-        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond.SetType('1')
 
     # Write out a mol2 file without altering molecule.
     import tempfile
@@ -350,9 +351,9 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
-    params.write(ffxml)
+    params.write(ffxml, write_unused=True)
 
     return template, ffxml.getvalue()
 
@@ -457,9 +458,9 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO(leaprc)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
-    params.write(ffxml)
+    params.write(ffxml, write_unused=True)
 
     # TODO: Clean up temporary directory.
     os.chdir(olddir)

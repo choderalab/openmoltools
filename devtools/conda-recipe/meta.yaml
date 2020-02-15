@@ -16,14 +16,18 @@ requirements:
     - pandas
     - six
     - mdtraj
+    - lxml
+    - pymbar
     - numpy
     - numpydoc
     - scipy
     - openmm
-    - ambermini
+    - ambertools >=19
     - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - openmmtools
+    - packmol
+    - rdkit    # optional dependency
+    - openeye-toolkits  # optional dependency
   run:
     - python
     - setuptools
@@ -36,15 +40,16 @@ requirements:
     - numpydoc
     - scipy
     - openmm
-    - ambermini
+    - ambertools >=19
     - pytables
-    - parmed
-    - rdkit    # rdkit is an optional dependency, may want to comment this out for the release version.
+    - openmmtools
+    - packmol
+    - rdkit    # optional dependency
+    - openeye-toolkits  # optional dependency
 
 test:
   requires:
     - nose
-    - openmmtools
   imports:
     - openmoltools
   #commands:
