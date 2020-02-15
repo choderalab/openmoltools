@@ -31,7 +31,7 @@ requirements:
     - openmmtools
     - packmol
     - rdkit    # optional dependency
-    - openeye-toolkit  # optional dependency
+    - openeye-toolkits  # optional dependency
 
 test:
   requires:
