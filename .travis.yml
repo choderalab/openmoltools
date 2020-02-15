@@ -1,76 +1,80 @@
 language: c
+sudo: false
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
     packages:
-      - g++
-      - gfortran
-      - valgrind
-      - csh
-      - g++-multilib
-      - gcc-multilib
-
+      #- g++
+      #- gfortran
+      #- valgrind
+      #- csh
+      #- g++-multilib
+      #- gcc-multilib
 branches:
-  only:
-    - master
+  except:
+    - /^(?i:notest)-.*$/
+
+matrix:
+  include:
+    - env: python=3.6 CONDA_PY=36 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="latest"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="latest"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="beta"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="nightly"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="conda-forge"
+  allow_failures:
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="beta"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="nightly"
+    - env: python=3.7 CONDA_PY=37 TESTSYSTEMS="ValenceSmallMoleculeLibraryTestSystem" OPENMM="conda-forge"
+
+install:
+  #add random sleep from 1-10s to try to prevent overloading the anaconda servers
+  - sleep $[ ( $RANDOM % 10 )  + 1 ]s
+  - env
+  - source devtools/travis-ci/install.sh
+  - export PYTHONUNBUFFERED=true
+  - export CC=gcc
+  - export CXX=g++
+  # Unpack encrypted OpenEye license file
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_751d8ffa39c6_key -iv $encrypted_751d8ffa39c6_iv -in devtools/travis-ci/oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == false ]; then echo "OpenEye license will not be installed in forks."; fi
+
+script:
+  # Create a test environment
+  - conda create --yes -n test python=$python
+  # Activate the test environment
+  - source activate test
+  # Add omnia
+  - conda config --add channels omnia --add channels conda-forge
+  # Add OpenEye channel
+  - conda config --add channels openeye
+  # Update conda
+  - conda update --yes --all
+  # List conda environment
+  - conda list
+  # Build the recipe
+  - conda build devtools/conda-recipe
+  # Install the package
+  - conda install --yes --use-local ${PACKAGENAME}-dev
+  # Install testing dependencies
+  - conda install --yes --quiet nose nose-timer
+  # Install desired OpenMM version
+  - if [ "$OPENMM" == "latest" ]; then echo "Using latest release OpenMM."; conda install --yes -c omnia openmm; fi
+  - if [ "$OPENMM" == "beta" ]; then echo "Using OpenMM beta"; conda install --yes -c omnia/label/beta openmm; fi
+  - if [ "$OPENMM" == "nightly" ]; then echo "Using OpenMM nightly dev build."; conda install --yes -c omnia-dev openmm; fi
+  - if [ "$OPENMM" == "conda-forge" ]; then echo "Using OpenMM conda-forge testing build."; conda install --yes -c conda-forge/label/testing openmm; fi
+  # Test the package
+  - cd devtools && nosetests openmoltools --nocapture --verbosity=3 --with-timer -a '!advanced' && cd ..
 
 env:
-  matrix:
-    - PYTHON_VER=3.6 OPENMM_CHANNEL=omnia
-    - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia
-    - PYTHON_VER=3.6 OPENMM_CHANNEL=omnia-dev
-    - PYTHON_VER=3.7 OPENMM_CHANNEL=omnia-dev
-
   global:
+    - ORGNAME="omnia"
+    - PACKAGENAME="perses"
     # Location of decrypted OpenEye license file
     - OE_LICENSE="$HOME/oe_license.txt"
     # encrypted BINSTAR_TOKEN for push of dev package to binstar
-    - secure: "S9I5imZ0CJdwfhHzy+Beh8NTFm2ZYpMFCLgvBYT/UsifIKlGynUK2xGi7bDnHLpslT45FUMmjzdpf2QNrfbivVJgiSDTQJc1GCIqGFFKFqerJEEYUkXlBxvWNO+poSOMIzkJqd7xsTodt4CYhGJM1dT6ocaSM7UJgAErrcRJfLo="
-
-branches:
-  only:
-    - master
-
-before_install:
-  # Additional info about the build
-  - uname -a
-  - df -h
-  - ulimit -a
-  # Install Conda and dependencies
-  - source devtools/travis-ci/install.sh
-  # Activate miniconda
-  - eval "$($HOME/miniconda/bin/conda shell.bash hook)"
-  # Check Python version
-  - python -V
-  # Unpack encrypted OpenEye license file
-  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ] ; then openssl aes-256-cbc -K $encrypted_751d8ffa39c6_key -iv $encrypted_751d8ffa39c6_iv -in oe_license.txt.enc -out $HOME/oe_license.txt -d; fi
-  - if [ "$TRAVIS_SECURE_ENV_VARS" == false ] ; then echo "OpenEye license will not be installed in pull request."; fi
-
-install:
-  # Activate miniconda
-  - eval "$($HOME/miniconda/bin/conda shell.bash hook)"
-  # Create test environment for package
-  - conda create --yes -n test python=$PYTHON_VER pip codecov pytest pytest-cov conda-build jinja2 anaconda-client
-  - conda activate test
-  # Install the OpenEye toolkit
-  - conda install --yes -c openeye openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
-  # Install other testing dependencies
-  - conda install --yes --quiet nose nose-timer
-  - conda install --yes --quiet -c $OPENMM_CHANNEL openmm
-  - conda install --yes --quiet openmmtools
-  - conda install --yes --quiet packmol
-  - conda install --yes --quiet rdkit
-  # Build the conda package
-  - conda build --python=$PYTHON_VER devtools/conda-recipe
-  - conda install --yes --use-local openmoltools-dev
-
-script:
-  - nosetests --nocapture openmoltools/tests/test_forcefield_generators.py
-  - pytest -v --cov=openmoltools --cov-config setup.cfg openmoltools/tests/
-
-notifications:
-  email: false
+    - secure: "RRvLDPu9mPoNaRWIseaJdgShOXI+PaHPWKAIJvW7VYWcAS6iEN7W4Fj4zD5hkocQxc3ou97EtkgID+ApH10bSGKxCykyU0urSY9jsSOJX2m0AE19X0dVr6ySIQkwCWE6kUMVlvQYQo80fM2EMElD+btr4G9XBAhArAO7HvZHkoQ="
 
 after_success:
-  - codecov
+  - echo "after_success"
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == true ]; then source devtools/travis-ci/after_success.sh; fi
