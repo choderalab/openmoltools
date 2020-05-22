@@ -27,7 +27,7 @@ except Exception as e:
     HAVE_OE = False
     openeye_exception_message = str(e)
 
-IUPAC_molecule_names = ['naproxen', 'aspirin', 'imatinib', 'bosutinib', 'dibenzyl ketone']
+IUPAC_molecule_names = ['aspirin', 'imatinib', 'bosutinib', 'dibenzyl ketone', 'naproxen']
 def createOEMolFromIUPAC(iupac_name='bosutinib'):
     from openeye import oechem, oeiupac, oeomega
 
@@ -141,7 +141,6 @@ def test_generate_ffxml_from_molecules():
         # Check potential is finite.
         positions = extractPositionsFromOEMOL(molecule)
         check_potential_is_finite(system, positions)
-
 
 @skipIf(not HAVE_OE, "Cannot test openeye module without OpenEye tools.\n" + openeye_exception_message)
 def test_generate_gaff2_ffxml_from_molecules():

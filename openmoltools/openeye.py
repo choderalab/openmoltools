@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Note: We recommend having every function return *copies* of input, to avoid headaches associated with in-place changes
 
 def get_charges(molecule, max_confs=800, strictStereo=True,
-                normalize=True, keep_confs=None, legacy=True):
+                normalize=True, keep_confs=None, legacy=False):
     """Generate charges for an OpenEye OEMol molecule.
 
     Parameters
@@ -67,9 +67,13 @@ def get_charges(molecule, max_confs=800, strictStereo=True,
     charged_copy = generate_conformers(molecule, max_confs=max_confs, strictStereo=strictStereo)  # Generate up to max_confs conformers
 
     if not legacy:
-        # 2017.2.1 OEToolkits new charging function
-        status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
-        if not status: raise(RuntimeError("OEAssignCharges failed."))
+        # try charge using AM1BCCELF10
+        status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCELF10Charges())
+        # or fall back to OEAM1BCC
+        if not status: 
+            # 2017.2.1 OEToolkits new charging function
+            status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
+            if not status: raise(RuntimeError("OEAssignCharges failed."))
     else:
         # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
         status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
@@ -179,7 +183,7 @@ def iupac_to_oemol(iupac_name):
     return molecule
 
 
-def smiles_to_oemol(smiles):
+def smiles_to_oemol(smiles,title='MOL'):
     """Create a OEMolBuilder from a smiles string.
 
     Parameters
@@ -201,6 +205,9 @@ def smiles_to_oemol(smiles):
         raise ValueError("The supplied SMILES '%s' could not be parsed." % smiles)
 
     molecule = normalize_molecule(molecule)
+
+    # Set title.
+    molecule.SetTitle(title)
 
     return molecule
 
@@ -415,7 +422,7 @@ def oemols_to_ffxml(molecules, base_molecule_name="lig"):
     return all_trajectories, ffxml
 
 
-def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL", strictStereo=False):
+def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, residue_name="MOL", strictStereo=False, protonation=False):
     """Build a molecule from a smiles string and run antechamber,
     generating GAFF mol2 and frcmod files from a smiles string.  Charges
     will be generated using the OpenEye QuacPac AM1-BCC implementation.
@@ -438,15 +445,23 @@ def smiles_to_antechamber(smiles_string, gaff_mol2_filename, frcmod_filename, re
     strictStereo : bool, optional, default=False
         If False, permits smiles strings with unspecified stereochemistry.
         See https://docs.eyesopen.com/omega/usage.html
+    protonation : bool, optional, default=False
+        If True, uses OESetNeutralpHModel to set a pH model for the molecule
+        to attempt to obtain protonation states appropriate for neutral pH.
+        Depending on the application this may or may not be what you want, e.g. for
+        hydration free energy calculations you may want the typical depicted (neutral) form.
     """
     oechem = import_("openeye.oechem")
     if not oechem.OEChemIsLicensed(): raise(ImportError("Need License for oechem!"))
+    oequacpac = import_("openeye.oequacpac")
 
     # Get the absolute path so we can find these filenames from inside a temporary directory.
     gaff_mol2_filename = os.path.abspath(gaff_mol2_filename)
     frcmod_filename = os.path.abspath(frcmod_filename)
 
     m = smiles_to_oemol(smiles_string)
+    if protonation:
+        oequacpac.OESetNeutralpHModel(m)
     m = get_charges(m, strictStereo=strictStereo, keep_confs=1)
 
     with enter_temp_directory():  # Avoid dumping 50 antechamber files in local directory.

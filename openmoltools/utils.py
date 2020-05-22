@@ -9,6 +9,7 @@ import functools
 from pkg_resources import resource_filename
 import contextlib
 import shutil
+import warnings
 import mdtraj as md
 from mdtraj.utils import enter_temp_directory
 from mdtraj.utils.delay_import import import_
@@ -74,7 +75,7 @@ def unwrap_py2(func):
 # ------------------------------------------------------------------------------
 
 def find_gaff_dat():
-    print("Warning: find_gaff_dat has been moved to openmoltools.amber.")
+    warnings.warn("find_gaff_dat has been moved to openmoltools.amber.")
     amber = import_("openmoltools.amber")
 
     return amber.find_gaff_dat()
@@ -87,12 +88,12 @@ def parse_ligand_filename(filename):
 
 
 def run_antechamber(*args, **kwargs):
-    print("Warning: run_antechamber has been moved to openmoltools.amber.")
+    warnings.warn("run_antechamber has been moved to openmoltools.amber.")
     amber = import_("openmoltools.amber")
     return amber.run_antechamber(*args, **kwargs)
 
 def run_tleap(*args, **kwargs):
-    print("Warning: run_tleap has been moved to openmoltools.amber.")
+    warnings.warn("run_tleap has been moved to openmoltools.amber.")
     amber = import_("openmoltools.amber")
     return amber.run_tleap(*args, **kwargs)
 
@@ -363,7 +364,7 @@ def tag_description(lambda_function, description):
 
 
 def molecule_to_mol2(*args, **kwargs):
-    print("Warning: molecule_to_mol2 has been moved to openmoltools.openeye.")
+    warnings.warn("molecule_to_mol2 has been moved to openmoltools.openeye.")
     import openmoltools.openeye
     return openmoltools.openeye.molecule_to_mol2(*args, **kwargs)
 

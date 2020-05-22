@@ -15,10 +15,14 @@ from simtk.openmm.app.element import Element
 import parmed
 if sys.version_info >= (3, 0):
     from io import StringIO
-    from subprocess import getstatusoutput
+    from subprocess import getstatusoutput, call
+    def run_command(command):
+        call(command.split())
 else:
     from cStringIO import StringIO
     from commands import getstatusoutput
+    def run_command(command):
+        getstatusoutput(command)
 
 def generateTopologyFromOEMol(molecule):
     """
@@ -120,7 +124,8 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     oeatoms = { oeatom.GetName() : oeatom for oeatom in molecule.GetAtoms() }
     for (atom1, atom2) in residue.bonds():
         order = 1
-        molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond = molecule.NewBond(oeatoms[atom1.name], oeatoms[atom2.name], order)
+        bond.SetType('1')
 
     # Write out a mol2 file without altering molecule.
     import tempfile
@@ -134,9 +139,13 @@ def generateOEMolFromTopologyResidue(residue, geometry=False, tripos_atom_names=
     ofs.close()
     # Run Antechamber bondtype
     import subprocess
-    #command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
-    command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
-    [status, output] = getstatusoutput(command)
+    # HBM reverting back to bondtype, antechamber seems to complain about valency
+    # see https://github.com/choderalab/perses/pull/626
+    # and https://github.com/choderalab/openmoltools/issues/295
+    # and https://github.com/choderalab/openmoltools/issues/279
+    command = 'bondtype -i %s -o %s -f mol2 -j full' % (mol2_input_filename, ac_output_filename)
+    #command = 'antechamber -i %s -fi mol2 -o %s -fo ac -j 2' % (mol2_input_filename, ac_output_filename)
+    run_command(command)
 
     # Define mapping from GAFF bond orders to OpenEye bond orders.
     order_map = { 1 : 1, 2 : 2, 3: 3, 7 : 1, 8 : 2, 9 : 5, 10 : 5 }
@@ -243,7 +252,7 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
         explicit hydrogens, and renaming by IUPAC name.
     gaff_version : str, default = 'gaff'
         One of ['gaff', 'gaff2']; selects which atom types to use.
-        
+
 
     Returns
     -------
@@ -324,7 +333,13 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
         charge = atom.GetPartialCharge()
         parameters = { 'charge' : charge }
         atom_template = ForceField._TemplateAtomData(atomname, typename, element, parameters)
-        template.atoms.append(atom_template)
+        if hasattr(template, 'atomIndices'):
+            # OpenMM 7.4 and later
+            template.addAtom(atom_template)
+        else:
+            # OpenMM 7.3 and earlier
+            template.atoms.append(atom_template)
+
     for bond in molecule.GetBonds():
         if (bond.GetBgn() in residue_atoms) and (bond.GetEnd() in residue_atoms):
             template.addBondByName(bond.GetBgn().GetName(), bond.GetEnd().GetName())
@@ -336,9 +351,9 @@ def generateResidueTemplate(molecule, residue_atoms=None, normalize=True, gaff_v
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO('parm = loadamberparams %s' % frcmod_filename)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
-    params.write(ffxml)
+    params.write(ffxml, write_unused=True)
 
     return template, ffxml.getvalue()
 
@@ -363,7 +378,7 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
         If True, will generate globally unique names for templates.
     normalize : bool, optional, default=True
         If True, normalize the molecule by checking aromaticity, adding
-        explicit hydrogens, and renaming by IUPAC name.        
+        explicit hydrogens, and renaming by IUPAC name.
     gaff_version : str, default = 'gaff'
         One of ['gaff', 'gaff2']; selects which atom types to use.
 
@@ -443,9 +458,9 @@ def generateForceFieldFromMolecules(molecules, ignoreFailures=False, generateUni
     # Generate ffxml file contents for parmchk-generated frcmod output.
     leaprc = StringIO(leaprc)
     params = parmed.amber.AmberParameterSet.from_leaprc(leaprc)
-    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params)
+    params = parmed.openmm.OpenMMParameterSet.from_parameterset(params, remediate_residues=False)
     ffxml = StringIO()
-    params.write(ffxml)
+    params.write(ffxml, write_unused=True)
 
     # TODO: Clean up temporary directory.
     os.chdir(olddir)

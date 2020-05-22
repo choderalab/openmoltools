@@ -1,0 +1,34 @@
+name: test
+channels:
+  - conda-forge
+  - omnia
+  - openeye
+dependencies:
+    # Base depends
+  - python
+  - pip
+  - setuptools
+  - pandas
+  - six
+  - mdtraj
+  - lxml
+  - pymbar
+  - numpy
+  - numpydoc
+  - scipy
+  - openmm
+  - ambertools >=19.0
+  - pytables
+  - openmmtools
+  - packmol
+  - rdkit    # optional dependency
+  - openeye-toolkits  # optional dependency
+
+    # Testing
+  - nose
+  - nose-timer
+  - pytest
+  - pytest-cov
+  # Pip-only installs
+  - pip:
+    - codecov
