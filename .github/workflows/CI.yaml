@@ -18,6 +18,7 @@ jobs:
           - {python-version: 3.6, openmm: "latest"}
           - {python-version: 3.7, openmm: "latest"}
           - {python-version: 3.7, openmm: "beta"}
+          - {python-version: 3.7, openmm: "rc"}
           - {python-version: 3.7, openmm: "nightly"}
           - {python-version: 3.7, openmm: "conda-forge"}
 
@@ -83,6 +84,9 @@ jobs:
           beta)
             echo "Using OpenMM beta"
             conda install --quiet -c omnia/label/beta openmm;;
+          beta)
+            echo "Using OpenMM rc"
+            conda install --quiet -c omnia/label/rc openmm;;
           nightly)
             echo "Using OpenMM nightly dev build."
             conda install --quiet -c omnia-dev openmm;;
