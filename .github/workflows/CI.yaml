@@ -103,14 +103,14 @@ jobs:
         export OE_LICENSE="$HOME/oe_license.txt"
         export TRAVIS=true
         pushd .
-        nosetests ${PACKAGENAME}/tests/test_forcefield_generators.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_amber.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_utils.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_gromacs.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_openeye.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_freesolv.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_drugs.py --nocapture --verbosity=3 --with-timer -a '!advanced'
-        nosetests ${PACKAGENAME}/tests/test_common_molecules.py --nocapture --verbosity=3 --with-timer -a '!advanced'
+        nosetests ${PACKAGENAME}/tests/test_forcefield_generators.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_amber.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_utils.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_gromacs.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_openeye.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_freesolv.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_drugs.py --nocapture --verbosity=3 --with-timer -a '!slow'
+        nosetests ${PACKAGENAME}/tests/test_common_molecules.py --nocapture --verbosity=3 --with-timer -a '!slow'
         popd
 
     - name: Deploy
