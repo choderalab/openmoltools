@@ -13,7 +13,8 @@ import pandas as pd
 import mdtraj as md
 from numpy.testing import assert_raises
 
-smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(=C=[N-])C=[NH+]3"
+smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(=C=[N-])C=[NH+]3" # this is insane; C=C=[N-]?
+smiles_fails_with_strictStereo = "CN1CCN(CC1)CCCOc2cc3c(cc2OC)C(=[NH+]c4cc(c(cc4Cl)Cl)OC)C(C#N)C=[NH+]3" # more sane version
 
 try:
     oechem = utils.import_("openeye.oechem")
