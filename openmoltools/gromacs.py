@@ -5,15 +5,11 @@ import mdtraj.utils
 from distutils.spawn import find_executable
 import parmed
 # If ParmEd is older than 2.0.4 then halt - newer ParmEd is required to have correct FudgeLJ/FudgeQQ retained in GROMACS topologies.
-try:
-    ver = parmed.version
-except:
-    oldParmEd = Exception('ERROR: Installed ParmEd is too old, please upgrade to 2.0.4 or later')
-    raise oldParmEd
-if ver < (2,0,4):
-    # Check to make sure this isn't a versioneer dirty git issue
-    if not (ver[0], ver[1], ver[2]) == (0,0,0):
-        raise RuntimeError("Installed ParmEd (%s) is too old, please upgrade to 2.0.4 or later" % str(ver))
+
+# Ensure ParmEd is sufficiently recent
+# TODO: Instead, check if the ParmEd API is sufficient
+from .utils import check_parmed_version
+check_parmed_version()
 
 from openmoltools.utils import getoutput
 
