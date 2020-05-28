@@ -232,9 +232,11 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
     If error(s) are found, raise a RuntimeError and attept to print the appropriate errors from the processed text."""
     lines = outputtext.split('\n')
     error_lines = []
+    import re
     for line in lines:
         if 'ERROR' in line.upper():
-            error_lines.append( line )
+            if not bool(re.match('Exiting LEaP: Errors = \d+; Warnings = \d+; Notes = \d+.', line)):
+                error_lines.append( line )
         if not other_errors == None:
             for err in other_errors:
                 if err.upper() in line.upper():

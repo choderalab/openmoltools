@@ -32,7 +32,7 @@ def getoutput(cmd):
     """Compatibility function to substitute deprecated commands.getoutput in Python2.7"""
     try:
         out = subprocess.getoutput(cmd)
-    except AttributeError:
+    except (AttributeError, UnicodeDecodeError):
         out = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
                                stdout=subprocess.PIPE).communicate()[0]
     try:
@@ -391,20 +391,34 @@ def get_unique_names(n_molecules):
             return names
 
 
+def check_parmed_version():
+    """Check that parmed version is (2,0,4) or more recent.
+
+    Raises
+    ------
+    RuntimeError if ParmEd is older than 2.0.4 (unless version showes (0,0,0)
+    """
+    import parmed
+    # If ParmEd is older than 2.0.4 then halt - newer ParmEd is required to have correct FudgeLJ/FudgeQQ retained in GROMACS topologies.
+    try:
+        ver = parmed.version
+    except:
+        oldParmEd = Exception('ERROR: Installed ParmEd is too old, please upgrade to 2.0.4 or later')
+        raise oldParmEd
+    if ver < (2,0,4):
+        # Check to make sure this isn't a versioneer dirty git issue
+        if not (ver[0], ver[1], ver[2]) == (0,0,0):
+            raise RuntimeError("Installed ParmEd (%s) is too old, please upgrade to 2.0.4 or later" % str(ver))
+
 def randomize_mol2_residue_names(mol2_filenames):
     """Find unique residue names for a list of MOL2 files.  Then
     re-write the MOL2 files using ParmEd with the unique identifiers.
     """
     import parmed
 
-    # We require at least ParmEd 2.5.1 because of issues with the .mol2 writer (issue #691 on ParmEd) prior to that.
-    try: #Try to get version tag
-        ver = parmed.version
-    except: #If too old for version tag, it is too old
-        oldParmEd = Exception('ERROR: ParmEd is too old, please upgrade to 2.0.4 or later')
-        raise oldParmEd
-    if ver < (2,5,1):
-        raise RuntimeError("ParmEd is too old, please upgrade to 2.0.4 or later")
+    # Ensure ParmEd is sufficiently recent
+    # TODO: Instead, check if the ParmEd API is sufficient
+    check_parmed_version()
 
     names = get_unique_names(len(mol2_filenames))
 
@@ -524,14 +538,13 @@ def amber_to_gromacs( molecule_name, in_prmtop, in_crd, out_top = None, out_gro 
 
     #Import ParmEd
     import parmed
-    #Require version 2.0.4 or later of ParmEd, otherwise ParmEd corrupts [ defaults ] section in GROMACS topologies with incorrect FudgeLJ/FudgeQQ
-    try:
+    # We require at least ParmEd 2.5.1 because of issues with the .mol2 writer (issue #691 on ParmEd) prior to that.
+    try: #Try to get version tag
         ver = parmed.version
-    except:
-        oldParmEd = Exception('ERROR: ParmEd is too old, please upgrade to 2.0.4 or later')
-        raise oldParmEd
-    if ver < (2,0,4):
-        raise RuntimeError("ParmEd is too old, please upgrade to 2.0.4 or later")
+    except: #If too old for version tag, it is too old
+        # Check to make sure this isn't a versioneer dirty git issue
+        if not (ver[0], ver[1], ver[2]) == (0,0,0):
+            raise RuntimeError("Installed ParmEd (%s) is too old, please upgrade to 2.0.4 or later" % str(ver))
 
 
     #Read AMBER to ParmEd object

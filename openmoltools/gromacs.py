@@ -5,13 +5,11 @@ import mdtraj.utils
 from distutils.spawn import find_executable
 import parmed
 # If ParmEd is older than 2.0.4 then halt - newer ParmEd is required to have correct FudgeLJ/FudgeQQ retained in GROMACS topologies.
-try:
-    ver = parmed.version
-except:
-    oldParmEd = Exception('ERROR: ParmEd is too old, please upgrade to 2.0.4 or later')
-    raise oldParmEd
-if ver < (2,0,4):
-    raise RuntimeError("ParmEd is too old, please upgrade to 2.0.4 or later")
+
+# Ensure ParmEd is sufficiently recent
+# TODO: Instead, check if the ParmEd API is sufficient
+from .utils import check_parmed_version
+check_parmed_version()
 
 from openmoltools.utils import getoutput
 
@@ -59,7 +57,7 @@ def extract_section(lines, section):
     Returns
     -------
     status : bool
-        Whether or not section is found. True if found, False if not. 
+        Whether or not section is found. True if found, False if not.
     indices :  list (int)
         Line indices within lines belonging to section excluding the header and counting from zero
 
@@ -115,7 +113,7 @@ def extract_section(lines, section):
 
 def change_molecules_section( input_topology, output_topology, molecule_names, molecule_numbers):
     """Create a GROMACS topology file where the  molecule numbers are replaced by new molecule numbers in the gromacs [ molecules ] section.
-        
+
     Parameters
     ----------
     input_topology : str
@@ -126,21 +124,21 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
         Molecule names to be searched in the gromacs [ molecules ] section
     molecule_numbers : list (int)
         The new molecule numbers to be used in [ molecules ] section
-        
+
     Returns
     -------
     nothing is returned
-        
+
     Notes
     -----
-    This function reads in a gromacs topology file and changes the number of atoms related to the passed molecule name list. 
+    This function reads in a gromacs topology file and changes the number of atoms related to the passed molecule name list.
     If in the topology file one molecule name is not present in the passed molecule name list an exception is raised.
     Currently assumes the components are single-residue, single-molecule (i.e. the molecule names and residue names are equivalent).
     """
-    
+
     #The molecule name list and the molecule number list must have the same size otherwise an exception is raised
     assert len(molecule_names) == len(molecule_numbers), "The molecule name list and the molecule name number must have the same size"
-    
+
     #Check for non negative integer number of molecules
     check_nni = all(item >=0  and isinstance(item, int) for item in molecule_numbers)
 
@@ -159,9 +157,9 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     current_names = []
     for c in components:
         molecules.append( c[0] )
-        numbers.append( c[1] )    
+        numbers.append( c[1] )
         current_names.append( c[0].residues[0].name )
-    
+
     #Check length
     assert len(molecules) == len(molecule_numbers), "The number of molecules in the topology file is not equal to the number of molecule numbers/molecules provided."
 
@@ -175,16 +173,16 @@ def change_molecules_section( input_topology, output_topology, molecule_names, m
     newtop = molecules[0] * molecule_numbers[0]
     for idx in range( 1, len(molecule_names) ):
         newtop += molecules[idx] * molecule_numbers[idx]
-    
+
 
     #Write topology file
-    newtop.write( output_topology ) 
+    newtop.write( output_topology )
 
 
 def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename, box_dim, box_type, water_model, water_top, FF = 'amber99sb-ildn.ff' ):
 
     """ This function creates water solvated molecule coordinate files and its corresponding topology
-        
+
         PARAMETERS:
             top_filename: str
                           Topology path/filename
@@ -203,7 +201,7 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
             water_top: str
                           Water include file to ensure is present in topology file, i.e. "tip3p.itp"
             FF : str, optional, default = 'amber99sb-ildn.ff'
-                          String specifying base force field directory for include files (i.e. 'amber99sb-ildn.ff').  
+                          String specifying base force field directory for include files (i.e. 'amber99sb-ildn.ff').
 
         NOTES:
         -----
@@ -275,23 +273,23 @@ def do_solvate( top_filename, gro_filename, top_solv_filename, gro_solv_filename
 
 def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
     """Open a topology file, and check to ensure that includes the desired forcefield itp file. If not, remove any [ defaults ] section (which will be provided by the FF) and include the forcefield itp. Useful when working with files set up by acpypi -- these need to have a water model included in order to work, and most water models require a force field included in order for them to work.
-            
+
             ARGUMENTS:
             - intop: Input topology
             - outtop: Output topology
         OPTIONAL:
         - FF: String corresponding to desired force field; default ffamber99sb.-ildn.ff
-        
+
         Limitations:
         - If you use this on a topology file that already includes a DIFFERENT forcefield, the result will be a topology file including two forcefields.
     """
-    
+
     file = open(intop, 'r')
     text= file.readlines()
     file.close()
-    
+
     FFstring = FF+'/forcefield.itp'
-    
+
     #Check if force field is included somewhere
     found = False
     for line in text:
@@ -303,7 +301,7 @@ def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
         while text[idx].find(';')==0:
             idx+=1
         text[idx] = '\n#include "%s"\n\n' % FFstring + text[idx]
-    
+
     #Remove any defaults section
     found = False
     foundidx = None
@@ -319,18 +317,18 @@ def ensure_forcefield( intop, outtop, FF = 'ffamber99sb-ildn.ff'):
             if endidx == None:
                 endidx = idx
     #Now remove defaults section
-    
+
     if found:
         text = text[0:foundidx] + text[endidx:]
-    
-    
+
+
     #Write results
     file = open( outtop, 'w')
     file.writelines(text)
     file.close()
 
 
-    
+
 def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
     """Check GROMACS package output for the string 'ERROR' (upper or lowercase) and (optionally) specified other strings and raise an exception if it is found (to avoid silent failures which might be noted to log but otherwise ignored).
 
@@ -365,7 +363,7 @@ def check_for_errors( outputtext, other_errors = None, ignore_errors = None ):
                     ignore = True
             if not ignore:
                 new_error_lines.append( err )
-        error_lines = new_error_lines 
+        error_lines = new_error_lines
 
     if len(error_lines) > 0:
         print("Unexpected errors encountered running GROMACS tool. Offending output:")
@@ -423,8 +421,8 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
     #Check that we've been provided with the correct number of molecule_names if any
     if molecule_names != None:
         total_molecules = 0
-        for topnr in range(N_tops): 
-            total_molecules += len( tops[topnr].residues ) 
+        for topnr in range(N_tops):
+            total_molecules += len( tops[topnr].residues )
         assert total_molecules == len( molecule_names ), "Must provide a number of molecule names equal to your total number of residues, but you have %s and %s, respectively." % ( len( molecule_names), total_molecules )
 
         #Rename residues
@@ -433,18 +431,16 @@ def merge_topologies( input_topologies, output_topology, system_name, molecule_n
             for resnr in range(len(tops[topnr].residues)):
                 tops[topnr].residues[resnr].name = molecule_names[ ctr ]
                 ctr += 1
- 
+
     #Construct final topology
-    final = tops[0] * molecule_numbers[ 0 ] 
+    final = tops[0] * molecule_numbers[ 0 ]
     for topnr in range( 1, N_tops ):
-        final += tops[ topnr ] * molecule_numbers[ topnr ] 
+        final += tops[ topnr ] * molecule_numbers[ topnr ]
 
     #Set system name
     final.title = system_name
 
     #Write topology
-    parmed.gromacs.GromacsTopologyFile.write( final, output_topology ) 
+    parmed.gromacs.GromacsTopologyFile.write( final, output_topology )
 
     return True
-
- 

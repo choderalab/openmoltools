@@ -70,16 +70,20 @@ def get_charges(molecule, max_confs=800, strictStereo=True,
         # try charge using AM1BCCELF10
         status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCELF10Charges())
         # or fall back to OEAM1BCC
-        if not status: 
+        if not status:
             # 2017.2.1 OEToolkits new charging function
             status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1BCCCharges())
-            if not status: raise(RuntimeError("OEAssignCharges failed."))
+            if not status:
+                # Fall back
+                status = oequacpac.OEAssignCharges(charged_copy, oequacpac.OEAM1Charges())
+
+                # Give up
+                if not status:
+                    raise(RuntimeError("OEAssignCharges failed."))
     else:
         # AM1BCCSym recommended by Chris Bayly to KAB+JDC, Oct. 20 2014.
         status = oequacpac.OEAssignPartialCharges(charged_copy, oequacpac.OECharges_AM1BCCSym)
         if not status: raise(RuntimeError("OEAssignPartialCharges returned error code %d" % status))
-
-
 
     #Determine conformations to return
     if keep_confs == None:
