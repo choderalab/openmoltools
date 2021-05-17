@@ -1,4 +1,4 @@
-[![GH Actions Status](https://github.com/choderalab/perses/workflows/CI/badge.svg)](https://github.com/choderalab/perses/actions?query=branch%3Amaster)
+[![GH Actions Status](https://github.com/choderalab/openmoltools/workflows/CI/badge.svg)](https://github.com/choderalab/openmoltools/actions?query=branch%3Amaster)
 
 ## openmoltools: Tools for Small Molecules, Antechamber, OpenMM, and More.
 
