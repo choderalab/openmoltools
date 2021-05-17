@@ -35,8 +35,8 @@ epsilon14scale = 0.5
 skipResidues = ['CIO', 'IB']  # "Generic" ions defined by Amber, which are identical to other real ions
 skipClasses = ['OW', 'HW']  # Skip water atoms, since we define these in separate files
 
-# Manually create the hydrogen element
-hydrogen = Element(1, "hydrogen", "H", 1.007947*unit.daltons)
+# Manually get the hydrogen element
+hydrogen = Element.getBySymbol("H")
 
 
 class AmberParser(object):
