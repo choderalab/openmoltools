@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import math
-from simtk.openmm.app import Element, hydrogen
+from simtk.openmm.app import Element
 import simtk.unit as unit
 import subprocess
 import datetime
@@ -34,6 +34,9 @@ epsilon14scale = 0.5
 
 skipResidues = ['CIO', 'IB']  # "Generic" ions defined by Amber, which are identical to other real ions
 skipClasses = ['OW', 'HW']  # Skip water atoms, since we define these in separate files
+
+# Manually create the hydrogen element
+hydrogen = Element(1, "hydrogen", "H", 1.007947*daltons)
 
 
 class AmberParser(object):
