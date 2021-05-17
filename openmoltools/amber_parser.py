@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import math
-import simtk.openmm.app.element as element
+from simtk.openmm.app import Element, hydrogen
 import simtk.unit as unit
 import subprocess
 import datetime
@@ -40,7 +40,7 @@ class AmberParser(object):
 
     def __init__(self, override_mol2_residue_name=None):
         """Create an AmberParser object for converting amber force field files to XML format.
-        
+
         Parameters
         ----------
         override_mol2_residue_name : str, default=None
@@ -48,10 +48,10 @@ class AmberParser(object):
             Useful to ensure that multiple ligands have unique residue
             names, as required by the OpenMM ffXML parser.
         """
-        
+
         self.override_mol2_residue_name = override_mol2_residue_name
         self.current_mol2 = 0
-        
+
         self.residueAtoms = {}
         self.residueBonds = {}
         self.residueConnections = {}
@@ -123,12 +123,12 @@ class AmberParser(object):
 
         """
         atoms, bonds = md.formats.mol2.mol2_to_dataframes(inputfile)
-        
+
         if self.override_mol2_residue_name is None:
             residue_name = atoms.resName[1]  # To Do: Add check for consistency
         else:
             residue_name = self.override_mol2_residue_name
-        
+
         # Give each mol2 file a unique numbering to avoid conflicts.
         residue_name = "%s-%d" % (residue_name, self.current_mol2)
         self.current_mol2 += 1
@@ -141,7 +141,7 @@ class AmberParser(object):
             # i0 and i1 are zero-based and one-based indices, respectively
             full_name = residue_name + "_" + name
             element_symbol = md.formats.mol2.gaff_elements[atype]
-            e = element.Element.getBySymbol(element_symbol)
+            e = Element.getBySymbol(element_symbol)
             self.addAtom(residue_name, name, atype, e, charge, use_numeric_types=False)  # use_numeric_types set to false to use string-based atom names, rather than numbers
             self.vdwEquivalents[full_name] = atype
 
@@ -1086,7 +1086,7 @@ class AmberParser(object):
                 atomBonds[bond[1]].append(bond[0])
             if symmetrize_protons is True:
                 for index, atom in enumerate(self.residueAtoms[res]):
-                    hydrogens = [x for x in atomBonds[index] if self.types[self.residueAtoms[res][x][1]][1] == element.hydrogen]
+                    hydrogens = [x for x in atomBonds[index] if self.types[self.residueAtoms[res][x][1]][1] == hydrogen]
                     for h in hydrogens[1:]:
                         removeType[self.residueAtoms[res][h][1]] = True
                         self.residueAtoms[res][h][1] = self.residueAtoms[res][hydrogens[0]][1]
