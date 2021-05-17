@@ -17,7 +17,7 @@ def fix(atomClass):
     return atomClass
 
 elements = {}
-for elem in element.Element._elements_by_symbol.values():
+for elem in Element._elements_by_symbol.values():
     num = elem.atomic_number
     if num not in elements or elem.mass < elements[num].mass:
         elements[num] = elem
