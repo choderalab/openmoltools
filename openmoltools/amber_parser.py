@@ -36,7 +36,7 @@ skipResidues = ['CIO', 'IB']  # "Generic" ions defined by Amber, which are ident
 skipClasses = ['OW', 'HW']  # Skip water atoms, since we define these in separate files
 
 # Manually create the hydrogen element
-hydrogen = Element(1, "hydrogen", "H", 1.007947*daltons)
+hydrogen = Element(1, "hydrogen", "H", 1.007947*unit.daltons)
 
 
 class AmberParser(object):
