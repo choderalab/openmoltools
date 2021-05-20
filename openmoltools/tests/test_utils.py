@@ -9,7 +9,7 @@ from openmoltools import amber
 import simtk.unit as u
 from simtk.openmm import app
 import simtk.openmm as mm
-import simtk.openmm.openmm as mmmm
+import simtk.openmm as mmmm
 from distutils.spawn import find_executable
 import parmed
 
@@ -49,7 +49,7 @@ def test_parse_ligand_filename():
     molecule_name = "sustiva"
     input_filename = utils.get_data_filename("chemicals/sustiva/sustiva.mol2")
     name, ext = utils.parse_ligand_filename(input_filename)
-    
+
     eq(name, "sustiva")
     eq(ext, ".mol2")
 
@@ -66,7 +66,7 @@ def test_parmed_conversion():
         #Make sure conversion runs
         gaff_mol2_filename, frcmod_filename = amber.run_antechamber(molecule_name, input_filename, charge_method=None)
         prmtop, inpcrd = amber.run_tleap(molecule_name, gaff_mol2_filename, frcmod_filename)
-        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd, precision = 8 ) 
+        out_top, out_gro = utils.amber_to_gromacs( molecule_name, prmtop, inpcrd, precision = 8 )
 
         #Test energies before and after conversion
         #Set up amber system
@@ -76,15 +76,15 @@ def test_parmed_conversion():
         ambercon.setPositions( a.positions )
         #Set up GROMACS system
         g = parmed.load_file( out_top )
-        gro = parmed.gromacs.GromacsGroFile.parse( out_gro ) 
+        gro = parmed.gromacs.GromacsGroFile.parse( out_gro )
         g.box = gro.box
         g.positions = gro.positions
         gromacssys = g.createSystem()
         gromacscon = mmmm.Context( gromacssys, mm.VerletIntegrator(0.001))
-        gromacscon.setPositions( g.positions ) 
+        gromacscon.setPositions( g.positions )
 
         #Check energies
-        a_energies = parmed.openmm.utils.energy_decomposition( a, ambercon )    
+        a_energies = parmed.openmm.utils.energy_decomposition( a, ambercon )
         g_energies = parmed.openmm.utils.energy_decomposition( g, gromacscon )
         #Check components
         tolerance = 1e-5
@@ -95,8 +95,8 @@ def test_parmed_conversion():
                 ok = False
                 print("In testing AMBER to GROMACS conversion, %s energy differs by %.5g, which is more than a fraction %.2g of the total, so conversion appears not to be working properly." % ( key, diff, tolerance) )
         if not ok:
-            raise(ValueError("AMBER to GROMACS conversion yields energies which are too different.")) 
-    
+            raise(ValueError("AMBER to GROMACS conversion yields energies which are too different."))
+
 
 @skipIf(SKIP_CHECKMOL, "Skipping testing of checkmol descriptors since checkmol is not found (under that name)." )
 def test_checkmol_descriptors():
@@ -122,11 +122,11 @@ def test_smiles_conversion():
     ligand_trajectories, ffxml = utils.smiles_to_mdtraj_ffxml([smiles])
     ligand_traj = ligand_trajectories[0]
     ligand_traj.center_coordinates()
-    
+
     eq(ligand_traj.n_atoms, 15)
     eq(ligand_traj.n_frames, 1)
 
-    #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.  
+    #Move the pre-centered ligand sufficiently far away from the protein to avoid a clash.
     min_atom_pair_distance = ((ligand_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + ((protein_traj.xyz[0] ** 2.).sum(1) ** 0.5).max() + 0.3
     ligand_traj.xyz += np.array([1.0, 0.0, 0.0]) * min_atom_pair_distance
 
