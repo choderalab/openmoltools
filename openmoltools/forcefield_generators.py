@@ -11,7 +11,7 @@ import os, os.path, sys
 from simtk.openmm.app import ForceField
 from openmoltools.amber import run_antechamber
 from openmoltools.openeye import get_charges
-from simtk.openmm.app.element import Element
+from simtk.openmm.app import Element
 import parmed
 if sys.version_info >= (3, 0):
     from io import StringIO
