@@ -89,8 +89,8 @@ jobs:
             conda install --quiet -c omnia/label/rc openmm;;
           nightly)
             echo "Using OpenMM nightly dev build."
-            # need to install parmed from master my fork
-            pip install git+https://github.com/mikemhenry/parmed.git@fix/openmm_namespace_change
+            # need to install parmed from master until new release
+            pip install git+https://github.com/ParmEd/ParmEd.git
             conda install --quiet -c omnia-dev openmm;;
           conda-forge)
             echo "Using OpenMM conda-forge testing build."
