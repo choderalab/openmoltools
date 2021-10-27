@@ -26,8 +26,7 @@ python setup.py install
 
 or
 
-conda config --add channels http://conda.binstar.org/omnia
-conda install openmoltools
+conda install -c conda-forge openmoltools
 
 ```
 
